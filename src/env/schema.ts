@@ -14,6 +14,13 @@ const jupiterBaseUrl = z
   })
   .transform((url) => url.replace(/\/+$/, ""));
 
+/** Unset or blank (e.g. `KEY=""` copied from .env.example) both read as undefined. */
+const optionalSecret = (schema: z.ZodString) =>
+  z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    schema.optional(),
+  );
+
 export const serverEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.url().refine((url) => /^postgres(ql)?:\/\//.test(url), {
@@ -24,6 +31,18 @@ export const serverEnvSchema = z.object({
   JUPITER_API_BASE_URL: jupiterBaseUrl,
   /** Server-side Solana RPC (may embed a provider key). Never exposed to the browser. */
   SOLANA_RPC_URL: z.url(),
+  /**
+   * Birdeye Data Services key (X-API-KEY) for historical OHLCV. Optional so the
+   * app runs without it; /api/cron/prices responds 503 until it is set.
+   */
+  BIRDEYE_API_KEY: optionalSecret(z.string().trim()),
+  /**
+   * Shared secret for /api/cron/*, sent as `Authorization: Bearer <secret>`
+   * (Vercel Cron does this automatically). Required in production.
+   */
+  CRON_SECRET: optionalSecret(
+    z.string().trim().min(16, "CRON_SECRET must be at least 16 characters"),
+  ),
 });
 
 export const clientEnvSchema = z.object({

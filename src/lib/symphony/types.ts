@@ -7,21 +7,9 @@
  * Runtime shapes live in schema.ts; semantic rules in validate.ts.
  */
 
-/**
- * A technical indicator over one price series. Periods count daily bars.
- * Units: price and SMA/EMA in the series' price; RSI 0–100; cumulative
- * return, max drawdown and stdev of returns in percent (10 = 10%).
- */
-export type IndicatorSpec =
-  | { fn: "price" }
-  | { fn: "sma"; period: number }
-  | { fn: "ema"; period: number }
-  | { fn: "rsi"; period: number }
-  | { fn: "cumulativeReturn"; period: number }
-  | { fn: "maxDrawdown"; period: number }
-  | { fn: "stdevReturn"; period: number };
+import type { IndicatorSpec } from "@/lib/indicators/types";
 
-export type IndicatorFn = IndicatorSpec["fn"];
+export type { IndicatorFn, IndicatorSpec } from "@/lib/indicators/types";
 
 /** An indicator applied to a specific asset, e.g. SMA(50) of SOL. */
 export type AssetIndicator = { mint: string; indicator: IndicatorSpec };
@@ -67,7 +55,8 @@ export type IfNode = {
 /**
  * Ranks children by `sortBy` and keeps the top or bottom `count`, equally
  * weighted. Asset children are ranked on their own price series; composite
- * children on their current allocation's series (see evaluate.ts).
+ * children on their current allocation's series. Children too new to measure
+ * rank last (see evaluate.ts).
  */
 export type FilterNode = {
   type: "filter";

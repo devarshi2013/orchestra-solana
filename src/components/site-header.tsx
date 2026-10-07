@@ -13,6 +13,9 @@ export function SiteHeader() {
           <Link href="/swap" className="text-sm text-muted-foreground hover:text-foreground">
             Swap
           </Link>
+          <Link href="/symphonies" className="text-sm text-muted-foreground hover:text-foreground">
+            Symphonies
+          </Link>
         </nav>
         <WalletButton />
       </div>

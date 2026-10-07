@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { barsNeeded, evaluate, SymphonyEvaluationError } from "./evaluate";
-import { InsufficientDataError, type MarketData } from "./market-data";
+import {
+  barsNeeded,
+  evaluate,
+  evaluateWithWarnings,
+  SymphonyEvaluationError,
+  type EvaluationWarning,
+} from "./evaluate";
+import type { MarketData } from "./market-data";
 import type { Condition, IndicatorSpec, SymphonyNode } from "./types";
 
 // Mint strings are opaque to evaluate(); short names keep expectations readable.
@@ -19,7 +25,7 @@ const when = (condition: Condition, then: SymphonyNode, otherwise: SymphonyNode)
   then,
   else: otherwise,
 });
-/** An `if` that throws InsufficientDataError if evaluated (mint "missing" has no data). */
+/** An `if` that warns if evaluated (mint "missing" has no data). */
 const poisoned = when({ left: ind("missing"), comparator: "gt", right: 0 }, asset("A"), asset("A"));
 
 function day(i: number): string {
@@ -119,6 +125,28 @@ describe("evaluate: inverse volatility", () => {
     const tree = inverseVol(equal(asset("A"), asset("B")), asset("C"));
     expect(evaluate(tree, data, LAST(data))).toEqual({ A: 0.5, B: 0.5 });
   });
+
+  it("falls back to equal weights, warning per short child, when any child lacks history", () => {
+    // "new" listed yesterday: 1 close, but stdev over 2 days needs 3.
+    const data = market({ A: [100, 101, 99.99], new: [null, null, 5] });
+    const { allocation, warnings } = evaluateWithWarnings(
+      inverseVol(asset("A"), asset("new")),
+      data,
+      LAST(data),
+    );
+    expect(allocation).toEqual({ A: 0.5, new: 0.5 });
+    expect(warnings).toEqual([
+      {
+        kind: "insufficient_history",
+        path: "root.children[1]",
+        mint: "new",
+        indicator: { fn: "stdevReturn", period: 2 },
+        barsNeeded: 3,
+        barsAvailable: 1,
+        fallback: "equal_weight",
+      },
+    ]);
+  });
 });
 
 describe("evaluate: if", () => {
@@ -153,8 +181,8 @@ describe("evaluate: if", () => {
 
   it("evaluates only the taken branch", () => {
     const tree = when({ left: ind("A"), comparator: "gt", right: 0 }, asset("T"), poisoned);
-    expect(evaluate(tree, data, date)).toEqual({ T: 1 });
-    expect(() => evaluate(poisoned, data, date)).toThrow(InsufficientDataError);
+    expect(evaluateWithWarnings(tree, data, date)).toEqual({ allocation: { T: 1 }, warnings: [] });
+    expect(evaluateWithWarnings(poisoned, data, date).warnings).toHaveLength(1);
   });
 
   it("uses only bars on or before the date (no look-ahead)", () => {
@@ -164,20 +192,55 @@ describe("evaluate: if", () => {
     expect(evaluate(tree, data, "2099-01-01")).toEqual({ T: 1 }); // after the last bar
   });
 
-  it("throws InsufficientDataError when history is too short", () => {
-    const sma = (period: number) =>
-      when(
-        { left: ind("A", { fn: "sma", period }), comparator: "gt", right: 0 },
-        asset("T"),
-        asset("F"),
-      );
-    expect(evaluate(sma(5), data, date)).toEqual({ T: 1 });
-    expect(() => evaluate(sma(6), data, date)).toThrow(InsufficientDataError);
-    expect(() => evaluate(sma(1), data, "2025-12-31")).toThrow(InsufficientDataError);
-    const gappy = market({ A: [1, null, 3] });
-    expect(() => evaluate(sma(3), gappy, LAST(gappy))).toThrow(
-      "Need 3 daily closes of A up to 2026-01-03",
+  const sma = (period: number) =>
+    when(
+      { left: ind("A", { fn: "sma", period }), comparator: "gt", right: 0 },
+      asset("T"),
+      asset("F"),
     );
+  const shortHistory = (
+    barsNeeded: number,
+    barsAvailable: number,
+    path = "root",
+  ): EvaluationWarning => ({
+    kind: "insufficient_history",
+    path,
+    mint: "A",
+    indicator: { fn: "sma", period: barsNeeded },
+    barsNeeded,
+    barsAvailable,
+    fallback: "else",
+  });
+
+  it("falls back to else, with a warning, when history is too short", () => {
+    expect(evaluateWithWarnings(sma(5), data, date)).toEqual({
+      allocation: { T: 1 },
+      warnings: [],
+    });
+    expect(evaluateWithWarnings(sma(6), data, date)).toEqual({
+      allocation: { F: 1 },
+      warnings: [shortHistory(6, 5)],
+    });
+  });
+
+  it("treats a date before the data, or a gap, as short history", () => {
+    expect(evaluateWithWarnings(sma(1), data, "2025-12-31").warnings).toEqual([shortHistory(1, 0)]);
+    const gappy = market({ A: [1, null, 3] });
+    expect(evaluateWithWarnings(sma(2), gappy, LAST(gappy)).warnings).toEqual([shortHistory(2, 1)]);
+  });
+
+  it("warns for each side of a condition that lacks history", () => {
+    const tree = when(
+      { left: ind("A", { fn: "sma", period: 9 }), comparator: "lt", right: ind("missing") },
+      asset("T"),
+      asset("F"),
+    );
+    const { allocation, warnings } = evaluateWithWarnings(tree, data, date);
+    expect(allocation).toEqual({ F: 1 });
+    expect(warnings.map((w) => [w.mint, w.barsAvailable])).toEqual([
+      ["A", 5],
+      ["missing", 0],
+    ]);
   });
 });
 
@@ -232,6 +295,45 @@ describe("evaluate: filter", () => {
       B: 1,
     });
   });
+
+  it("ranks children without enough history last, in either direction", () => {
+    const withNew = market({ ...data.closes, new: [null, 100] });
+    const children = [asset("new"), asset("A"), asset("C")];
+    for (const direction of ["top", "bottom"] as const) {
+      const { allocation, warnings } = evaluateWithWarnings(
+        filter(direction, 2, children),
+        withNew,
+        date,
+      );
+      expect(allocation).toEqual({ A: 0.5, C: 0.5 });
+      expect(warnings).toMatchObject([
+        { path: "root.children[0]", mint: "new", fallback: "ranked_last" },
+      ]);
+    }
+    // Picked anyway when there aren't enough measurable children.
+    expect(evaluate(filter("top", 3, children), withNew, date)).toEqual({
+      A: 1 / 3,
+      C: 1 / 3,
+      new: 1 / 3,
+    });
+  });
+
+  it("measures a composite child over the span all its constituents share", () => {
+    const withNew = market({ ...data.closes, new: [null, 100] });
+    const { warnings } = evaluateWithWarnings(
+      filter("top", 1, [equal(asset("B"), asset("new")), asset("A")]),
+      withNew,
+      date,
+    );
+    expect(warnings).toMatchObject([{ mint: "new", barsAvailable: 1, barsNeeded: 2 }]);
+    const neverListed = evaluateWithWarnings(
+      filter("top", 1, [equal(asset("B"), asset("ghost")), asset("A")]),
+      withNew,
+      date,
+    );
+    expect(neverListed.allocation).toEqual({ A: 1 });
+    expect(neverListed.warnings).toMatchObject([{ mint: "ghost", barsAvailable: 0 }]);
+  });
 });
 
 describe("evaluate: purity", () => {
@@ -264,7 +366,7 @@ describe("barsNeeded", () => {
   it("takes the deepest requirement anywhere in the tree", () => {
     const tree: SymphonyNode = {
       type: "filter",
-      sortBy: { fn: "rsi", period: 14 }, // 29 bars
+      sortBy: { fn: "rsi", period: 14 }, // 15 bars
       select: { direction: "top", count: 1 },
       children: [
         when(
@@ -288,6 +390,6 @@ describe("barsNeeded", () => {
       asset("A"),
       asset("B"),
     );
-    expect(barsNeeded(tree)).toBe(40);
+    expect(barsNeeded(tree)).toBe(20);
   });
 });

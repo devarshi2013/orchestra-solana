@@ -35,6 +35,16 @@ describe("serverEnvSchema", () => {
     expect(serverEnvSchema.safeParse({ ...validServer, JUPITER_API_KEY: " " }).success).toBe(false);
   });
 
+  it("treats blank optional secrets as unset", () => {
+    const env = serverEnvSchema.parse({ ...validServer, BIRDEYE_API_KEY: " ", CRON_SECRET: "" });
+    expect(env.BIRDEYE_API_KEY).toBeUndefined();
+    expect(env.CRON_SECRET).toBeUndefined();
+  });
+
+  it("rejects a short CRON_SECRET", () => {
+    expect(serverEnvSchema.safeParse({ ...validServer, CRON_SECRET: "short" }).success).toBe(false);
+  });
+
   it("requires a postgres DATABASE_URL", () => {
     const result = serverEnvSchema.safeParse({ ...validServer, DATABASE_URL: "mysql://x@y/z" });
     expect(result.success).toBe(false);

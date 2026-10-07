@@ -1,11 +1,12 @@
-import { barsRequired, computeIndicator } from "./indicators";
-import { barIndexAt, closesWindow, type MarketData } from "./market-data";
+import { barsRequired, computeIndicator } from "@/lib/indicators/compute";
+
+import { barIndexAt, historyAt, type MarketData } from "./market-data";
 import type {
   Allocation,
-  AssetIndicator,
   Condition,
   FilterNode,
   GroupNode,
+  IndicatorSpec,
   SymphonyNode,
 } from "./types";
 
@@ -20,33 +21,75 @@ export class SymphonyEvaluationError extends Error {
   }
 }
 
-type Context = { data: MarketData; date: string; index: number };
+/**
+ * An indicator had too little history (e.g. a newly listed token), so its node
+ * fell back to a default instead of failing:
+ * - `else`: an `if` took its else branch;
+ * - `ranked_last`: a filter ranked the child below every measurable child;
+ * - `equal_weight`: an inverse-volatility group weighted its children equally.
+ */
+export type EvaluationWarning = {
+  kind: "insufficient_history";
+  /** Node that fell back, e.g. `root.children[1]`. */
+  path: string;
+  /** Mint with the shortest history; for a composite child, its shortest constituent. */
+  mint: string;
+  indicator: IndicatorSpec;
+  barsNeeded: number;
+  barsAvailable: number;
+  fallback: "else" | "ranked_last" | "equal_weight";
+};
+
+export type Evaluation = { allocation: Allocation; warnings: EvaluationWarning[] };
+
+type Context = {
+  data: MarketData;
+  index: number;
+  warnings: EvaluationWarning[];
+};
 
 /**
- * The allocation `tree` asks for on `date` (ISO YYYY-MM-DD), using only closes
- * on or before that date. Pure and deterministic: same inputs, same output,
- * no clock, randomness or mutation.
+ * The allocation `tree` asks for on `date` (ISO), using only bars on or before
+ * that date, plus a warning for every node that fell back because an indicator
+ * lacked history. Pure and deterministic: same inputs, same output, no clock,
+ * randomness or mutation of inputs.
  *
  * Weights are fractions summing to 1; a mint reached through several branches
- * gets the sum. Only the taken branch of an `if` is evaluated, so the other
- * branch may lack data. Throws InsufficientDataError when an indicator needs
- * more history than `marketData` has (see `barsNeeded` for the warm-up).
+ * gets the sum. Only the taken branch of an `if` is evaluated.
  *
- * A composite child of a filter or inverse-volatility group is measured on its
- * current allocation held at constant weights over the lookback. A child that
- * resolves to a single mint uses that mint's own closes.
+ * Indicators run on each mint's whole unbroken history up to the date, so EMA
+ * and RSI match charting tools when enough history is supplied. A composite
+ * child of a filter or inverse-volatility group is measured on its current
+ * allocation held at constant weights; a child resolving to one mint uses that
+ * mint's own closes.
  */
-export function evaluate(tree: SymphonyNode, marketData: MarketData, date: string): Allocation {
-  return evaluateNode(tree, { data: marketData, date, index: barIndexAt(marketData.dates, date) });
+export function evaluateWithWarnings(
+  tree: SymphonyNode,
+  marketData: MarketData,
+  date: string,
+): Evaluation {
+  const ctx: Context = {
+    data: marketData,
+    index: barIndexAt(marketData.dates, date),
+    warnings: [],
+  };
+  const allocation = evaluateNode(tree, "root", ctx);
+  return { allocation, warnings: ctx.warnings };
 }
 
-/** Daily bars of history `tree` may need on any date, i.e. the backtest warm-up. */
+/** `evaluateWithWarnings` without the warnings. */
+export function evaluate(tree: SymphonyNode, marketData: MarketData, date: string): Allocation {
+  return evaluateWithWarnings(tree, marketData, date).allocation;
+}
+
+/** Fewest bars of history for every indicator in `tree` to have a value (the backtest warm-up). */
 export function barsNeeded(tree: SymphonyNode): number {
   switch (tree.type) {
     case "asset":
       return 0;
     case "group": {
-      const own = tree.weight.method === "inverseVolatility" ? tree.weight.lookbackDays + 1 : 0;
+      const own =
+        tree.weight.method === "inverseVolatility" ? barsRequired(stdevSpec(tree.weight)) : 0;
       return Math.max(own, ...tree.children.map(barsNeeded));
     }
     case "if": {
@@ -64,28 +107,33 @@ export function barsNeeded(tree: SymphonyNode): number {
   }
 }
 
-function evaluateNode(node: SymphonyNode, ctx: Context): Allocation {
+function evaluateNode(node: SymphonyNode, path: string, ctx: Context): Allocation {
   switch (node.type) {
     case "asset":
       return { [node.mint]: 1 };
     case "if":
-      return evaluateNode(isTrue(node.condition, ctx) ? node.then : node.else, ctx);
+      return isTrue(node.condition, path, ctx)
+        ? evaluateNode(node.then, `${path}.then`, ctx)
+        : evaluateNode(node.else, `${path}.else`, ctx);
     case "group":
-      return evaluateGroup(node, ctx);
+      return evaluateGroup(node, path, ctx);
     case "filter":
-      return evaluateFilter(node, ctx);
+      return evaluateFilter(node, path, ctx);
   }
 }
 
-function evaluateGroup(node: GroupNode, ctx: Context): Allocation {
-  const allocations = evaluateChildren(node, ctx);
+const stdevSpec = ({ lookbackDays }: { lookbackDays: number }): IndicatorSpec => ({
+  fn: "stdevReturn",
+  period: lookbackDays,
+});
+
+function evaluateGroup(node: GroupNode, path: string, ctx: Context): Allocation {
+  const allocations = evaluateChildren(node, path, ctx);
   const { weight } = node;
+  const equalWeights = allocations.map(() => 1 / allocations.length);
   switch (weight.method) {
     case "equal":
-      return combine(
-        allocations,
-        allocations.map(() => 1 / allocations.length),
-      );
+      return combine(allocations, equalWeights);
     case "specified": {
       const { percentages } = weight;
       const total = percentages.reduce((sum, p) => sum + p, 0);
@@ -100,10 +148,15 @@ function evaluateGroup(node: GroupNode, ctx: Context): Allocation {
       );
     }
     case "inverseVolatility": {
-      const stdev = { fn: "stdevReturn", period: weight.lookbackDays } as const;
-      const vols = allocations.map((a) =>
-        computeIndicator(stdev, seriesOf(a, barsRequired(stdev), ctx)),
+      const spec = stdevSpec(weight);
+      const measurements = allocations.map((a, i) =>
+        measure(a, spec, `${path}.children[${i}]`, ctx),
       );
+      const vols = measurements.map((m) => m.value);
+      if (!vols.every((v) => v !== null)) {
+        measurements.forEach((m) => m.warn("equal_weight"));
+        return combine(allocations, equalWeights);
+      }
       return combine(allocations, inverseVolatilityWeights(vols));
     }
   }
@@ -118,68 +171,114 @@ function inverseVolatilityWeights(vols: readonly number[]): number[] {
   return inverse.map((x) => x / total);
 }
 
-function evaluateFilter(node: FilterNode, ctx: Context): Allocation {
-  const allocations = evaluateChildren(node, ctx);
-  const bars = barsRequired(node.sortBy);
+function evaluateFilter(node: FilterNode, path: string, ctx: Context): Allocation {
+  const allocations = evaluateChildren(node, path, ctx);
   const sign = node.select.direction === "top" ? -1 : 1;
-  const ranked = allocations
-    .map((allocation, index) => ({
-      allocation,
-      index,
-      score: computeIndicator(node.sortBy, seriesOf(allocation, bars, ctx)),
-    }))
-    // Ties keep tree order, so the result never depends on sort internals.
-    .sort((a, b) => sign * (a.score - b.score) || a.index - b.index)
-    .slice(0, node.select.count);
+  const children = allocations.map((allocation, index) => {
+    const measurement = measure(allocation, node.sortBy, `${path}.children[${index}]`, ctx);
+    measurement.warn("ranked_last");
+    return { allocation, index, score: measurement.value };
+  });
+  const ranked = [
+    ...children
+      .filter((c) => c.score !== null)
+      // Ties keep tree order, so the result never depends on sort internals.
+      .sort((a, b) => sign * (a.score! - b.score!) || a.index - b.index),
+    ...children.filter((c) => c.score === null),
+  ].slice(0, node.select.count);
   return combine(
     ranked.map((r) => r.allocation),
     ranked.map(() => 1 / ranked.length),
   );
 }
 
-function evaluateChildren(node: GroupNode | FilterNode, ctx: Context): Allocation[] {
+function evaluateChildren(node: GroupNode | FilterNode, path: string, ctx: Context): Allocation[] {
   if (node.children.length === 0) {
     const label = node.type === "group" ? `Group "${node.name}"` : "Filter";
     throw new SymphonyEvaluationError(`${label} has no children`);
   }
-  return node.children.map((child) => evaluateNode(child, ctx));
+  return node.children.map((child, i) => evaluateNode(child, `${path}.children[${i}]`, ctx));
 }
 
-function isTrue({ left, comparator, right }: Condition, ctx: Context): boolean {
-  const a = indicatorValue(left, ctx);
-  const b = typeof right === "number" ? right : indicatorValue(right, ctx);
+/** False when either side lacks history, so the `if` falls back to its else branch. */
+function isTrue({ left, comparator, right }: Condition, path: string, ctx: Context): boolean {
+  const a = measure({ [left.mint]: 1 }, left.indicator, path, ctx);
+  const b =
+    typeof right === "number"
+      ? { value: right, warn: () => {} }
+      : measure({ [right.mint]: 1 }, right.indicator, path, ctx);
+  if (a.value === null || b.value === null) {
+    a.warn("else");
+    b.warn("else");
+    return false;
+  }
   switch (comparator) {
     case "gt":
-      return a > b;
+      return a.value > b.value;
     case "gte":
-      return a >= b;
+      return a.value >= b.value;
     case "lt":
-      return a < b;
+      return a.value < b.value;
     case "lte":
-      return a <= b;
+      return a.value <= b.value;
   }
 }
 
-function indicatorValue({ mint, indicator }: AssetIndicator, ctx: Context): number {
-  const bars = barsRequired(indicator);
-  return computeIndicator(indicator, closesWindow(ctx.data, mint, ctx.index, bars, ctx.date));
-}
+type Measurement = {
+  value: number | null;
+  /** Records a warning if the value is missing; no-op otherwise. */
+  warn: (fallback: EvaluationWarning["fallback"]) => void;
+};
 
 /**
- * Price series of an allocation over the last `bars` days: the mint's closes
- * for a single-mint allocation, otherwise a constant-weight index starting at 1.
+ * `spec` on an allocation's price series: the mint's own closes for a
+ * single-mint allocation, otherwise a constant-weight index starting at 1 over
+ * the span every constituent has data for.
  */
-function seriesOf(allocation: Allocation, bars: number, ctx: Context): number[] {
+function measure(
+  allocation: Allocation,
+  spec: IndicatorSpec,
+  path: string,
+  ctx: Context,
+): Measurement {
   const holdings = Object.entries(allocation).map(([mint, weight]) => ({
+    mint,
     weight,
-    closes: closesWindow(ctx.data, mint, ctx.index, bars, ctx.date),
+    closes: historyAt(ctx.data, mint, ctx.index),
   }));
-  if (holdings.length === 1) return holdings[0]!.closes;
-  const index = [1];
-  for (let i = 1; i < bars; i++) {
+  const shortest = holdings.reduce((a, b) => (b.closes.length < a.closes.length ? b : a));
+  const series =
+    holdings.length === 1 ? shortest.closes : indexSeries(holdings, shortest.closes.length);
+  const value = computeIndicator(spec, series);
+  return {
+    value,
+    warn: (fallback) => {
+      if (value !== null) return;
+      ctx.warnings.push({
+        kind: "insufficient_history",
+        path,
+        mint: shortest.mint,
+        indicator: spec,
+        barsNeeded: barsRequired(spec),
+        barsAvailable: shortest.closes.length,
+        fallback,
+      });
+    },
+  };
+}
+
+function indexSeries(
+  holdings: readonly { weight: number; closes: readonly number[] }[],
+  length: number,
+): number[] {
+  const aligned = holdings.map((h) => h.closes.slice(h.closes.length - length));
+  const index = length > 0 ? [1] : [];
+  for (let i = 1; i < length; i++) {
     let dayReturn = 0;
-    for (const { weight, closes } of holdings)
+    holdings.forEach(({ weight }, h) => {
+      const closes = aligned[h]!;
       dayReturn += weight * (closes[i]! / closes[i - 1]! - 1);
+    });
     index.push(index[i - 1]! * (1 + dayReturn));
   }
   return index;

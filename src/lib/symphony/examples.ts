@@ -57,6 +57,17 @@ export const solJup6040: Symphony = {
   },
 };
 
+/** Display symbols for the mints the examples use. */
+export const EXAMPLE_TOKEN_SYMBOLS: Readonly<Record<string, string>> = {
+  [SOL_MINT]: "SOL",
+  [USDC_MINT]: "USDC",
+  [JUP_MINT]: "JUP",
+  [BONK_MINT]: "BONK",
+  [JTO_MINT]: "JTO",
+  [PYTH_MINT]: "PYTH",
+  [RAY_MINT]: "RAY",
+};
+
 export const EXAMPLE_SYMPHONIES: readonly Symphony[] = [
   solTrendFollower,
   solanaMomentumTop3,

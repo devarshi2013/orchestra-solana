@@ -9,3 +9,39 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+/// Candle width. Daily candles open at 00:00 UTC.
+enum CandleInterval {
+  H1
+  D1
+}
+
+/// Mints whose price history /api/cron/prices keeps up to date.
+model TrackedMint {
+  mint       String    @id
+  addedAt    DateTime  @default(now()) @map("added_at")
+  /// Last time the sync job finished this mint (successfully or not).
+  lastSyncAt DateTime? @map("last_sync_at")
+  /// Error from the last sync, cleared on success.
+  lastError  String?   @map("last_error")
+
+  @@map("tracked_mints")
+}
+
+/// Closed USD OHLCV candles from Birdeye (docs/market-data.md). The in-progress
+/// candle is never stored, so rows are immutable once written.
+model Candle {
+  mint      String
+  interval  CandleInterval
+  openTime  DateTime       @map("open_time") @db.Timestamptz(3)
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  /// Volume in token units.
+  volume    Float
+  volumeUsd Float?         @map("volume_usd")
+
+  @@id([mint, interval, openTime])
+  @@map("candles")
+}
