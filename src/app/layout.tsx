@@ -4,7 +4,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { SolanaWalletProvider } from "@/components/providers/wallet-provider";
 import { RebalanceBanner } from "@/components/invest/rebalance-banner";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { themeScript } from "@/components/layout/theme-toggle";
 import { SiteHeader } from "@/components/site-header";
+import { Toaster } from "@/components/ui/toast";
 
 import "./globals.css";
 
@@ -25,7 +28,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // The theme script sets class="dark" before hydration.
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="flex min-h-full flex-col">
         <SolanaWalletProvider>
           <SiteHeader />
@@ -33,7 +44,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Suspense fallback={null}>
             <RebalanceBanner />
           </Suspense>
-          {children}
+          <div id="main" className="flex flex-1 flex-col">
+            {children}
+          </div>
+          <SiteFooter />
+          <Toaster />
         </SolanaWalletProvider>
       </body>
     </html>

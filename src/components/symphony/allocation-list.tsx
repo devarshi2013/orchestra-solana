@@ -11,7 +11,10 @@ export function AllocationList({ rows }: { rows: readonly AllocationRow[] }) {
             <span className="text-muted-foreground tabular-nums">{(weight * 100).toFixed(1)}%</span>
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-            <div className="h-full rounded-full bg-primary" style={{ width: `${weight * 100}%` }} />
+            <div
+              className="h-full rounded-full bg-brand transition-[width] duration-200"
+              style={{ width: `${weight * 100}%` }}
+            />
           </div>
         </li>
       ))}

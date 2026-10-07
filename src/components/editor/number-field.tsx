@@ -33,7 +33,7 @@ export function NumberField({
       inputMode="decimal"
       value={shown}
       aria-invalid={invalid || undefined}
-      className={cn("h-7 w-20 px-2 text-sm tabular-nums", className)}
+      className={cn("h-8 w-20 rounded-md px-2.5 text-[0.8125rem] tabular-nums", className)}
       onChange={(e) => {
         setText(e.target.value);
         const next = Number(e.target.value);

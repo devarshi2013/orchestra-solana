@@ -1,11 +1,14 @@
 "use client";
 
+import { controlClass } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import type { IndicatorFn, IndicatorSpec } from "@/lib/indicators/types";
+import { cn } from "@/lib/utils";
 
 import { isPositiveInt, NumberField } from "./number-field";
 
-export const selectClass =
-  "h-7 rounded-lg border border-input bg-transparent px-1.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30";
+/** For plain <select>s elsewhere; the editor uses <NativeSelect>. */
+export const selectClass = cn(controlClass, "h-8 w-auto px-2.5");
 
 const OPTIONS: { fn: IndicatorFn; label: string; unit: string }[] = [
   { fn: "price", label: "Price", unit: "USD" },
@@ -40,9 +43,9 @@ export function IndicatorSelect({
 }) {
   return (
     <span className="inline-flex items-center gap-1">
-      <select
+      <NativeSelect
+        size="sm"
         aria-label={label}
-        className={selectClass}
         value={value.fn}
         onChange={(e) => {
           const fn = e.target.value as IndicatorFn;
@@ -55,7 +58,7 @@ export function IndicatorSelect({
             {o.label}
           </option>
         ))}
-      </select>
+      </NativeSelect>
       {value.fn !== "price" && (
         <>
           <NumberField

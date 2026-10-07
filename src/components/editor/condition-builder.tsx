@@ -2,7 +2,9 @@
 
 import type { AssetIndicator, Comparator, Condition } from "@/lib/symphony/types";
 
-import { IndicatorSelect, selectClass, unitOf } from "./indicator-select";
+import { NativeSelect } from "@/components/ui/native-select";
+
+import { IndicatorSelect, unitOf } from "./indicator-select";
 import { NumberField } from "./number-field";
 import { TokenChip } from "./token-chip";
 
@@ -23,7 +25,7 @@ function IndicatorOf({
   side: string;
 }) {
   return (
-    <span className="inline-flex flex-wrap items-center gap-1">
+    <span className="inline-flex flex-wrap items-center gap-2">
       <IndicatorSelect
         label={`${side} indicator`}
         value={value.indicator}
@@ -49,15 +51,15 @@ export function ConditionBuilder({
 }) {
   const { left, right, comparator } = value;
   return (
-    <div className="flex flex-wrap items-center gap-1.5 text-sm">
+    <div className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-raised p-3 text-sm">
       <IndicatorOf
         side="Left"
         value={left}
         onChange={(next) => onChange({ ...value, left: next })}
       />
-      <select
+      <NativeSelect
+        size="sm"
         aria-label="Comparison"
-        className={selectClass}
         value={comparator}
         onChange={(e) => onChange({ ...value, comparator: e.target.value as Comparator })}
       >
@@ -66,10 +68,10 @@ export function ConditionBuilder({
             {c.label}
           </option>
         ))}
-      </select>
-      <select
+      </NativeSelect>
+      <NativeSelect
+        size="sm"
         aria-label="Compare against"
-        className={selectClass}
         value={typeof right === "number" ? "value" : "indicator"}
         onChange={(e) =>
           onChange({
@@ -80,7 +82,7 @@ export function ConditionBuilder({
       >
         <option value="value">a value</option>
         <option value="indicator">an indicator</option>
-      </select>
+      </NativeSelect>
       {typeof right === "number" ? (
         <span className="inline-flex items-center gap-1">
           <NumberField

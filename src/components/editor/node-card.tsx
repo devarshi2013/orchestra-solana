@@ -1,11 +1,23 @@
 "use client";
 
-import { ArrowDown, ArrowUp, CircleAlert, GripVertical, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CircleAlert,
+  Coins,
+  Filter,
+  GitBranch,
+  GripVertical,
+  Layers,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useRef, useState, type DragEvent, type ReactNode } from "react";
 
 import { AssetPickerDialog } from "@/components/assets/asset-picker-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import {
   emptyGroup,
   insertNode,
@@ -25,7 +37,7 @@ import { cn } from "@/lib/utils";
 
 import { ConditionBuilder } from "./condition-builder";
 import { useEditor } from "./editor-context";
-import { IndicatorSelect, selectClass } from "./indicator-select";
+import { IndicatorSelect } from "./indicator-select";
 import { isPositiveInt, NumberField } from "./number-field";
 import { TokenChip } from "./token-chip";
 
@@ -48,6 +60,13 @@ const TITLES: Record<SymphonyNode["type"], string> = {
   filter: "Filter",
 };
 
+const ICONS: Record<SymphonyNode["type"], typeof Coins> = {
+  asset: Coins,
+  group: Layers,
+  if: GitBranch,
+  filter: Filter,
+};
+
 export function NodeCard({ node, path, slot }: { node: SymphonyNode; path: string; slot: Slot }) {
   const { issues, edit, setDragging } = useEditor();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -63,15 +82,20 @@ export function NodeCard({ node, path, slot }: { node: SymphonyNode; path: strin
     setTimeout(() => setDragging(path));
   };
 
+  const Icon = ICONS[node.type];
   return (
     <div
       ref={cardRef}
       data-path={path}
-      className={cn("rounded-lg border bg-card text-sm", own.length > 0 && "border-destructive/60")}
+      className={cn(
+        "rounded-xl border bg-surface text-sm shadow-xs transition-[border-color,box-shadow] duration-150 hover:border-foreground/15",
+        own.length > 0 &&
+          "border-destructive/50 ring-3 ring-destructive/10 hover:border-destructive/60",
+      )}
     >
       <div
         className={cn(
-          "flex flex-wrap items-center gap-1.5 px-2 py-1.5",
+          "flex flex-wrap items-center gap-2 px-3 py-2",
           (node.type !== "asset" || own.length > 0) && "border-b",
         )}
       >
@@ -80,14 +104,15 @@ export function NodeCard({ node, path, slot }: { node: SymphonyNode; path: strin
             draggable
             onDragStart={onDragStart}
             onDragEnd={() => setDragging(null)}
-            className="cursor-grab text-muted-foreground active:cursor-grabbing"
+            className="-ml-1 cursor-grab rounded p-0.5 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing"
             title="Drag to move"
             aria-hidden
           >
             <GripVertical className="size-4" />
           </span>
         )}
-        <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium">
+        <span className="inline-flex h-6 items-center gap-1 rounded-md bg-muted px-2 text-xs font-semibold text-foreground/80">
+          <Icon className="size-3.5 text-muted-foreground" aria-hidden />
           {TITLES[node.type]}
         </span>
         {node.type === "asset" && (
@@ -102,7 +127,7 @@ export function NodeCard({ node, path, slot }: { node: SymphonyNode; path: strin
             aria-label="Group name"
             value={node.name}
             onChange={(e) => update((n) => ({ ...(n as GroupNode), name: e.target.value }))}
-            className="h-7 w-40 px-2 text-sm"
+            className="h-8 w-44 rounded-md px-2.5 text-[0.8125rem] font-medium"
           />
         )}
         <span className="flex-1" />
@@ -117,7 +142,7 @@ export function NodeCard({ node, path, slot }: { node: SymphonyNode; path: strin
               className="w-20"
               onCommit={slot.percentage.onChange}
             />
-            <span className="text-xs text-muted-foreground">%</span>
+            <span className="type-caption">%</span>
           </span>
         )}
         {slot.kind === "child" && (
@@ -154,7 +179,7 @@ export function NodeCard({ node, path, slot }: { node: SymphonyNode; path: strin
         )}
       </div>
 
-      <div className={cn("space-y-2 p-2", node.type === "asset" && own.length === 0 && "hidden")}>
+      <div className={cn("space-y-3 p-3", node.type === "asset" && own.length === 0 && "hidden")}>
         {node.type === "group" && <GroupBody node={node} path={path} />}
         {node.type === "filter" && <FilterBody node={node} path={path} />}
         {node.type === "if" && (
@@ -180,7 +205,10 @@ export function NodeCard({ node, path, slot }: { node: SymphonyNode; path: strin
           </>
         )}
         {own.length > 0 && (
-          <ul className="space-y-0.5 text-xs text-destructive" aria-live="polite">
+          <ul
+            className="space-y-1 rounded-md bg-destructive/6 px-2.5 py-2 text-xs text-destructive"
+            aria-live="polite"
+          >
             {own.map((issue) => (
               <li key={issue.path + issue.message} className="flex items-start gap-1">
                 <CircleAlert className="mt-px size-3.5 shrink-0" />
@@ -196,8 +224,15 @@ export function NodeCard({ node, path, slot }: { node: SymphonyNode; path: strin
 
 function Branch({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="space-y-1 border-l-2 pl-3">
-      <div className="text-xs font-medium text-muted-foreground uppercase">{label}</div>
+    <div className="space-y-2 border-l-2 border-border pl-4">
+      <div
+        className={cn(
+          "inline-flex h-5 items-center rounded-full px-2 text-[0.6875rem] font-semibold tracking-wide uppercase",
+          label === "Then" ? "bg-success/12 text-success" : "bg-muted text-muted-foreground",
+        )}
+      >
+        {label}
+      </div>
       {children}
     </div>
   );
@@ -228,10 +263,10 @@ function GroupBody({ node, path }: { node: GroupNode; path: string }) {
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <select
+      <div className="flex flex-wrap items-center gap-2">
+        <NativeSelect
+          size="sm"
           aria-label="Weighting"
-          className={selectClass}
           value={weight.method}
           onChange={(e) => {
             const method = e.target.value as Weighting["method"];
@@ -246,9 +281,9 @@ function GroupBody({ node, path }: { node: GroupNode; path: string }) {
               {WEIGHT_LABELS[m]}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {weight.method === "inverseVolatility" && (
-          <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 type-caption">
             over
             <NumberField
               aria-label="Volatility lookback in days"
@@ -265,8 +300,10 @@ function GroupBody({ node, path }: { node: GroupNode; path: string }) {
         {total !== null && (
           <span
             className={cn(
-              "text-xs tabular-nums",
-              Math.abs(total - 100) > 1e-6 ? "text-destructive" : "text-muted-foreground",
+              "inline-flex h-6 items-center rounded-full px-2 text-xs font-medium tabular-nums",
+              Math.abs(total - 100) > 1e-6
+                ? "bg-destructive/10 text-destructive"
+                : "bg-success/12 text-success",
             )}
           >
             Total {Math.round(total * 100) / 100}%
@@ -295,11 +332,11 @@ function FilterBody({ node, path }: { node: FilterNode; path: string }) {
     edit((root) => updateNode(root, path, (n) => ({ ...(n as FilterNode), ...change })));
   return (
     <>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-xs text-muted-foreground">Keep the</span>
-        <select
+      <div className="flex flex-wrap items-center gap-2 rounded-lg bg-surface-raised p-3">
+        <span className="type-caption">Keep the</span>
+        <NativeSelect
+          size="sm"
           aria-label="Top or bottom"
-          className={selectClass}
           value={node.select.direction}
           onChange={(e) =>
             update({
@@ -309,7 +346,7 @@ function FilterBody({ node, path }: { node: FilterNode; path: string }) {
         >
           <option value="top">top</option>
           <option value="bottom">bottom</option>
-        </select>
+        </NativeSelect>
         <NumberField
           aria-label="How many to keep"
           value={node.select.count}
@@ -319,7 +356,7 @@ function FilterBody({ node, path }: { node: FilterNode; path: string }) {
           className="w-14"
           onCommit={(count) => update({ select: { ...node.select, count } })}
         />
-        <span className="text-xs text-muted-foreground">by</span>
+        <span className="type-caption">by</span>
         <IndicatorSelect
           label="Sort by"
           value={node.sortBy}
@@ -343,9 +380,9 @@ function ChildList({
   onPercentage?: (index: number, value: number) => void;
 }) {
   return (
-    <div className="space-y-1 pl-3">
+    <div className="space-y-2 border-l border-dashed border-border pl-4">
       {nodes.map((child, index) => (
-        <div key={`${parentPath}.children[${index}]`} className="space-y-1">
+        <div key={`${parentPath}.children[${index}]`} className="space-y-2">
           <DropZone parentPath={parentPath} index={index} />
           <NodeCard
             node={child}
@@ -383,8 +420,8 @@ function DropZone({
   const accepts = dragging !== null && !isWithin(parentPath, dragging);
   if (!accepts) {
     return empty ? (
-      <p className="rounded-md border border-dashed px-2 py-2 text-xs text-muted-foreground">
-        Empty. Add a block below, or drag one here.
+      <p className="rounded-lg border border-dashed bg-surface-raised/50 px-3 py-4 text-center type-caption">
+        Nothing here yet. Add an asset, group, condition or filter below, or drag a block in.
       </p>
     ) : null;
   }
@@ -403,8 +440,8 @@ function DropZone({
         setDragging(null);
       }}
       className={cn(
-        "flex h-6 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground transition-colors",
-        over && "border-primary bg-muted text-foreground",
+        "flex h-8 items-center justify-center rounded-lg border border-dashed text-xs text-muted-foreground transition-colors duration-150",
+        over && "border-primary bg-accent text-accent-foreground",
       )}
     >
       Drop here
@@ -416,7 +453,8 @@ function AddNodeMenu({ parentPath, index }: { parentPath: string; index: number 
   const { edit, rememberToken } = useEditor();
   const add = (node: SymphonyNode) => edit((root) => insertNode(root, parentPath, index, node));
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap items-center gap-1">
+      <span className="mr-1 type-caption">Add</span>
       <AssetPickerDialog
         label="Add asset"
         onSelect={(asset) => {
@@ -424,18 +462,33 @@ function AddNodeMenu({ parentPath, index }: { parentPath: string; index: number 
           add({ type: "asset", mint: asset.mint });
         }}
         trigger={
-          <Button variant="ghost" size="xs">
+          <Button variant="outline" size="xs" className="border-dashed">
             <Plus /> Asset
           </Button>
         }
       />
-      <Button variant="ghost" size="xs" onClick={() => add(emptyGroup())}>
+      <Button
+        variant="outline"
+        size="xs"
+        className="border-dashed"
+        onClick={() => add(emptyGroup())}
+      >
         <Plus /> Group
       </Button>
-      <Button variant="ghost" size="xs" onClick={() => add(newIf(SOL_MINT))}>
+      <Button
+        variant="outline"
+        size="xs"
+        className="border-dashed"
+        onClick={() => add(newIf(SOL_MINT))}
+      >
         <Plus /> If
       </Button>
-      <Button variant="ghost" size="xs" onClick={() => add(newFilter())}>
+      <Button
+        variant="outline"
+        size="xs"
+        className="border-dashed"
+        onClick={() => add(newFilter())}
+      >
         <Plus /> Filter
       </Button>
     </div>

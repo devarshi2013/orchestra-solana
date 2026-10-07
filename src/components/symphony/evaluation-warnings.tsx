@@ -6,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 export function EvaluationWarnings({ messages }: { messages: readonly string[] }) {
   if (messages.length === 0) return null;
   return (
-    <Alert className="border-amber-500/50 text-amber-700 dark:text-amber-400">
+    <Alert variant="warning">
       <TriangleAlert />
       <AlertTitle>Not enough price history</AlertTitle>
       <AlertDescription>

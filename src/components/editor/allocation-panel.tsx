@@ -1,11 +1,13 @@
 "use client";
 
-import { FlaskConical, Loader2 } from "lucide-react";
+import { CircleAlert, FlaskConical } from "lucide-react";
 import { useMemo } from "react";
 
 import { AllocationList } from "@/components/symphony/allocation-list";
 import { EvaluationWarnings } from "@/components/symphony/evaluation-warnings";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Section } from "@/components/ui/section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMarketData } from "@/hooks/use-market-data";
 import { evaluateWithWarnings, SymphonyEvaluationError } from "@/lib/symphony/evaluate";
@@ -52,19 +54,26 @@ export function AllocationPanel({
     : [];
 
   return (
-    <section className="space-y-3 rounded-lg border bg-card p-3" aria-labelledby="today-heading">
-      <div>
-        <h2 id="today-heading" className="font-medium">
-          Allocation today
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          {today?.asOf ? `As of the ${today.asOf} daily close (UTC).` : "From stored daily closes."}
-        </p>
-      </div>
+    <Section
+      title="Allocation today"
+      description={
+        today?.asOf ? `As of the ${today.asOf} daily close (UTC).` : "From stored daily closes."
+      }
+      bodyClassName="space-y-4"
+    >
       {!valid && (
-        <p className="text-sm text-muted-foreground">Fix the highlighted problems to see it.</p>
+        <EmptyState icon={<CircleAlert />} title="Fix the highlighted problems">
+          Today&apos;s allocation and the backtest appear once the symphony is valid.
+        </EmptyState>
       )}
-      {valid && loading && <Skeleton className="h-24 w-full" />}
+      {valid && loading && (
+        <div className="space-y-3" aria-label="Loading prices">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-2 w-full" />
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-2 w-full" />
+        </div>
+      )}
       {error && <p className="text-sm text-destructive">{error}</p>}
       {today && "error" in today && <p className="text-sm text-destructive">{today.error}</p>}
       {today && "allocation" in today && (
@@ -78,19 +87,21 @@ export function AllocationPanel({
         </>
       )}
       {unstored.length > 0 && (
-        <p className="text-xs text-muted-foreground">
+        <p className="type-caption">
           No stored prices yet for {unstored.map(symbolOf).join(", ")}. Saving the draft tracks
           them; the next price sync (daily, or GET /api/cron/prices) backfills their history.
         </p>
       )}
       <Button
         className="w-full"
-        disabled={!valid || !data || backtesting}
+        size="lg"
+        loading={backtesting}
+        disabled={!valid || !data}
         onClick={() => data && onBacktest(data)}
       >
-        {backtesting ? <Loader2 className="animate-spin" /> : <FlaskConical />}
-        Backtest
+        <FlaskConical />
+        {backtesting ? "Backtesting…" : "Backtest"}
       </Button>
-    </section>
+    </Section>
   );
 }
