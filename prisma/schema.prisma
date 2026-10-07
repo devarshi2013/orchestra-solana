@@ -22,13 +22,16 @@ model TrackedMint {
   addedAt    DateTime  @default(now()) @map("added_at")
   /// Last time the sync job finished this mint (successfully or not).
   lastSyncAt DateTime? @map("last_sync_at")
+  /// GeckoTerminal pool whose candles price this mint, picked once (busiest
+  /// mature pool) so the series never switches pools. Unused with Birdeye.
+  pricePool  String?   @map("price_pool")
   /// Error from the last sync, cleared on success.
   lastError  String?   @map("last_error")
 
   @@map("tracked_mints")
 }
 
-/// Closed USD OHLCV candles from Birdeye (docs/market-data.md). The in-progress
+/// Closed USD OHLCV candles from GeckoTerminal or Birdeye (docs/market-data.md). The in-progress
 /// candle is never stored, so rows are immutable once written.
 model Candle {
   mint      String
@@ -38,8 +41,8 @@ model Candle {
   high      Float
   low       Float
   close     Float
-  /// Volume in token units.
-  volume    Float
+  /// Volume in token units (Birdeye only; GeckoTerminal reports USD volume).
+  volume    Float?
   volumeUsd Float?         @map("volume_usd")
 
   @@id([mint, interval, openTime])

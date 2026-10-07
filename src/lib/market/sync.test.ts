@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import type { Candle, CandleInterval } from "./candles";
-import { BACKFILL_DAYS, syncPrices, type SyncDeps } from "./sync";
+import { syncPrices, type SyncDeps } from "./sync";
+
+const BACKFILL_DAYS = { "1D": 3 * 365, "1H": 90 };
 
 const DAY = 86_400;
 const HOUR = 3_600;
@@ -66,6 +68,7 @@ function fakeDeps(options: {
       return candles;
     },
     maxCandlesPerRequest: 5000,
+    backfillDays: BACKFILL_DAYS,
     now: () => NOW,
     outOfTime: () => started++ >= (options.outOfTimeAfter ?? Infinity),
   };

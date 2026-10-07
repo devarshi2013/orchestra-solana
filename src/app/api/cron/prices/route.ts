@@ -1,13 +1,12 @@
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { serverEnv } from "@/env/server";
 import { base58AddressSchema } from "@/lib/jupiter/schemas";
+import { priceSource } from "@/lib/market/sources";
 import { candleStore, trackMints } from "@/lib/market/store";
 import { syncPrices } from "@/lib/market/sync";
 import { EXAMPLE_SYMPHONIES } from "@/lib/symphony/examples";
 import { collectMints } from "@/lib/symphony/mints";
-import { fetchOhlcv, MAX_CANDLES_PER_REQUEST } from "@/server/birdeye/client";
 import { isAuthorizedCron } from "@/server/cron";
 import { errorResponse, validationErrorResponse } from "@/server/http";
 
@@ -31,15 +30,12 @@ const querySchema = z.object({
 
 /**
  * Backfills new mints and appends closed daily + hourly candles for every
- * tracked mint from Birdeye. Idempotent: rerunning only fetches what's missing.
+ * tracked mint, from GeckoTerminal (keyless) or Birdeye when a key is set. Idempotent: rerunning only fetches what's missing.
  * Scheduled in vercel.json; see docs/market-data.md.
  */
 export async function GET(request: NextRequest) {
   if (!isAuthorizedCron(request.headers.get("authorization"))) {
     return errorResponse(401, "Unauthorized");
-  }
-  if (!serverEnv.BIRDEYE_API_KEY) {
-    return errorResponse(503, "BIRDEYE_API_KEY is not configured");
   }
   const parsed = querySchema.safeParse({
     track: request.nextUrl.searchParams.get("track") ?? undefined,
@@ -49,17 +45,17 @@ export async function GET(request: NextRequest) {
   try {
     await trackMints([...DEFAULT_MINTS, ...parsed.data.track]);
     const started = Date.now();
+    const { name: source, ...fetching } = priceSource(request.signal);
     const report = await syncPrices({
       ...candleStore,
-      fetchCandles: (params) => fetchOhlcv(params, request.signal),
-      maxCandlesPerRequest: MAX_CANDLES_PER_REQUEST,
+      ...fetching,
       now: () => Math.floor(Date.now() / 1000),
       outOfTime: () => Date.now() - started > TIME_BUDGET_MS,
     });
     for (const { mint, error } of report.synced) {
       if (error) console.error(`[cron/prices] ${mint}: ${error}`);
     }
-    return Response.json(report);
+    return Response.json({ source, ...report });
   } catch (error) {
     console.error("[cron/prices] failed", error);
     return errorResponse(500, "Price sync failed");

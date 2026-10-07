@@ -65,12 +65,12 @@ describe("planWindows", () => {
 });
 
 describe("toMarketData", () => {
-  it("aligns daily closes on a gap-free UTC date axis", () => {
+  it("aligns daily closes on a gap-free UTC date axis, carrying closes over no-trade days", () => {
     const data = toMarketData(
       [
         candle("SOL", JAN_1, 100),
         candle("SOL", JAN_1 + DAY, 101),
-        candle("SOL", JAN_1 + 3 * DAY, 103), // day 3 missing
+        candle("SOL", JAN_1 + 3 * DAY, 103), // no day-3 candle
         candle("NEW", JAN_1 + 2 * DAY, 5), // listed on day 3
         candle("SOL", JAN_1 + 2 * DAY + 3600, 999, "1H"), // hourly rows are ignored
         candle("OTHER", JAN_1, 1), // not requested
@@ -80,8 +80,8 @@ describe("toMarketData", () => {
     expect(data).toEqual({
       dates: ["2026-01-01", "2026-01-02", "2026-01-03", "2026-01-04"],
       closes: {
-        SOL: [100, 101, null, 103],
-        NEW: [null, null, 5, null],
+        SOL: [100, 101, 101, 103], // no trades on day 3: close carried forward
+        NEW: [null, null, 5, 5],
         EMPTY: [null, null, null, null],
       },
     });

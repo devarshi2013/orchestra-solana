@@ -13,9 +13,6 @@ import {
  * network; see store.ts and server/birdeye for the real ones.
  */
 
-/** How far back a mint's first sync reaches. Hourly is kept short to save compute units. */
-export const BACKFILL_DAYS: Record<CandleInterval, number> = { "1D": 3 * 365, "1H": 90 };
-
 export type SyncDeps = {
   /** Tracked mints, least recently synced first so a starved mint goes next. */
   listTrackedMints(): Promise<string[]>;
@@ -30,6 +27,8 @@ export type SyncDeps = {
     to: number;
   }): Promise<Candle[]>;
   maxCandlesPerRequest: number;
+  /** How far back a mint's first sync reaches, per interval; set by the source's history limits. */
+  backfillDays: Record<CandleInterval, number>;
   /** Unix seconds. */
   now(): number;
   /** Stop starting new mints once this returns true (serverless time limits). */
@@ -76,7 +75,7 @@ export async function syncPrices(
 
 /**
  * Appends every closed candle after the latest stored one; with nothing
- * stored, backfills BACKFILL_DAYS first. Only closed candles are stored, so a
+ * stored, backfills `deps.backfillDays` first. Only closed candles are stored, so a
  * row never changes after it is written.
  */
 async function syncSeries(deps: SyncDeps, mint: string, interval: CandleInterval): Promise<number> {
@@ -87,7 +86,7 @@ async function syncSeries(deps: SyncDeps, mint: string, interval: CandleInterval
   const from =
     latest !== null
       ? latest + width
-      : candleOpenAt(now - BACKFILL_DAYS[interval] * INTERVAL_SECONDS["1D"], interval);
+      : candleOpenAt(now - deps.backfillDays[interval] * INTERVAL_SECONDS["1D"], interval);
 
   let inserted = 0;
   for (const window of planWindows(from, lastClosed, interval, deps.maxCandlesPerRequest)) {

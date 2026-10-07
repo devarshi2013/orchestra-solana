@@ -21,8 +21,8 @@ export type Candle = {
   high: number;
   low: number;
   close: number;
-  /** Token units. */
-  volume: number;
+  /** Token units; null when the source only reports USD volume. */
+  volume: number | null;
   volumeUsd: number | null;
 };
 
@@ -62,8 +62,10 @@ export function toDateKey(openTime: number): string {
 
 /**
  * Daily candles → the aligned MarketData evaluate() reads: one bar per UTC day
- * from the earliest to the latest candle, `null` where a mint has no candle
- * (not yet listed, or a gap Birdeye didn't fill).
+ * from the earliest to the latest candle. Before a mint's first candle it is
+ * `null` (not listed yet). Days without a candle after that (no trades; both
+ * sources skip empty periods) carry the previous close forward, since the
+ * price didn't move.
  */
 export function toMarketData(candles: readonly Candle[], mints: readonly string[]): MarketData {
   const daily = candles.filter((c) => c.interval === "1D");
@@ -84,5 +86,8 @@ export function toMarketData(candles: readonly Candle[], mints: readonly string[
     const series = closes[candle.mint];
     if (series) series[(opens[i]! - first) / day] = candle.close;
   });
+  for (const series of Object.values(closes)) {
+    for (let i = 1; i < length; i++) series[i] ??= series[i - 1]!;
+  }
   return { dates, closes };
 }

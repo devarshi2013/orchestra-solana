@@ -60,6 +60,16 @@ export const candleStore: Pick<
   },
 };
 
+/** The GeckoTerminal pool saved for `mint`, if one was picked before. */
+export async function getPricePool(mint: string): Promise<string | null> {
+  const row = await db.trackedMint.findUnique({ where: { mint }, select: { pricePool: true } });
+  return row?.pricePool ?? null;
+}
+
+export async function setPricePool(mint: string, pool: string): Promise<void> {
+  await db.trackedMint.update({ where: { mint }, data: { pricePool: pool } });
+}
+
 export async function loadCandles(
   mints: readonly string[],
   interval: CandleInterval,

@@ -32,8 +32,8 @@ export const serverEnvSchema = z.object({
   /** Server-side Solana RPC (may embed a provider key). Never exposed to the browser. */
   SOLANA_RPC_URL: z.url(),
   /**
-   * Birdeye Data Services key (X-API-KEY) for historical OHLCV. Optional so the
-   * app runs without it; /api/cron/prices responds 503 until it is set.
+   * Birdeye Data Services key (X-API-KEY) for historical OHLCV. Optional:
+   * without it, /api/cron/prices uses keyless GeckoTerminal instead.
    */
   BIRDEYE_API_KEY: optionalSecret(z.string().trim()),
   /**
