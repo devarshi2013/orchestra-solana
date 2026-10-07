@@ -1,0 +1,11 @@
+// Orchestra database schema. Models (symphonies, backtests, rebalance runs)
+// are added with the features that need them.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
