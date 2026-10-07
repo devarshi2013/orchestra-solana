@@ -6,6 +6,7 @@ import {
   type ExecuteResponse,
   type OrderResponse,
 } from "@/lib/jupiter/schemas";
+import type { MarketData } from "@/lib/symphony/market-data";
 import type { ExecuteBody, OrderQuery } from "@/lib/swap/requests";
 import { tokenInfoSchema, type TokenInfo } from "@/lib/tokens";
 
@@ -75,4 +76,18 @@ export function searchTokens(query: string, signal?: AbortSignal): Promise<Token
     { signal },
     z.array(tokenInfoSchema),
   );
+}
+
+const marketDataSchema: z.ZodType<MarketData> = z.object({
+  dates: z.array(z.string()),
+  closes: z.record(z.string(), z.array(z.number().nullable())),
+});
+
+/** Stored daily closes for `mints`, aligned on one date axis. */
+export function fetchMarketData(
+  mints: readonly string[],
+  signal?: AbortSignal,
+): Promise<MarketData> {
+  const params = new URLSearchParams({ mints: mints.join(",") });
+  return request(`/api/market-data?${params}`, { signal }, marketDataSchema);
 }
