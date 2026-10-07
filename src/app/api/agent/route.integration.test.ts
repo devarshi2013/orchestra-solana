@@ -22,6 +22,11 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("@/server/auth/session", () => ({ sessionWallet: async () => state.wallet }));
+// Handlers are called directly here, outside a Next request scope, where connection() throws.
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof NextServer>()),
+  connection: async () => {},
+}));
 vi.mock("@/server/agent/tools", async (importOriginal) => ({
   ...(await importOriginal<typeof AgentTools>()),
   runAgentTool: async () => ({
@@ -62,6 +67,7 @@ vi.mock("@/server/agent/client", () => ({
       : null,
 }));
 
+import type * as NextServer from "next/server";
 import { solTrendFollower } from "@/lib/symphony/examples";
 import { getRegistry } from "@/server/assets/registry";
 import type * as AgentTools from "@/server/agent/tools";

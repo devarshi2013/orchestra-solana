@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { z } from "zod";
 
 import { db } from "@/server/db";
@@ -8,6 +9,8 @@ import { handle, readJson, requireWallet } from "@/server/invest/route";
  * rebalances left partial (so they can be resumed).
  */
 export async function GET() {
+  // Per-request data: never prerendered at build time.
+  await connection();
   return handle(async () => {
     const owner = await requireWallet();
     const [notifications, partial] = await Promise.all([

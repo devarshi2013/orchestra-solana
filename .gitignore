@@ -24,6 +24,15 @@
 .DS_Store
 *.pem
 
+# secrets and wallet credentials: never commit these
+*.key
+*.p12
+*-keypair.json
+*keypair*.json
+id.json
+wallet*.json
+.secrets/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
