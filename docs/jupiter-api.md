@@ -158,6 +158,18 @@ type ExecuteResponse = {
 
 Use `totalInputAmount` / `totalOutputAmount` for portfolio accounting (they're what actually moved in the wallet). Fee in the input mint = `totalInputAmount − inputAmountResult`. Fee in the output mint = `outputAmountResult − totalOutputAmount`.
 
+### Observed behaviour (live api.jup.ag, 2026-10-07)
+
+Not in the docs, but seen in real responses. Fixtures are in `src/lib/jupiter/__fixtures__/`.
+
+- **Without `taker`:** `slippageBps` is `0` and `otherAmountThreshold` equals `outAmount`, because RTSE only runs for real orders. Don't show these as the user's slippage.
+- **`priceImpact` can be positive or negative.** Display `Math.abs`.
+- **Dust amounts** (e.g. 1 lamport) → `400 { requestId, error: "Failed to get quotes" }`. There is no `errorCode` for this. Jupiter's only documented minimum is the gasless one (about $10 when the taker holds less than 0.01 SOL → `errorCode 3`).
+- **A taker that isn't a wallet** (e.g. a mint address) → `400 "Failed to get quotes"` or `"Invalid taker"`.
+- **An unknown mint** → `500 { error: "Something unexpected occurred" }`.
+- **JupiterZ (RFQ) orders** have **no `lastValidBlockHeight`**. Their expiry is `expireAt`, a **Unix-seconds string**, about 50s out. They are often `gasless: true` (the market maker pays fees).
+- **`/execute` with an undecodable transaction** → `400 { code: -2, error: "Failed to decode signed transaction" }`.
+
 ### Orchestra flow (non-custodial)
 
 ```

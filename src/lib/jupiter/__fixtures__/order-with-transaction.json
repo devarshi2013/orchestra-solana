@@ -1,0 +1,50 @@
+{
+  "swapType": "aggregator",
+  "inAmount": "10000000",
+  "outAmount": "1188129",
+  "otherAmountThreshold": "1184564",
+  "swapMode": "ExactIn",
+  "slippageBps": 30,
+  "priceImpactPct": "-0.0000665557205052891",
+  "routePlan": [
+    {
+      "percent": 100,
+      "bps": 10000,
+      "usdValue": 1.1880254767910476,
+      "swapInfo": {
+        "ammKey": "7DyH4hFA9KY2Uf3ZC2fUGP9ATsLqAEq3pUpyJPA2Mjft",
+        "label": "ZeroFi",
+        "inputMint": "So11111111111111111111111111111111111111112",
+        "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "inAmount": "10000000",
+        "outAmount": "1188366"
+      }
+    }
+  ],
+  "feeMint": "So11111111111111111111111111111111111111112",
+  "feeBps": 2,
+  "platformFee": { "feeBps": 2, "feeMint": "So11111111111111111111111111111111111111112" },
+  "taker": "5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9",
+  "gasless": false,
+  "jitOptimized": false,
+  "signatureFeeLamports": 5000,
+  "signatureFeePayer": "5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9",
+  "prioritizationFeeLamports": 115,
+  "prioritizationFeePayer": "5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9",
+  "rentFeeLamports": 0,
+  "rentFeePayer": "5tzFkiKscXHK5ZXCGbXZxdw7gTjjD1mBwuoFbhUvuAi9",
+  "transaction": "AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAQAEB0jAG1BZAFRV2dywxrzs3LT7Wy6rwamoK1c5K6qkDwTm3sTeRGTwuXxew5/kivghLMd/7RlS2oFJdI1UTmJL6wANhMFxmHie5lj8TFWhd75WFwp5jDWzhXPBOqZlIgYcLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwZGb+UhFzL/7K26csOb57yM5bvF9xJrLEObOkAAAAAEedVb8jHAbu50xW7OaBUH/bGy3qP0jlECsc2iVrwTjwbd9uHXZaGT2cvhRs7reawctIXtX1s3kTqM9YV+/wCpvOKoDqN5NvHSI+Q9Wbj7G2KqiAabHWnGiqq4RHbpe7EGBAAFAu/fAAAEAAkD0wcAAAAAAAADAgACDAIAAACAlpgAAAAAAAYBAgERBRsAAgEQDgYGBQ0FBxILEwgJCgwCAQAGEAYOEQ8nu2T6zDHErxSAlpgAAAAAACEhEgAAAAAAHgACAAAAAQAAAJoQJwABBgMCAAABCQIpv5UHKk+/BN9xdZPnOLzMIScoFcJHGoDZ+fVVsNSEJQEnBAAoAReptpPUZ4/xgIN7WaLUXOHB03DwSNVlvKy3wi8fPGAtFAU5QT83QAM9Pjg=",
+  "lastValidBlockHeight": "432195844",
+  "inputMint": "So11111111111111111111111111111111111111112",
+  "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "router": "metis",
+  "guaranteedPrice": false,
+  "requestId": "01a1154d-1701-75a8-8cba-e710836a5897",
+  "inUsdValue": 1.188104551945538,
+  "outUsdValue": 1.1880254767910476,
+  "swapUsdValue": 1.1880254767910476,
+  "priceImpact": -0.00665557205052891,
+  "mode": "ultra",
+  "transactionVersion": 0,
+  "totalTime": 340
+}

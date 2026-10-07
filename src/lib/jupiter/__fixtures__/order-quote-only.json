@@ -1,0 +1,48 @@
+{
+  "swapType": "aggregator",
+  "inAmount": "10000000",
+  "outAmount": "1188929",
+  "otherAmountThreshold": "1188929",
+  "swapMode": "ExactIn",
+  "slippageBps": 0,
+  "priceImpactPct": "0.00004070270652235848",
+  "routePlan": [
+    {
+      "percent": 100,
+      "bps": 10000,
+      "usdValue": 1.1888322512094995,
+      "swapInfo": {
+        "ammKey": "GMCJvYGf5Ex2ARiMquaBDqU6iKM8uiEQkB8jCnoNfHpC",
+        "label": "GoonFi V2",
+        "inputMint": "So11111111111111111111111111111111111111112",
+        "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "inAmount": "10000000",
+        "outAmount": "1189166"
+      }
+    }
+  ],
+  "feeMint": "So11111111111111111111111111111111111111112",
+  "feeBps": 2,
+  "platformFee": { "feeBps": 2, "feeMint": "So11111111111111111111111111111111111111112" },
+  "signatureFeeLamports": 0,
+  "signatureFeePayer": null,
+  "prioritizationFeeLamports": 0,
+  "prioritizationFeePayer": null,
+  "rentFeeLamports": 0,
+  "rentFeePayer": null,
+  "transaction": null,
+  "gasless": false,
+  "jitOptimized": false,
+  "taker": null,
+  "inputMint": "So11111111111111111111111111111111111111112",
+  "outputMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "router": "metis",
+  "guaranteedPrice": false,
+  "requestId": "01a1154c-39c8-771b-88e4-b438b56f8fd7",
+  "inUsdValue": 1.1887838644887447,
+  "outUsdValue": 1.1888322512094995,
+  "swapUsdValue": 1.1888322512094995,
+  "priceImpact": 0.004070270652235848,
+  "mode": "ultra",
+  "totalTime": 237
+}
