@@ -1,6 +1,7 @@
 "use client";
 
-import { Braces, LayoutList } from "lucide-react";
+import { Braces, LayoutList, Rocket } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -52,6 +53,7 @@ export function SymphonyEditor() {
   const loadSymphony = useSymphonyEditor((s) => s.loadSymphony);
   const rememberTokens = useSymphonyEditor((s) => s.rememberTokens);
   const saveStatus = useSymphonyEditor((s) => s.saveStatus);
+  const draftId = useSymphonyEditor((s) => s.draftId);
   const upToDate = useSymphonyEditor((s) => s.revision === s.savedRevision);
   const [mode, setMode] = useState<"cards" | "json">("cards");
   const [dragging, setDragging] = useState<string | null>(null);
@@ -134,6 +136,16 @@ export function SymphonyEditor() {
               </option>
             ))}
           </select>
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            aria-disabled={issues.length > 0 || undefined}
+          >
+            <Link href={`/invest/new?draft=${draftId ?? ""}`}>
+              <Rocket /> Invest
+            </Link>
+          </Button>
           <Button
             variant="outline"
             size="sm"

@@ -6,6 +6,8 @@ import {
   type ExecuteResponse,
   type OrderResponse,
 } from "@/lib/jupiter/schemas";
+import type { CreateInvestment } from "@/lib/invest/schemas";
+import type { IndicativeQuote, InvestmentView, RunView, SnapshotView } from "@/lib/invest/views";
 import type { MarketData } from "@/lib/symphony/market-data";
 import { symphonySchema } from "@/lib/symphony/schema";
 import type { Symphony } from "@/lib/symphony/types";
@@ -123,3 +125,116 @@ export function saveDraft(
     savedDraftSchema,
   );
 }
+
+// --- Wallet sign-in and investments (session cookie; same-origin) -----------
+
+/** Our own API's JSON, typed by the route; not re-validated. */
+const trusted = <T>() => z.custom<T>(() => true);
+const json = (method: string, body?: unknown): RequestInit => ({
+  method,
+  headers: body === undefined ? undefined : { "content-type": "application/json" },
+  body: body === undefined ? undefined : JSON.stringify(body),
+});
+
+export const authApi = {
+  session: () => request("/api/auth/session", {}, trusted<{ wallet: string | null }>()),
+  challenge: (address: string) =>
+    request(
+      `/api/auth/challenge?address=${encodeURIComponent(address)}`,
+      {},
+      trusted<{ message: string }>(),
+    ),
+  verify: (address: string, signature: string) =>
+    request(
+      "/api/auth/verify",
+      json("POST", { address, signature }),
+      trusted<{ wallet: string }>(),
+    ),
+  signOut: () => request("/api/auth/session", json("DELETE"), trusted<{ wallet: null }>()),
+};
+
+export type PreparedLegResponse =
+  | { status: "skipped"; reason: string; run: RunView }
+  | { status: "failed"; reason: string; run: RunView }
+  | {
+      status: "quoted";
+      run: RunView;
+      order: {
+        transaction: string;
+        requestId: string;
+        expireAt?: string | null;
+        lastValidBlockHeight?: string | null;
+      };
+    };
+
+export type ExecutedLegResponse = {
+  outcome: "succeeded" | "failed" | "requote" | "unknown";
+  message?: string;
+  run: RunView;
+};
+
+export const investApi = {
+  list: () => request("/api/investments", {}, trusted<InvestmentView[]>()),
+  create: (body: CreateInvestment) =>
+    request("/api/investments", json("POST", body), trusted<InvestmentView>()),
+  get: (id: string) =>
+    request(`/api/investments/${id}`, {}, trusted<InvestmentView & { runs: RunView[] }>()),
+  update: (
+    id: string,
+    body: Partial<
+      Pick<InvestmentView, "status" | "rebalance" | "driftThresholdPct" | "notifyEmail">
+    >,
+  ) => request(`/api/investments/${id}`, json("PATCH", body), trusted<InvestmentView>()),
+  portfolio: (id: string, signal?: AbortSignal) =>
+    request(`/api/investments/${id}/portfolio`, { signal }, trusted<SnapshotView>()),
+  openRun: (id: string) =>
+    request(`/api/investments/${id}/runs`, {}, trusted<{ open: RunView | null }>()),
+  planRun: (id: string) =>
+    request(
+      `/api/investments/${id}/runs`,
+      json("POST"),
+      trusted<{ run: RunView | null; snapshot: SnapshotView }>(),
+    ),
+  run: (runId: string) => request(`/api/runs/${runId}`, {}, trusted<RunView>()),
+  cancelRun: (runId: string) =>
+    request(`/api/runs/${runId}`, json("PATCH", { action: "cancel" }), trusted<RunView>()),
+  quotes: (runId: string) =>
+    request(`/api/runs/${runId}/quotes`, {}, trusted<{ quotes: IndicativeQuote[] }>()),
+  prepareLeg: (runId: string, index: number) =>
+    request(
+      `/api/runs/${runId}/legs/${index}`,
+      json("POST", { action: "prepare" }),
+      trusted<PreparedLegResponse>(),
+    ),
+  executeLeg: (runId: string, index: number, signedTransaction: string) =>
+    request(
+      `/api/runs/${runId}/legs/${index}`,
+      json("POST", { action: "execute", signedTransaction }),
+      trusted<ExecutedLegResponse>(),
+    ),
+  abandonLeg: (runId: string, index: number, reason: string) =>
+    request(
+      `/api/runs/${runId}/legs/${index}`,
+      json("POST", { action: "abandon", reason }),
+      trusted<{ run: RunView }>(),
+    ),
+  notifications: () =>
+    request(
+      "/api/notifications",
+      {},
+      trusted<{
+        notifications: {
+          id: string;
+          title: string;
+          body: string;
+          url: string;
+          investmentId: string | null;
+        }[];
+        partial: { id: string; investmentId: string; investment: { name: string } }[];
+      }>(),
+    ),
+  dismissNotification: (id: string) =>
+    request("/api/notifications", json("PATCH", { id }), trusted<{ ok: true }>()),
+  subscribePush: (subscription: PushSubscriptionJSON) =>
+    request("/api/push/subscriptions", json("POST", subscription), trusted<{ ok: true }>()),
+};

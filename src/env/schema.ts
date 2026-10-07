@@ -40,6 +40,25 @@ export const serverEnvSchema = z.object({
    * Shared secret for /api/cron/*, sent as `Authorization: Bearer <secret>`
    * (Vercel Cron does this automatically). Required in production.
    */
+  /**
+   * Signs session cookies (Sign-In With Solana). Required in production; in
+   * development a fixed fallback is used so sign-in works out of the box.
+   */
+  SESSION_SECRET: optionalSecret(
+    z.string().trim().min(32, "SESSION_SECRET must be at least 32 characters"),
+  ),
+  /** Public base URL for links in emails and notifications. */
+  APP_URL: z
+    .url()
+    .default("http://localhost:3000")
+    .transform((url) => url.replace(/\/+$/, "")),
+  /** Resend API key for rebalance emails; without it, emails are logged instead. */
+  RESEND_API_KEY: optionalSecret(z.string().trim()),
+  /** Sender for rebalance emails, e.g. "Orchestra <alerts@yourdomain.com>". */
+  EMAIL_FROM: optionalSecret(z.string().trim()),
+  /** Web push (optional): VAPID keys from `npx web-push generate-vapid-keys`. */
+  VAPID_PRIVATE_KEY: optionalSecret(z.string().trim()),
+  VAPID_SUBJECT: optionalSecret(z.string().trim()),
   CRON_SECRET: optionalSecret(
     z.string().trim().min(16, "CRON_SECRET must be at least 16 characters"),
   ),
@@ -49,6 +68,11 @@ export const clientEnvSchema = z.object({
   NEXT_PUBLIC_SOLANA_CLUSTER: z.enum(["mainnet-beta", "devnet"]).default("mainnet-beta"),
   /** Browser RPC used by the wallet adapter. Use a public or origin-restricted endpoint. */
   NEXT_PUBLIC_SOLANA_RPC_URL: z.url(),
+  /** Web push public VAPID key; push is offered only when set. */
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().trim().optional(),
+  ),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

@@ -18,6 +18,13 @@ export type RebalanceRule =
   | { kind: "monthly" }
   | { kind: "threshold"; driftPct: number };
 
+export const rebalanceRuleSchema: z.ZodType<RebalanceRule> = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("daily") }),
+  z.object({ kind: z.literal("weekly") }),
+  z.object({ kind: z.literal("monthly") }),
+  z.object({ kind: z.literal("threshold"), driftPct: z.number().finite().positive().max(100) }),
+]);
+
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD");
 const bps = z.number().finite().min(0).max(10_000);
 
@@ -26,12 +33,7 @@ export const backtestConfigSchema = z
     /** First day whose close is in the equity curve; it trades on the prior day's close. */
     startDate: isoDate,
     endDate: isoDate,
-    rebalance: z.discriminatedUnion("kind", [
-      z.object({ kind: z.literal("daily") }),
-      z.object({ kind: z.literal("weekly") }),
-      z.object({ kind: z.literal("monthly") }),
-      z.object({ kind: z.literal("threshold"), driftPct: z.number().finite().positive().max(100) }),
-    ]),
+    rebalance: rebalanceRuleSchema,
     startingCapitalUsdc: z.number().finite().positive(),
     /** Swap fee per trade, on the traded notional. */
     feeBps: bps,

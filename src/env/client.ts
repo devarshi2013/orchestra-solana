@@ -5,6 +5,7 @@ import { clientEnvSchema, formatEnvError, type ClientEnv } from "./schema";
 const result = clientEnvSchema.safeParse({
   NEXT_PUBLIC_SOLANA_CLUSTER: process.env.NEXT_PUBLIC_SOLANA_CLUSTER,
   NEXT_PUBLIC_SOLANA_RPC_URL: process.env.NEXT_PUBLIC_SOLANA_RPC_URL,
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
 });
 
 if (!result.success) {
