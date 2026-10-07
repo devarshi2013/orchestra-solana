@@ -47,6 +47,8 @@ export const serverEnvSchema = z.object({
   SESSION_SECRET: optionalSecret(
     z.string().trim().min(32, "SESSION_SECRET must be at least 32 characters"),
   ),
+  /** Claude API key for the research assistant (/api/agent). Server-only; optional. */
+  ANTHROPIC_API_KEY: optionalSecret(z.string().trim()),
   /** Financial Modeling Prep key for stock fundamentals (docs/market-tools.md). Optional. */
   MARKET_DATA_API_KEY: optionalSecret(z.string().trim()),
   /** CoinGecko Demo key for crypto price history; keyless access works at a lower rate limit. */

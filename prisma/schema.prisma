@@ -204,3 +204,19 @@ model PushSubscription {
   @@index([owner])
   @@map("push_subscriptions")
 }
+
+/// Research-assistant conversations (/api/agent). Stored server-side so the
+/// model's history, including every tool result, can't be altered by the
+/// browser; append-only, as Claude's thinking blocks require.
+model AgentConversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// Signed-in wallet that owns it.
+  owner     String
+  /// Anthropic beta MessageParam[] exactly as sent to and received from the API.
+  messages  Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([owner, updatedAt])
+  @@map("agent_conversations")
+}
