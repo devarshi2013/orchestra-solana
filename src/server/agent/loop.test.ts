@@ -254,6 +254,48 @@ describe("runAgentTurn", () => {
     expect(events.filter((e) => e.type === "plan")).toEqual([{ type: "plan", plan }]);
   });
 
+  it("streams an accepted symphony proposal, and none for a rejected one", async () => {
+    const proposal = {
+      tree: { name: "Trend", root: { type: "asset" as const, ticker: "SOL" } },
+      backtest: null,
+      backtestNote: "No stored price history",
+    };
+    let call = 0;
+    const { events } = await run(
+      [
+        message([toolUse("s1", "createSymphony", { symphony: {} })], "tool_use"),
+        message([toolUse("s2", "createSymphony", { symphony: {} })], "tool_use"),
+        message([text("Here it is.")], "end_turn"),
+      ],
+      async () =>
+        ++call === 1
+          ? { content: '{"accepted":false,"errors":["root: bad"]}', isError: true }
+          : { content: '{"accepted":true}', isError: false, symphony: proposal },
+    );
+    expect(events.filter((e) => e.type === "symphony")).toEqual([
+      { type: "symphony", id: "s2", proposal },
+    ]);
+  });
+
+  it("sends the context as its own block before the user's message", async () => {
+    const { client, calls } = fakeClient([message([text("ok")], "end_turn")]);
+    await runAgentTurn({
+      client,
+      history: [],
+      userText: "Explain it",
+      context: "<orchestra-context>tree</orchestra-context>",
+      runTool: vi.fn(),
+      emit: () => {},
+    });
+    expect(calls[0]!.messages[0]).toEqual({
+      role: "user",
+      content: [
+        { type: "text", text: "<orchestra-context>tree</orchestra-context>" },
+        { type: "text", text: "Explain it" },
+      ],
+    });
+  });
+
   it("tells the model to stop after repeated invalid plans", async () => {
     const { result } = await run(
       [

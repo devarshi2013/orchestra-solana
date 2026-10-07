@@ -20,6 +20,8 @@ import {
   type PlanExecutionState,
 } from "@/hooks/use-plan-execution";
 import { formatBaseUnits } from "@/lib/amount";
+
+import { KeepBalancedOffer } from "./keep-balanced";
 import type { ExecutionItemView, ExecutionView } from "@/lib/assistant/views";
 import { formatUsd } from "@/lib/backtest/format";
 import { solscanTxUrl } from "@/lib/solana";
@@ -181,6 +183,8 @@ export function ExecutionItems({
           )}
         </div>
       )}
+
+      {!running && bought.length > 0 && <KeepBalancedOffer execution={execution} />}
     </div>
   );
 }

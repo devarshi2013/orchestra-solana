@@ -12,11 +12,13 @@ import {
 } from "@/lib/invest/plan";
 import { canQuoteLeg, deriveRunStatus } from "@/lib/invest/run-state";
 import { nextDueAt } from "@/lib/invest/schedule";
-import { loadDailyMarketData } from "@/lib/market/store";
+import type { CreateInvestment } from "@/lib/invest/schemas";
+import { loadDailyMarketData, trackMints } from "@/lib/market/store";
 import { evaluateWithWarnings, type EvaluationWarning } from "@/lib/symphony/evaluate";
 import { collectMints } from "@/lib/symphony/mints";
 import { symphonySchema } from "@/lib/symphony/schema";
 import type { Allocation, Symphony } from "@/lib/symphony/types";
+import { validateSymphony } from "@/lib/symphony/validate";
 import { classifyExecuteResult, classifyOrderError } from "@/lib/swap/errors";
 import { USDC_MINT } from "@/lib/tokens";
 import { listedAssets } from "@/server/assets/registry";
@@ -54,6 +56,34 @@ const OPEN_RUN = ["planned", "executing", "partial"] as const;
 const RECONCILE_AFTER_MS = 60_000;
 /** Without a confirmation by then, an aggregator transaction has expired. */
 const GIVE_UP_AFTER_MS = 180_000;
+
+/**
+ * Starts a live symphony for `owner`. The registry is the only source of
+ * mints: a symphony with anything else is refused. Nothing trades here.
+ */
+export async function createInvestment(owner: string, body: CreateInvestment) {
+  const { isListed } = await listedAssets();
+  const issues = validateSymphony(body.symphony, { isKnownMint: isListed });
+  if (issues.length > 0) {
+    throw new InvestError(
+      400,
+      `Fix the symphony first: ${issues.map((i) => i.message).join("; ")}`,
+    );
+  }
+  await trackMints(universeOf(body.symphony));
+  return db.investment.create({
+    data: {
+      owner,
+      name: body.symphony.name,
+      symphony: body.symphony as unknown as Prisma.InputJsonValue,
+      sourceDraftId: body.sourceDraftId,
+      rebalance: body.rebalance as unknown as Prisma.InputJsonValue,
+      driftThresholdPct: body.driftThresholdPct,
+      notifyEmail: body.notifyEmail ?? null,
+      nextDueAt: nextDueAt(body.rebalance, new Date()),
+    },
+  });
+}
 
 export async function getOwnedInvestment(id: string, owner: string): Promise<InvestmentRow> {
   const investment = await db.investment.findUnique({ where: { id } });

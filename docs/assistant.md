@@ -171,6 +171,80 @@ Execution lives in `src/server/assistant/executions.ts` and
    on-chain, as in Invest. If its outcome can't be learned, the item is
    flagged and can't be retried, because retrying could buy twice.
 
+## Symphonies
+
+The assistant can design, read, backtest and explain symphonies. The tools
+are in `src/lib/assets/symphony-tools.ts` and exported from
+`src/lib/assets/tools.ts`.
+
+| Tool               | What it does                                                                                                                                                                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createSymphony`   | Checks a proposed tree (structure, size, the symphony rules from `validateSymphony`, every ticker in the registry), then backtests it. Errors go back to the model to fix. **Never saves.**                                                                         |
+| `listMySymphonies` | The wallet's live investments and its drafts. A draft belongs to a wallet when that wallet was signed in at its first save; unowned drafts aren't listed.                                                                                                           |
+| `getSymphony`      | One of those, as a ticker tree, with its schedule if it's live.                                                                                                                                                                                                     |
+| `runBacktest`      | The backtester (`src/lib/backtest/engine.ts`) on stored daily closes, over 3M, 6M, 1Y or max. Uses the editor's settings: $1,000, weekly, 10 bps fee, 20 bps slippage. Returns its metrics, SOL buy-and-hold, costs, and tokens with short history.                 |
+| `explainRebalance` | `evaluateWithTrace` (evaluate()'s own code path, recording every condition's values, filter ranking and inverse-volatility split) on two closes: the last rebalance, the start date if never rebalanced, or a week ago for drafts. Also reports the wallet's drift. |
+
+**The model never sees or writes a mint.** Trees go in and out as ticker trees
+(`src/lib/symphony/ticker-tree.ts`):
+
+- `toMintTree` resolves tickers through the registry and rejects anything
+  unknown or ambiguous.
+- `toTickerTree` names mints by symbol, and anything unlisted as `UNLISTED`.
+
+### In chat
+
+An accepted `createSymphony` streams a `symphony` event. The chat shows a
+**symphony card** with the tree outline and the backtest summary, including
+its period and settings. **Open in editor** (`POST /api/assistant/symphonies`)
+saves it as a draft owned by the wallet and opens `/create?draft=<id>`.
+Nothing is saved before that click.
+
+### Ask AI panels
+
+The editor and the investment page have an **Ask AI** panel
+(`src/components/assistant/ask-ai-panel.tsx`):
+
+- Each message carries the symphony on screen as a context block: the
+  editor's current tree, or the investment by id, checked for ownership. The
+  block starts with `<orchestra-context>` and is hidden when a chat is
+  replayed.
+- Suggested changes appear as a **line diff** against the current tree,
+  with **Accept** and **Reject**.
+- Accepting resolves the proposal through the registry
+  (`POST /api/assistant/symphonies/resolve`):
+  - **In the editor**, it replaces the draft, which autosaves.
+  - **On an investment**, it updates the investment's symphony with
+    `PATCH /api/investments/[id]`. The new symphony is validated against the
+    registry, and the update is refused while a rebalance is open. It applies
+    from the next rebalance, and every trade still needs a signature.
+
+### Keep this balanced automatically
+
+Once a plan has bought something, the plan card (and `/history`) offers to save
+the bought items as a live symphony:
+
+- **Weights:** from the plan's USDC amounts of the items actually bought,
+  rounded to hundredths that sum to exactly 100 (`keepBalancedWeights`).
+- **Settings:** the user picks the rebalance schedule and drift threshold.
+- **Endpoint:** `POST /api/assistant/executions/[id]/keep-balanced` uses the
+  mints stored at purchase.
+- **Nothing trades** until the user signs a rebalance.
+
+### Why these trades (rebalance review)
+
+The review screen shows a "Why these trades" card when a rebalance is planned:
+
+- **Data:** `GET /api/investments/[id]/explanation` returns
+  `explainRebalance`'s data and a plain summary built only from that data
+  (`summarizeRebalance`).
+- **AI text:** `POST` recomputes the same data on the server and asks Claude
+  for 2–4 sentences using only it (`src/server/agent/explain.ts`, effort
+  `low`).
+- **Checking it:** the AI text is labelled as such and can be wrong. The data
+  summary and a table of every rule, then and now, stay beneath it. Without
+  the AI, only the data is shown.
+
 ## History
 
 Chats (`agent_conversations`, now titled from the first question) and bought
@@ -197,6 +271,14 @@ wallet.
     `src/lib/agent/transcript.test.ts`.
   - `src/lib/assistant/review.test.ts` (warnings and pre-flight) and
     `src/lib/assistant/market-hours.test.ts`.
+  - `src/lib/symphony/explain.test.ts`: the explanation's targets equal
+    `evaluate()` on both dates, plus the trace, flipped conditions, filter
+    picks and summaries.
+  - `src/lib/symphony/ticker-tree.test.ts`, `outline.test.ts`, and
+    `src/lib/assistant/keep-balanced.test.ts` (weights).
+  - `src/server/agent/tools.test.ts`: an AI-proposed symphony with an unknown
+    asset, a mint in place of a ticker, or bad weights is rejected. A valid
+    one is backtested and has no mints.
   - `src/server/agent/rate-limit.test.ts`.
 - **Integration** (`pnpm test:integration`):
   - `src/app/api/agent/route.integration.test.ts`: SSE with tool results,
@@ -205,7 +287,13 @@ wallet.
   - `src/server/assistant/executions.integration.test.ts`: buying against the
     real Postgres with real signed transactions. Covers registry-only mints,
     plan checks, partial failure and retry, the signed-order check, re-quote,
-    decline, on-chain reconciliation and privacy.
+    decline, on-chain reconciliation and privacy. Also covers "Keep balanced",
+    which creates the right weights and mints, and keeps only bought items.
+  - `src/lib/assets/symphony-tools.integration.test.ts`:
+    - listing and reading only the wallet's own symphonies;
+    - `explainRebalance` on an investment matches `evaluate()`;
+    - backtests by id or tree;
+    - draft ownership.
 
 ## Not yet verified
 

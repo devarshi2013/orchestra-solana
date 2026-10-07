@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { trackMints } from "@/lib/market/store";
 import { listedAssets } from "@/server/assets/registry";
+import { sessionWallet } from "@/server/auth/session";
 import { collectMints } from "@/lib/symphony/mints";
 import { symphonySchema } from "@/lib/symphony/schema";
 import { db } from "@/server/db";
@@ -35,7 +36,8 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/api/drafts/
 /**
  * PUT creates or replaces a draft. The tree only has to parse (an unfinished
  * draft is fine); its mints are tracked so the price sync starts fetching
- * their history.
+ * their history. A signed-in save claims an unowned draft for that wallet
+ * (so the assistant can list it); an owner is never changed.
  */
 export async function PUT(request: NextRequest, ctx: RouteContext<"/api/drafts/[id]">) {
   const id = idSchema.safeParse((await ctx.params).id);
@@ -53,11 +55,15 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/drafts/[
 
   const { symphony } = parsed.data;
   try {
+    const owner = await sessionWallet().catch(() => null);
     const draft = await db.symphonyDraft.upsert({
       where: { id: id.data },
-      create: { id: id.data, name: symphony.name, symphony },
+      create: { id: id.data, owner, name: symphony.name, symphony },
       update: { name: symphony.name, symphony },
     });
+    if (owner && !draft.owner) {
+      await db.symphonyDraft.updateMany({ where: { id: draft.id, owner: null }, data: { owner } });
+    }
     // Drafts may hold unlisted mints while being edited; only listed ones get price history.
     const { isListed } = await listedAssets().catch(() => ({ isListed: () => false }));
     await trackMints([...collectMints(symphony.root)].filter(isListed));

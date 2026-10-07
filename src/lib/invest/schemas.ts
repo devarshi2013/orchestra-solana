@@ -26,6 +26,8 @@ export const updateInvestmentSchema = z.object({
   rebalance: rebalanceRuleSchema.optional(),
   driftThresholdPct: z.number().finite().min(0).max(50).optional(),
   notifyEmail: email.optional(),
+  /** A changed strategy (e.g. an accepted AI suggestion); applies from the next rebalance. */
+  symphony: symphonySchema.optional(),
 });
 
 /** POST /api/runs/[id]/legs/[index] */

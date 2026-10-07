@@ -50,7 +50,13 @@ vi.mock("@/server/assets/registry", () => {
     liquidityUsd: null,
     volume24hUsd: null,
   });
+  const listed = new Set([
+    "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
+    "So11111111111111111111111111111111111111112",
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  ]);
   return {
+    listedAssets: async () => ({ isListed: (mint: string) => listed.has(mint) }),
     getRegistry: async () => ({
       stocks: [
         asset("stock", "NVDA", "NVDAx", "NVIDIA", "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh"),
@@ -71,6 +77,7 @@ vi.mock("@/server/assets/registry", () => {
     }),
   };
 });
+vi.mock("@/lib/market/store", () => ({ trackMints: async () => {}, loadDailyMarketData: vi.fn() }));
 vi.mock("@/server/solana/rpc", () => ({
   getWalletBalances: async () => ({
     EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: { amount: fake.usdc.toString(), decimals: 6 },
@@ -138,6 +145,7 @@ import { db } from "@/server/db";
 import { InvestError } from "@/server/invest/service";
 
 import { acceptDisclosure } from "./disclosure";
+import { keepBalanced } from "./symphonies";
 import {
   abandonItem,
   createExecution,
@@ -168,6 +176,7 @@ const rejects = (promise: Promise<unknown>, status: number) =>
   expect(promise).rejects.toSatisfy((e) => e instanceof InvestError && e.status === status);
 
 const cleanup = async () => {
+  await db.investment.deleteMany({ where: { owner: { in: [OWNER, OTHER] } } });
   await db.planExecution.deleteMany({ where: { owner: { in: [OWNER, OTHER] } } });
   await db.assistantDisclosure.deleteMany({ where: { owner: { in: [OWNER, OTHER] } } });
 };
@@ -304,5 +313,58 @@ describe("assistant plan executions", () => {
     await rejects(prepareItem(id, 0, OTHER), 404);
     expect(await listExecutions(OTHER)).toEqual([]);
     expect((await listExecutions(OWNER)).map((e) => e.id)).toEqual([id]);
+  });
+
+  it("keeps what was bought balanced at the plan's weights", async () => {
+    const { id } = await createExecution(OWNER, plan);
+    await rejects(
+      keepBalanced(OWNER, id, { name: "x", rebalance: { kind: "weekly" }, driftThresholdPct: 2 }),
+      409,
+    );
+    await buy(id, 0);
+    await buy(id, 1);
+    const { investmentId } = await keepBalanced(OWNER, id, {
+      name: "My AI plan",
+      rebalance: { kind: "monthly" },
+      driftThresholdPct: 2,
+    });
+    const investment = await db.investment.findUniqueOrThrow({ where: { id: investmentId } });
+    expect(investment).toMatchObject({
+      owner: OWNER,
+      name: "My AI plan",
+      rebalance: { kind: "monthly" },
+      driftThresholdPct: 2,
+      status: "active",
+    });
+    expect(investment.symphony).toMatchObject({
+      root: {
+        type: "group",
+        weight: { method: "specified", percentages: [60, 40] }, // 30 and 20 USDC
+        children: [
+          { type: "asset", mint: "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh" },
+          { type: "asset", mint: "So11111111111111111111111111111111111111112" },
+        ],
+      },
+    });
+    await rejects(
+      keepBalanced(OTHER, id, { name: "x", rebalance: { kind: "weekly" }, driftThresholdPct: 2 }),
+      404,
+    );
+  });
+
+  it("keeps only the items that were bought", async () => {
+    const { id } = await createExecution(OWNER, plan);
+    await buy(id, 0);
+    fake.executions = ["land-failed"];
+    await buy(id, 1);
+    const { symphony } = await keepBalanced(OWNER, id, {
+      name: "Partial",
+      rebalance: { kind: "weekly" },
+      driftThresholdPct: 0,
+    });
+    expect(symphony.root).toMatchObject({
+      weight: { percentages: [100] },
+      children: [{ mint: "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh" }],
+    });
   });
 });

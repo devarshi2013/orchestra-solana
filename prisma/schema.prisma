@@ -54,12 +54,16 @@ model Candle {
 /// read and overwrite the draft (there are no accounts yet).
 model SymphonyDraft {
   id        String   @id @db.Uuid
+  /// The wallet signed in when it was first saved (null: saved signed out).
+  /// Only owned drafts appear in the assistant's "my symphonies".
+  owner     String?
   name      String
   /// A structurally valid Symphony (schema.ts); may still fail validateSymphony.
   symphony  Json
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([owner, updatedAt])
   @@map("symphony_drafts")
 }
 

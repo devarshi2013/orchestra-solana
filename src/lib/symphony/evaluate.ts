@@ -42,10 +42,49 @@ export type EvaluationWarning = {
 
 export type Evaluation = { allocation: Allocation; warnings: EvaluationWarning[] };
 
+/** One indicator value an `if` compared; null when there was too little history. */
+export type TracedValue = { mint: string; indicator: IndicatorSpec; value: number | null };
+
+/**
+ * What a node decided during one evaluation, recorded by evaluateWithTrace().
+ * Only nodes actually reached are traced (an untaken `if` branch isn't).
+ */
+export type TraceEntry =
+  | {
+      kind: "condition";
+      path: string;
+      left: TracedValue;
+      comparator: Condition["comparator"];
+      right: number | TracedValue;
+      /** null: a side lacked history, so the else branch was taken. */
+      result: boolean | null;
+      branch: "then" | "else";
+    }
+  | {
+      kind: "filter";
+      path: string;
+      sortBy: IndicatorSpec;
+      direction: "top" | "bottom";
+      count: number;
+      /** Children in tree order with their scores; `selected` ones got the weight. */
+      children: { index: number; score: number | null; selected: boolean }[];
+    }
+  | {
+      kind: "inverseVolatility";
+      path: string;
+      /** Each child's weight; equal when a child lacked history. */
+      weights: number[];
+      fellBack: boolean;
+    };
+
+export type TracedEvaluation = Evaluation & { trace: TraceEntry[] };
+
 type Context = {
   data: MarketData;
   index: number;
   warnings: EvaluationWarning[];
+  /** Set by evaluateWithTrace(); decisions are only recorded when present. */
+  trace?: TraceEntry[];
 };
 
 /**
@@ -75,6 +114,27 @@ export function evaluateWithWarnings(
   };
   const allocation = evaluateNode(tree, "root", ctx);
   return { allocation, warnings: ctx.warnings };
+}
+
+/**
+ * evaluateWithWarnings() plus a record of every decision it made: each `if`
+ * condition's values and outcome, each filter's ranking, each
+ * inverse-volatility split. Same code path, so the trace always matches the
+ * allocation.
+ */
+export function evaluateWithTrace(
+  tree: SymphonyNode,
+  marketData: MarketData,
+  date: string,
+): TracedEvaluation {
+  const ctx: Context = {
+    data: marketData,
+    index: barIndexAt(marketData.dates, date),
+    warnings: [],
+    trace: [],
+  };
+  const allocation = evaluateNode(tree, "root", ctx);
+  return { allocation, warnings: ctx.warnings, trace: ctx.trace! };
 }
 
 /** `evaluateWithWarnings` without the warnings. */
@@ -155,9 +215,12 @@ function evaluateGroup(node: GroupNode, path: string, ctx: Context): Allocation 
       const vols = measurements.map((m) => m.value);
       if (!vols.every((v) => v !== null)) {
         measurements.forEach((m) => m.warn("equal_weight"));
+        ctx.trace?.push({ kind: "inverseVolatility", path, weights: equalWeights, fellBack: true });
         return combine(allocations, equalWeights);
       }
-      return combine(allocations, inverseVolatilityWeights(vols));
+      const weights = inverseVolatilityWeights(vols);
+      ctx.trace?.push({ kind: "inverseVolatility", path, weights, fellBack: false });
+      return combine(allocations, weights);
     }
   }
 }
@@ -186,6 +249,18 @@ function evaluateFilter(node: FilterNode, path: string, ctx: Context): Allocatio
       .sort((a, b) => sign * (a.score! - b.score!) || a.index - b.index),
     ...children.filter((c) => c.score === null),
   ].slice(0, node.select.count);
+  ctx.trace?.push({
+    kind: "filter",
+    path,
+    sortBy: node.sortBy,
+    direction: node.select.direction,
+    count: node.select.count,
+    children: children.map((c) => ({
+      index: c.index,
+      score: c.score,
+      selected: ranked.some((r) => r.index === c.index),
+    })),
+  });
   return combine(
     ranked.map((r) => r.allocation),
     ranked.map(() => 1 / ranked.length),
@@ -207,20 +282,39 @@ function isTrue({ left, comparator, right }: Condition, path: string, ctx: Conte
     typeof right === "number"
       ? { value: right, warn: () => {} }
       : measure({ [right.mint]: 1 }, right.indicator, path, ctx);
+  let result: boolean | null;
   if (a.value === null || b.value === null) {
     a.warn("else");
     b.warn("else");
-    return false;
+    result = null;
+  } else {
+    result = compare(a.value, comparator, b.value);
   }
+  ctx.trace?.push({
+    kind: "condition",
+    path,
+    left: { mint: left.mint, indicator: left.indicator, value: a.value },
+    comparator,
+    right:
+      typeof right === "number"
+        ? right
+        : { mint: right.mint, indicator: right.indicator, value: b.value },
+    result,
+    branch: result ? "then" : "else",
+  });
+  return result === true;
+}
+
+function compare(a: number, comparator: Condition["comparator"], b: number): boolean {
   switch (comparator) {
     case "gt":
-      return a.value > b.value;
+      return a > b;
     case "gte":
-      return a.value >= b.value;
+      return a >= b;
     case "lt":
-      return a.value < b.value;
+      return a < b;
     case "lte":
-      return a.value <= b.value;
+      return a <= b;
   }
 }
 

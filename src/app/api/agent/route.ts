@@ -5,6 +5,9 @@ import type Anthropic from "@anthropic-ai/sdk";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { conversationTitle } from "@/lib/agent/transcript";
+import { agentContextSchema } from "@/lib/assistant/schemas";
+import { buildContext } from "@/server/assistant/context";
+import { InvestError } from "@/server/invest/service";
 import { hasAcceptedDisclosure } from "@/server/assistant/disclosure";
 import { sessionWallet } from "@/server/auth/session";
 import { db } from "@/server/db";
@@ -19,6 +22,8 @@ export const maxDuration = 300;
 const bodySchema = z.object({
   conversationId: z.uuid().optional(),
   message: z.string().trim().min(1).max(2000),
+  /** Sent by "Ask AI" panels: the symphony the user is looking at. */
+  context: agentContextSchema.optional(),
 });
 
 type StreamEvent = AgentEvent | { type: "conversation"; id: string } | { type: "done" };
@@ -42,6 +47,16 @@ export async function POST(request: NextRequest) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return validationErrorResponse(parsed.error);
   const { conversationId, message } = parsed.data;
+  let context: string | undefined;
+  if (parsed.data.context) {
+    try {
+      context = await buildContext(parsed.data.context, wallet);
+    } catch (error) {
+      if (error instanceof InvestError) return errorResponse(error.status, error.message);
+      console.error("[agent] context failed", error);
+      return errorResponse(503, "Couldn't load that symphony right now");
+    }
+  }
 
   let conversation;
   if (conversationId) {
@@ -81,6 +96,7 @@ export async function POST(request: NextRequest) {
           client,
           history,
           userText: message,
+          context,
           runTool: (name, input) => runAgentTool(name, input, wallet),
           emit: send,
           signal: abort.signal,

@@ -4,6 +4,7 @@ import { Pause, Play, Scale } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { AskAiPanel } from "@/components/assistant/ask-ai-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -183,6 +184,18 @@ export function InvestmentDetail({ id }: { id: string }) {
           ))}
         </CardContent>
       </Card>
+
+      <AskAiPanel
+        current={investment.symphony}
+        context={() => ({ kind: "investment", investmentId: id })}
+        onAccept={async (symphony) => {
+          await investApi.update(id, { symphony });
+          load();
+        }}
+        acceptLabel="Apply to this investment"
+        acceptNote="Changes the strategy from the next rebalance. Nothing trades until you sign."
+        description="Explain this portfolio's strategy or its last rebalance, suggest changes (as a diff you accept or reject) or compare backtests."
+      />
     </div>
   );
 }

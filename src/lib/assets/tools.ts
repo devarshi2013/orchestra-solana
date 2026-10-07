@@ -10,6 +10,18 @@ import { base58AddressSchema } from "@/lib/jupiter/schemas";
 import { classifyOrderError } from "@/lib/swap/errors";
 import { SOL_MINT, USDC_MINT } from "@/lib/tokens";
 import { getRegistry } from "@/server/assets/registry";
+
+import { resolveAsset } from "./resolve";
+import {
+  createSymphony,
+  createSymphonyInput,
+  explainRebalance,
+  getSymphony,
+  listMySymphonies,
+  runBacktestInput,
+  runSymphonyBacktest,
+  symphonyIdInput,
+} from "./symphony-tools";
 import { cached } from "@/server/cache";
 import { JupiterApiError, jupiterFetch } from "@/server/jupiter/client";
 import { getOrder } from "@/server/jupiter/swap";
@@ -34,6 +46,15 @@ import { getWalletBalances as readWalletBalances } from "@/server/solana/rpc";
  * are never estimated or filled in. Market data is cached for 15 minutes;
  * quotes and balances are always live. See docs/market-tools.md.
  */
+
+export { resolveAsset } from "./resolve";
+export {
+  createSymphony,
+  explainRebalance,
+  getSymphony,
+  listMySymphonies,
+  runSymphonyBacktest as runBacktest,
+} from "./symphony-tools";
 
 export type ToolResult<T> = { data: T; reason: null } | { data: null; reason: string };
 const ok = <T>(data: T): ToolResult<T> => ({ data, reason: null });
@@ -68,28 +89,6 @@ const tickerSchema = z
   .min(1)
   .max(20)
   .regex(/^\$?[A-Za-z0-9.]+$/, "Use a ticker or token symbol, not an address");
-
-/**
- * A ticker or token symbol → one registry asset. Token symbols are exact
- * (AAPLx); a ticker shared by two issuers (AAPL) is ambiguous.
- */
-export function resolveAsset(
-  assets: readonly Asset[],
-  ticker: string,
-): { asset: Asset } | { reason: string } {
-  const wanted = ticker.trim().replace(/^\$/, "").toUpperCase();
-  const norm = (s: string) => s.replace(/^\$/, "").toUpperCase();
-  const bySymbol = assets.filter((a) => norm(a.symbol) === wanted);
-  if (bySymbol.length === 1) return { asset: bySymbol[0]! };
-  const byTicker = assets.filter((a) => norm(a.ticker) === wanted);
-  if (byTicker.length === 1) return { asset: byTicker[0]! };
-  if (byTicker.length > 1) {
-    return {
-      reason: `"${ticker}" matches ${byTicker.map((a) => a.symbol).join(" and ")}; use the token symbol`,
-    };
-  }
-  return { reason: `"${ticker}" isn't in Orchestra's asset registry` };
-}
 
 // --- listAssets ---------------------------------------------------------------
 
@@ -584,5 +583,32 @@ export const ASSET_TOOLS = {
     description: "A wallet's USDC and SOL balances.",
     input: walletInput,
     run: getWalletBalances,
+  },
+  createSymphony: {
+    description:
+      "Check a proposed symphony (a ticker tree) against the symphony rules and the registry, and backtest it. Never saves.",
+    input: createSymphonyInput,
+    run: createSymphony,
+  },
+  getSymphony: {
+    description: "One of a wallet's symphonies (draft or investment) as a ticker tree.",
+    input: symphonyIdInput,
+    run: getSymphony,
+  },
+  listMySymphonies: {
+    description: "A wallet's symphonies: its live investments and its saved drafts.",
+    input: walletInput,
+    run: listMySymphonies,
+  },
+  runBacktest: {
+    description: "Backtest a symphony (by id, or a ticker tree) over 3M, 6M, 1Y or max.",
+    input: runBacktestInput,
+    run: runSymphonyBacktest,
+  },
+  explainRebalance: {
+    description:
+      "Which conditions and rankings changed since the last rebalance, how the target moved, and the wallet's drift.",
+    input: symphonyIdInput,
+    run: explainRebalance,
   },
 } as const;

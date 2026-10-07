@@ -18,6 +18,7 @@ import type { IndicativeQuote, RunView, SnapshotView } from "@/lib/invest/views"
 import { describeWarning } from "@/lib/symphony/warnings";
 
 import { LegTable } from "./leg-table";
+import { RebalanceExplanationCard } from "./rebalance-explanation";
 
 const SKIP_TEXT: Record<SkipReason, string> = {
   below_minimum: "under the $10 minimum order",
@@ -177,6 +178,8 @@ export function RebalanceReview({ investmentId }: { investmentId: string }) {
           </AlertDescription>
         </Alert>
       )}
+
+      {run && run.status === "planned" && <RebalanceExplanationCard investmentId={investmentId} />}
 
       {run && (
         <Card>

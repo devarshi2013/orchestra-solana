@@ -1,11 +1,14 @@
 import type Anthropic from "@anthropic-ai/sdk";
 
-import type { ToolCallView, TranscriptTurn } from "@/lib/assistant/views";
+import type { SymphonyProposal, ToolCallView, TranscriptTurn } from "@/lib/assistant/views";
 
 import { acceptedPlanSchema, type AcceptedPlan } from "./plan";
 import { redactAddresses, redactAddressesInData } from "./redact";
 
 type MessageParam = Anthropic.Beta.Messages.BetaMessageParam;
+
+/** Starts the context block an "Ask AI" panel adds before the user's message; never displayed. */
+export const CONTEXT_TAG = "<orchestra-context>";
 
 /** Longest tool result shown in a "data used" panel. */
 export const MAX_DISPLAYED_RESULT = 20_000;
@@ -25,6 +28,21 @@ function planFromResult(content: string): AcceptedPlan | null {
     if (!parsed.accepted) return null;
     const plan = acceptedPlanSchema.safeParse(parsed.plan);
     return plan.success ? plan.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The proposal carried by an accepted createSymphony result, if any. */
+function proposalFromResult(content: string): SymphonyProposal | null {
+  try {
+    const parsed = JSON.parse(content) as Partial<SymphonyProposal> & { accepted?: boolean };
+    if (!parsed.accepted || !parsed.tree) return null;
+    return {
+      tree: parsed.tree,
+      backtest: parsed.backtest ?? null,
+      backtestNote: parsed.backtestNote ?? null,
+    };
   } catch {
     return null;
   }
@@ -54,6 +72,7 @@ export function transcriptOf(messages: MessageParam[]): TranscriptTurn[] {
       }
       for (const block of message.content) {
         if (block.type === "text") {
+          if (block.text.startsWith(CONTEXT_TAG)) continue;
           current = null;
           turns.push({ role: "user", text: block.text });
         } else if (block.type === "tool_result") {
@@ -63,12 +82,16 @@ export function transcriptOf(messages: MessageParam[]): TranscriptTurn[] {
           call.result = displayToolResult(content);
           call.ok = !block.is_error;
           if (call.name === "submit_plan" && current) current.plan = planFromResult(content);
+          if (call.name === "createSymphony" && current) {
+            const proposal = proposalFromResult(content);
+            if (proposal) current.symphonies.push({ id: call.id, ...proposal });
+          }
         }
       }
       continue;
     }
     if (!current) {
-      current = { role: "assistant", text: "", tools: [], plan: null };
+      current = { role: "assistant", text: "", tools: [], plan: null, symphonies: [] };
       turns.push(current);
     }
     const blocks = typeof message.content === "string" ? [] : message.content;

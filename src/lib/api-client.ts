@@ -9,6 +9,9 @@ import {
 import type { Asset } from "@/lib/assets/registry";
 import type { ItemQuote } from "@/lib/assistant/review";
 import type { CreateExecution } from "@/lib/assistant/schemas";
+import type { RebalanceRule } from "@/lib/backtest/types";
+import type { RebalanceExplanation } from "@/lib/symphony/explain";
+import type { TickerSymphony } from "@/lib/symphony/ticker-tree";
 import type {
   ConversationSummary,
   ExecutedItem,
@@ -192,7 +195,10 @@ export const investApi = {
   update: (
     id: string,
     body: Partial<
-      Pick<InvestmentView, "status" | "rebalance" | "driftThresholdPct" | "notifyEmail">
+      Pick<
+        InvestmentView,
+        "status" | "rebalance" | "driftThresholdPct" | "notifyEmail" | "symphony"
+      >
     >,
   ) => request(`/api/investments/${id}`, json("PATCH", body), trusted<InvestmentView>()),
   portfolio: (id: string, signal?: AbortSignal) =>
@@ -206,6 +212,18 @@ export const investApi = {
       trusted<{ run: RunView | null; snapshot: SnapshotView }>(),
     ),
   run: (runId: string) => request(`/api/runs/${runId}`, {}, trusted<RunView>()),
+  explanation: (id: string) =>
+    request(
+      `/api/investments/${id}/explanation`,
+      {},
+      trusted<RebalanceExplanation & { name: string; summary: string[] }>(),
+    ),
+  aiExplanation: (id: string) =>
+    request(
+      `/api/investments/${id}/explanation`,
+      json("POST"),
+      trusted<{ text: string | null; reason: string | null }>(),
+    ),
   cancelRun: (runId: string) =>
     request(`/api/runs/${runId}`, json("PATCH", { action: "cancel" }), trusted<RunView>()),
   quotes: (runId: string) =>
@@ -313,6 +331,23 @@ export const assistantApi = {
       `/api/assistant/executions/${id}/items/${index}`,
       json("POST", { action: "execute", signedTransaction }),
       trusted<ExecutedItem>(),
+    ),
+  keepBalanced: (
+    id: string,
+    body: { name: string; rebalance: RebalanceRule; driftThresholdPct: number },
+  ) =>
+    request(
+      `/api/assistant/executions/${id}/keep-balanced`,
+      json("POST", body),
+      trusted<{ investmentId: string }>(),
+    ),
+  openProposal: (tree: TickerSymphony) =>
+    request("/api/assistant/symphonies", json("POST", { tree }), trusted<{ draftId: string }>()),
+  resolveProposal: (tree: TickerSymphony) =>
+    request(
+      "/api/assistant/symphonies/resolve",
+      json("POST", { tree }),
+      trusted<{ symphony: Symphony }>(),
     ),
   abandonItem: (id: string, index: number, reason: string) =>
     request(

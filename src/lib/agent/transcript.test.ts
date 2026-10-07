@@ -107,6 +107,40 @@ describe("transcriptOf", () => {
   });
 });
 
+describe("transcriptOf: symphonies and context", () => {
+  it("hides the Ask AI context block and restores symphony proposals", () => {
+    const tree = { name: "Trend", root: { type: "asset", ticker: "SOL" } };
+    const turns = transcriptOf([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "<orchestra-context>\n{...}\n</orchestra-context>" },
+          { type: "text", text: "Improve it" },
+        ],
+      },
+      {
+        role: "assistant",
+        content: [{ type: "tool_use", id: "s1", name: "createSymphony", input: {} }],
+      },
+      {
+        role: "user",
+        content: [
+          {
+            type: "tool_result",
+            tool_use_id: "s1",
+            content: JSON.stringify({ accepted: true, tree, backtest: null, backtestNote: "none" }),
+            is_error: false,
+          },
+        ],
+      },
+    ] as MessageParam[]);
+    expect(turns[0]).toEqual({ role: "user", text: "Improve it" });
+    expect(turns[1]).toMatchObject({
+      symphonies: [{ id: "s1", tree, backtest: null, backtestNote: "none" }],
+    });
+  });
+});
+
 describe("displayToolResult", () => {
   it("cuts very long results", () => {
     const shown = displayToolResult("x".repeat(MAX_DISPLAYED_RESULT + 5));

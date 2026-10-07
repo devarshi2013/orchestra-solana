@@ -62,6 +62,8 @@ vi.mock("@/server/agent/client", () => ({
       : null,
 }));
 
+import { solTrendFollower } from "@/lib/symphony/examples";
+import { getRegistry } from "@/server/assets/registry";
 import type * as AgentTools from "@/server/agent/tools";
 import { db } from "@/server/db";
 
@@ -213,5 +215,66 @@ describe("POST /api/agent", () => {
     await events(first);
     state.turns = [message([{ type: "text", text: "ok" }], "end_turn")];
     expect((await post({ message: "three" })).status).toBe(200);
+  });
+
+  it("sends an Ask AI panel's symphony as context, and refuses others' investments", async () => {
+    vi.mocked(getRegistry).mockResolvedValue({
+      builtAt: "2026-10-08T00:00:00Z",
+      stocks: [],
+      crypto: [
+        {
+          kind: "crypto",
+          ticker: "SOL",
+          symbol: "SOL",
+          mint: "So11111111111111111111111111111111111111112",
+        },
+        {
+          kind: "crypto",
+          ticker: "USDC",
+          symbol: "USDC",
+          mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        },
+      ],
+    } as never);
+    state.turns = [message([{ type: "text", text: "It holds SOL in uptrends." }], "end_turn")];
+    const first = await events(
+      await post({
+        message: "Explain this",
+        context: { kind: "editor", symphony: solTrendFollower },
+      }),
+    );
+    const sent = state.requests.at(-1)!.messages.at(-1) as { content: { text: string }[] };
+    expect(sent.content[0]!.text).toMatch(/^<orchestra-context>/);
+    expect(sent.content[0]!.text).toContain('"ticker":"SOL"');
+    expect(sent.content[0]!.text).not.toContain("So11111111111111111111111111111111111111112");
+    expect(sent.content[1]!.text).toBe("Explain this");
+
+    // The stored chat replays without the context block.
+    const id = first[0]!.id as string;
+    const transcript = (await (
+      await getConversation(new NextRequest(`http://localhost/api/assistant/conversations/${id}`), {
+        params: Promise.resolve({ id }),
+      })
+    ).json()) as { turns: { role: string; text: string }[] };
+    expect(transcript.turns[0]).toEqual({ role: "user", text: "Explain this" });
+
+    const someoneElses = await db.investment.create({
+      data: {
+        owner: "AgentTestOther",
+        name: "Not yours",
+        symphony: solTrendFollower,
+        rebalance: { kind: "weekly" },
+        driftThresholdPct: 1,
+      },
+    });
+    try {
+      const response = await post({
+        message: "peek",
+        context: { kind: "investment", investmentId: someoneElses.id },
+      });
+      expect(response.status).toBe(404);
+    } finally {
+      await db.investment.delete({ where: { id: someoneElses.id } });
+    }
   });
 });

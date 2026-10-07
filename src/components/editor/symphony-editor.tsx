@@ -4,6 +4,7 @@ import { Braces, LayoutList, Rocket } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { AskAiPanel } from "@/components/assistant/ask-ai-panel";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -189,6 +190,15 @@ export function SymphonyEditor() {
             />
           </aside>
         </div>
+
+        <AskAiPanel
+          current={symphony}
+          context={() => ({ kind: "editor", symphony: useSymphonyEditor.getState().symphony })}
+          onAccept={async (next) => loadSymphony(next)}
+          acceptLabel="Apply to draft"
+          acceptNote="Replaces the draft in the editor; you can still edit or undo it by hand."
+          description="Explain this symphony, suggest changes (shown as a diff you accept or reject) or compare backtests."
+        />
 
         <BacktestResults state={backtest.state} config={backtestConfig} />
       </div>
