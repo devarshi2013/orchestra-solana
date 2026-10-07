@@ -6,6 +6,7 @@ import {
   type ExecuteResponse,
   type OrderResponse,
 } from "@/lib/jupiter/schemas";
+import type { Asset } from "@/lib/assets/registry";
 import type { CreateInvestment } from "@/lib/invest/schemas";
 import type { IndicativeQuote, InvestmentView, RunView, SnapshotView } from "@/lib/invest/views";
 import type { MarketData } from "@/lib/symphony/market-data";
@@ -237,4 +238,27 @@ export const investApi = {
     request("/api/notifications", json("PATCH", { id }), trusted<{ ok: true }>()),
   subscribePush: (subscription: PushSubscriptionJSON) =>
     request("/api/push/subscriptions", json("POST", subscription), trusted<{ ok: true }>()),
+};
+
+// --- Asset registry ------------------------------------------------------------
+
+export type RegistryView = { builtAt: string; stocks: Asset[]; crypto: Asset[] };
+export type LiquidityCheck =
+  | { status: "ok" | "thin"; impactPct: number; router: string; testUsd: number }
+  | { status: "no_route"; message: string; testUsd: number };
+
+export const assetsApi = {
+  registry: (signal?: AbortSignal) => request("/api/assets", { signal }, trusted<RegistryView>()),
+  prices: (kind: "stock" | "crypto", signal?: AbortSignal) =>
+    request(
+      `/api/assets/prices?kind=${kind}`,
+      { signal },
+      trusted<Record<string, { usdPrice: number; priceChange24h: number | null }>>(),
+    ),
+  liquidity: (mint: string, signal?: AbortSignal) =>
+    request(
+      `/api/assets/liquidity?mint=${encodeURIComponent(mint)}`,
+      { signal },
+      trusted<LiquidityCheck>(),
+    ),
 };

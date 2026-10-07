@@ -47,6 +47,10 @@ export const serverEnvSchema = z.object({
   SESSION_SECRET: optionalSecret(
     z.string().trim().min(32, "SESSION_SECRET must be at least 32 characters"),
   ),
+  /** Financial Modeling Prep key for stock fundamentals (docs/market-tools.md). Optional. */
+  MARKET_DATA_API_KEY: optionalSecret(z.string().trim()),
+  /** CoinGecko Demo key for crypto price history; keyless access works at a lower rate limit. */
+  COINGECKO_API_KEY: optionalSecret(z.string().trim()),
   /** Public base URL for links in emails and notifications. */
   APP_URL: z
     .url()

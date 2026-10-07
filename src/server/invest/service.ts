@@ -19,6 +19,7 @@ import { symphonySchema } from "@/lib/symphony/schema";
 import type { Allocation, Symphony } from "@/lib/symphony/types";
 import { classifyExecuteResult, classifyOrderError } from "@/lib/swap/errors";
 import { USDC_MINT } from "@/lib/tokens";
+import { listedAssets } from "@/server/assets/registry";
 import { db } from "@/server/db";
 import { JupiterApiError } from "@/server/jupiter/client";
 import { getUsdPrices } from "@/server/jupiter/price";
@@ -131,6 +132,16 @@ export async function createRun(
     where: { investmentId: investment.id, status: { in: [...OPEN_RUN] } },
   });
   if (open) throw new InvestError(409, "A rebalance is already open; resume or cancel it first");
+
+  // A token delisted since investing is never traded into or out of automatically.
+  const { isListed } = await listedAssets();
+  const unlisted = universeOf(symphonyOf(investment)).filter((mint) => !isListed(mint));
+  if (unlisted.length > 0) {
+    throw new InvestError(
+      409,
+      `No longer in the asset registry: ${unlisted.join(", ")}. Update the symphony before rebalancing.`,
+    );
+  }
 
   const snap = await snapshot(investment);
   if (snap.plan.legs.length === 0) return { run: null, snapshot: snap };

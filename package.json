@@ -20,7 +20,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "assets:sync-stocks": "node scripts/sync-stock-sources.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

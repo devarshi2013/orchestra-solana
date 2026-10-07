@@ -3,7 +3,7 @@
 import { ArrowDown, ArrowUp, CircleAlert, GripVertical, Plus, Trash2 } from "lucide-react";
 import { useRef, useState, type DragEvent, type ReactNode } from "react";
 
-import { TokenSelectDialog } from "@/components/swap/token-select-dialog";
+import { AssetPickerDialog } from "@/components/assets/asset-picker-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,6 +19,7 @@ import {
   updateNode,
 } from "@/lib/symphony/edit";
 import type { FilterNode, GroupNode, SymphonyNode, Weighting } from "@/lib/symphony/types";
+import { assetToToken } from "@/lib/assets/token-info";
 import { SOL_MINT } from "@/lib/tokens";
 import { cn } from "@/lib/utils";
 
@@ -416,11 +417,11 @@ function AddNodeMenu({ parentPath, index }: { parentPath: string; index: number 
   const add = (node: SymphonyNode) => edit((root) => insertNode(root, parentPath, index, node));
   return (
     <div className="flex flex-wrap gap-1">
-      <TokenSelectDialog
+      <AssetPickerDialog
         label="Add asset"
-        onSelect={(token) => {
-          rememberToken(token);
-          add({ type: "asset", mint: token.mint });
+        onSelect={(asset) => {
+          rememberToken(assetToToken(asset));
+          add({ type: "asset", mint: asset.mint });
         }}
         trigger={
           <Button variant="ghost" size="xs">

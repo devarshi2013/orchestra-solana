@@ -7,7 +7,7 @@ export type ValidationIssue = {
 };
 
 export type ValidateOptions = {
-  /** Whether a mint is a token we know (e.g. present in Jupiter's token list). */
+  /** Whether a mint is listed in Orchestra's asset registry (the only source of mints). */
   isKnownMint: (mint: string) => boolean;
 };
 
@@ -24,7 +24,7 @@ export function validateSymphony(symphony: Symphony, options: ValidateOptions): 
   const issues: ValidationIssue[] = [];
   const report = (path: string, message: string) => issues.push({ path, message });
   const checkMint = (path: string, mint: string) => {
-    if (!options.isKnownMint(mint)) report(path, `Unknown token mint ${mint}`);
+    if (!options.isKnownMint(mint)) report(path, `Not in Orchestra's asset registry: ${mint}`);
   };
   const checkIndicator = (path: string, { mint }: AssetIndicator) =>
     checkMint(`${path}.mint`, mint);

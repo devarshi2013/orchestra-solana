@@ -13,6 +13,9 @@ export function SiteHeader() {
           <Link href="/create" className="text-sm text-muted-foreground hover:text-foreground">
             Create
           </Link>
+          <Link href="/assets" className="text-sm text-muted-foreground hover:text-foreground">
+            Assets
+          </Link>
           <Link href="/invest" className="text-sm text-muted-foreground hover:text-foreground">
             Invest
           </Link>

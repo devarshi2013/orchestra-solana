@@ -42,6 +42,18 @@ export const orderResponseSchema = z.object({
   feeMint: z.string().nullish(),
   routePlan: z.array(routePlanStepSchema).nullish(),
   gasless: z.boolean().nullish(),
+  /** Network costs the taker pays (lamports); absent without a taker. */
+  signatureFeeLamports: z.number().nullish(),
+  prioritizationFeeLamports: z.number().nullish(),
+  rentFeeLamports: z.number().nullish(),
+  /** Jupiter's platform fee, charged in feeMint. */
+  platformFee: z
+    .object({
+      amount: stringish.nullish(),
+      feeBps: z.number().nullish(),
+      feeMint: z.string().nullish(),
+    })
+    .nullish(),
   lastValidBlockHeight: stringish.nullish(),
   /** RFQ (JupiterZ) quote expiry. */
   expireAt: stringish.nullish(),

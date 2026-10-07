@@ -42,6 +42,17 @@ const fake = vi.hoisted(() => ({
 }));
 
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
+vi.mock("@/server/assets/registry", () => ({
+  listedAssets: async () => ({
+    // vi.mock is hoisted above the constants below, so the mints are inlined.
+    isListed: (mint: string) =>
+      [
+        "So11111111111111111111111111111111111111112",
+        "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+        "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      ].includes(mint),
+  }),
+}));
 vi.mock("@/lib/market/store", () => ({
   loadDailyMarketData: async () => ({ dates: ["2026-10-06"], closes: {} }),
   trackMints: async () => {},
@@ -260,6 +271,14 @@ describe("rebalance execution", () => {
     ).rejects.toThrow("The signed transaction isn't the quoted order");
     expect((await getOwnedRun(run!.id, OWNER)).legs[0]!.status).toBe("quoted");
     expect(prepared.status).toBe("quoted");
+  });
+
+  it("refuses to rebalance a symphony holding a token no longer in the registry", async () => {
+    const delisted = "Ds1isted1111111111111111111111111111111111";
+    const investment = await newInvestment({
+      symphony: { ...sixtyForty, root: { type: "asset", mint: delisted } },
+    });
+    await expect(createRun(investment)).rejects.toThrow("No longer in the asset registry");
   });
 
   it("runs legs strictly in order and only for the owner", async () => {

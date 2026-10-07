@@ -3,6 +3,7 @@ import { createInvestmentSchema } from "@/lib/invest/schemas";
 import { nextDueAt } from "@/lib/invest/schedule";
 import { trackMints } from "@/lib/market/store";
 import { validateSymphony } from "@/lib/symphony/validate";
+import { listedAssets } from "@/server/assets/registry";
 import { db } from "@/server/db";
 import { handle, readJson, requireWallet } from "@/server/invest/route";
 import { InvestError, universeOf } from "@/server/invest/service";
@@ -24,7 +25,9 @@ export async function POST(request: Request) {
   return handle(async () => {
     const owner = await requireWallet();
     const body = await readJson(request, createInvestmentSchema);
-    const issues = validateSymphony(body.symphony, { isKnownMint: () => true });
+    // The registry is the only source of mints: anything else is refused.
+    const { isListed } = await listedAssets();
+    const issues = validateSymphony(body.symphony, { isKnownMint: isListed });
     if (issues.length > 0) {
       throw new InvestError(
         400,

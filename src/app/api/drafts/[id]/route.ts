@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { trackMints } from "@/lib/market/store";
+import { listedAssets } from "@/server/assets/registry";
 import { collectMints } from "@/lib/symphony/mints";
 import { symphonySchema } from "@/lib/symphony/schema";
 import { db } from "@/server/db";
@@ -57,7 +58,9 @@ export async function PUT(request: NextRequest, ctx: RouteContext<"/api/drafts/[
       create: { id: id.data, name: symphony.name, symphony },
       update: { name: symphony.name, symphony },
     });
-    await trackMints([...collectMints(symphony.root)]);
+    // Drafts may hold unlisted mints while being edited; only listed ones get price history.
+    const { isListed } = await listedAssets().catch(() => ({ isListed: () => false }));
+    await trackMints([...collectMints(symphony.root)].filter(isListed));
     return Response.json({ id: draft.id, updatedAt: draft.updatedAt.toISOString() });
   } catch (error) {
     console.error("[drafts] save failed", error);

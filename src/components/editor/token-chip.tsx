@@ -2,21 +2,23 @@
 
 import { ShieldAlert, TriangleAlert } from "lucide-react";
 
+import { AssetPickerDialog } from "@/components/assets/asset-picker-dialog";
 import { TokenAvatar } from "@/components/swap/token-avatar";
-import { TokenSelectDialog } from "@/components/swap/token-select-dialog";
 import { Button } from "@/components/ui/button";
+import { assetToToken } from "@/lib/assets/token-info";
+import type { Asset } from "@/lib/assets/registry";
 import { isLowLiquidity, type TokenInfo } from "@/lib/tokens";
 
 import { useEditor, useSymbolOf } from "./editor-context";
 
-/** A token button: shows logo and symbol, opens the token picker to change it. */
+/** A token button: shows logo and symbol, opens the registry picker to change it. */
 export function TokenChip({
   mint,
   onChange,
   label,
 }: {
   mint: string;
-  onChange: (token: TokenInfo) => void;
+  onChange: (asset: Asset) => void;
   label: string;
 }) {
   const { tokenOf, rememberToken } = useEditor();
@@ -24,11 +26,11 @@ export function TokenChip({
   const token = tokenOf(mint);
   return (
     <span className="inline-flex items-center gap-1">
-      <TokenSelectDialog
+      <AssetPickerDialog
         label={label}
-        onSelect={(next) => {
-          rememberToken(next);
-          onChange(next);
+        onSelect={(asset) => {
+          rememberToken(assetToToken(asset));
+          onChange(asset);
         }}
         trigger={
           <Button

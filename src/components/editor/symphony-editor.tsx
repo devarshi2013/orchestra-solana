@@ -2,7 +2,7 @@
 
 import { Braces, LayoutList, Rocket } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,13 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBacktest } from "@/hooks/use-backtest";
 import { useDraftAutosave } from "@/hooks/use-draft-autosave";
-import { useResolveTokens } from "@/hooks/use-resolve-tokens";
+import { useAssetRegistry } from "@/hooks/use-asset-registry";
+import { assetToToken } from "@/lib/assets/token-info";
 import type { BacktestConfig } from "@/lib/backtest/types";
 import { emptyGroup } from "@/lib/symphony/edit";
 import { barsNeeded } from "@/lib/symphony/evaluate";
 import { EXAMPLE_SYMPHONIES } from "@/lib/symphony/examples";
 import type { MarketData } from "@/lib/symphony/market-data";
-import { collectMints } from "@/lib/symphony/mints";
 import type { Symphony } from "@/lib/symphony/types";
 import { validateSymphony, type ValidationIssue } from "@/lib/symphony/validate";
 import { useSymphonyEditor, type SaveStatus } from "@/stores/symphony-editor";
@@ -60,13 +60,17 @@ export function SymphonyEditor() {
   const backtest = useBacktest();
   const [backtestConfig, setBacktestConfig] = useState<BacktestConfig | null>(null);
 
-  const mints = useMemo(() => [...collectMints(symphony.root)], [symphony.root]);
-  useResolveTokens(mints);
+  // The registry is the only source of mints: show its names, and flag anything else.
+  const { registry, isListed } = useAssetRegistry();
+  useEffect(() => {
+    if (registry) rememberTokens([...registry.stocks, ...registry.crypto].map(assetToToken));
+  }, [registry, rememberTokens]);
 
   const issues = useMemo<ValidationIssue[]>(() => {
-    const found = validateSymphony(symphony, { isKnownMint: (mint) => mint in tokens });
+    // Until the registry loads, don't flag every mint as unknown.
+    const found = validateSymphony(symphony, { isKnownMint: isListed ?? (() => true) });
     return symphony.name.trim() ? found : [{ path: "name", message: "Give it a name" }, ...found];
-  }, [symphony, tokens]);
+  }, [symphony, isListed]);
 
   const context = useMemo<EditorContextValue>(
     () => ({

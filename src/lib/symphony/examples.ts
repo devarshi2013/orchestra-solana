@@ -1,12 +1,15 @@
-import { SOL_MINT, USDC_MINT } from "@/lib/tokens";
+import { CRYPTO_ALLOWLIST, SOL_MINT, USDC_MINT } from "@/lib/assets/allowlist";
 
 import type { Symphony } from "./types";
 
-export const JUP_MINT = "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN";
-export const BONK_MINT = "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263";
-export const JTO_MINT = "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL";
-export const PYTH_MINT = "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3";
-export const RAY_MINT = "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R";
+// Mints come only from the asset registry's curated allowlist.
+const mintOf = (ticker: (typeof CRYPTO_ALLOWLIST)[number]["ticker"]): string =>
+  CRYPTO_ALLOWLIST.find((asset) => asset.ticker === ticker)!.mint;
+export const JUP_MINT = mintOf("JUP");
+export const BONK_MINT = mintOf("BONK");
+export const JTO_MINT = mintOf("JTO");
+export const PYTH_MINT = mintOf("PYTH");
+export const RAY_MINT = mintOf("RAY");
 
 /** Hold SOL while it trades above its 50-day average, otherwise sit in USDC. */
 export const solTrendFollower: Symphony = {
