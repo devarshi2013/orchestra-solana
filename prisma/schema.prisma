@@ -209,14 +209,79 @@ model PushSubscription {
 /// model's history, including every tool result, can't be altered by the
 /// browser; append-only, as Claude's thinking blocks require.
 model AgentConversation {
-  id        String   @id @default(uuid()) @db.Uuid
+  id         String          @id @default(uuid()) @db.Uuid
   /// Signed-in wallet that owns it.
-  owner     String
+  owner      String
   /// Anthropic beta MessageParam[] exactly as sent to and received from the API.
-  messages  Json
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  messages   Json
+  /// The first question, shortened, for the history list.
+  title      String?
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
+  executions PlanExecution[]
 
   @@index([owner, updatedAt])
   @@map("agent_conversations")
+}
+
+/// The assistant's one-time risk disclosure, accepted per wallet. Bumping
+/// ASSISTANT_DISCLOSURE_VERSION asks everyone again.
+model AssistantDisclosure {
+  owner      String   @id
+  version    Int
+  acceptedAt DateTime @default(now()) @map("accepted_at")
+
+  @@map("assistant_disclosures")
+}
+
+/// An assistant plan the user approved and bought, item by item from their
+/// own wallet. Mints come from the asset registry, never from the model.
+model PlanExecution {
+  id             String              @id @default(uuid()) @db.Uuid
+  owner          String
+  conversationId String?             @map("conversation_id") @db.Uuid
+  conversation   AgentConversation?  @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  rankingMethod  String              @map("ranking_method")
+  totalUsdc      Float               @map("total_usdc")
+  status         RunStatus           @default(planned)
+  items          PlanExecutionItem[]
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+  completedAt    DateTime?           @map("completed_at")
+
+  @@index([owner, createdAt])
+  @@map("plan_executions")
+}
+
+/// One USDC → asset buy within a plan execution.
+model PlanExecutionItem {
+  id               String        @id @default(uuid()) @db.Uuid
+  executionId      String        @map("execution_id") @db.Uuid
+  execution        PlanExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  index            Int
+  kind             String
+  symbol           String
+  name             String
+  mint             String
+  decimals         Int
+  usdcAmount       Float         @map("usdc_amount")
+  status           LegStatus     @default(pending)
+  requestId        String?       @map("request_id")
+  /// The unsigned order transaction (base64), to check the wallet signed exactly it.
+  orderTransaction String?       @map("order_transaction")
+  /// Quote shown when signing: outAmount, priceImpact, feeBps, router.
+  quote            Json?
+  signature        String?
+  /// USDC spent and tokens received, base units.
+  inputAmount      String?       @map("input_amount")
+  outputAmount     String?       @map("output_amount")
+  error            String?
+  /// Sent, but we couldn't learn whether it landed: retrying could buy twice.
+  outcomeUnknown   Boolean       @default(false) @map("outcome_unknown")
+  executedAt       DateTime?     @map("executed_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  @@unique([executionId, index])
+  @@map("plan_execution_items")
 }

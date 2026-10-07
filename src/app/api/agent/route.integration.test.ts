@@ -17,6 +17,8 @@ const state = vi.hoisted(() => ({
   /** Scripted model turns; each is the final message of one stream. */
   turns: [] as object[],
   requests: [] as { messages: unknown[] }[],
+  /** Streams wait on this before replying (to hold a response open). */
+  hold: Promise.resolve() as Promise<void>,
 }));
 
 vi.mock("@/server/auth/session", () => ({ sessionWallet: async () => state.wallet }));
@@ -39,6 +41,7 @@ vi.mock("@/server/agent/client", () => ({
                 const turn = state.turns.shift() as { content: { type: string; text?: string }[] };
                 return {
                   async *[Symbol.asyncIterator]() {
+                    await state.hold;
                     for (const [index, block] of turn.content.entries()) {
                       if (block.type === "text") {
                         yield {
@@ -62,6 +65,8 @@ vi.mock("@/server/agent/client", () => ({
 import type * as AgentTools from "@/server/agent/tools";
 import { db } from "@/server/db";
 
+import { GET as getConversation } from "../assistant/conversations/[id]/route";
+import { GET as listConversations } from "../assistant/conversations/route";
 import { POST } from "./route";
 
 const message = (content: object[], stop_reason: string) => ({
@@ -96,15 +101,21 @@ async function events(response: Response) {
     );
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   state.wallet = "AgentTest1111111111111111111111111111111111";
   state.hasKey = true;
   state.turns = [];
   state.requests = [];
+  await db.assistantDisclosure.upsert({
+    where: { owner: state.wallet },
+    create: { owner: state.wallet, version: 1 },
+    update: { version: 1 },
+  });
 });
 
 afterAll(async () => {
   await db.agentConversation.deleteMany({ where: { owner: { startsWith: "AgentTest" } } });
+  await db.assistantDisclosure.deleteMany({ where: { owner: { startsWith: "AgentTest" } } });
   await db.$disconnect();
 });
 
@@ -125,9 +136,17 @@ describe("POST /api/agent", () => {
     const reply = first.filter((e) => e.type === "text").map((e) => e.delta);
     expect(reply.join("")).toBe("You hold 120 USDC.");
 
+    const result = first.find((e) => e.type === "tool_result")!;
+    expect(result).toMatchObject({
+      id: "t1",
+      ok: true,
+      content: expect.stringContaining('"usdc":120'),
+    });
+
     const id = first[0]!.id as string;
     const stored = await db.agentConversation.findUniqueOrThrow({ where: { id } });
     expect(stored.owner).toBe(state.wallet);
+    expect(stored.title).toBe("What's my balance?");
     expect(stored.messages).toHaveLength(4); // user, tool_use, tool_result, answer
 
     state.turns = [message([{ type: "text", text: "Still 120." }], "end_turn")];
@@ -137,6 +156,28 @@ describe("POST /api/agent", () => {
     expect((await db.agentConversation.findUniqueOrThrow({ where: { id } })).messages).toHaveLength(
       6,
     );
+
+    // History lists it, and reopening replays it with the data used.
+    const list = (await (await listConversations()).json()) as { id: string; title: string }[];
+    expect(list.find((c) => c.id === id)?.title).toBe("What's my balance?");
+    const transcript = (await (
+      await getConversation(new NextRequest(`http://localhost/api/assistant/conversations/${id}`), {
+        params: Promise.resolve({ id }),
+      })
+    ).json()) as {
+      turns: { role: string; text: string; tools?: { name: string; result: string }[] }[];
+    };
+    expect(transcript.turns.map((t) => t.role)).toEqual(["user", "assistant", "user", "assistant"]);
+    expect(transcript.turns[1]).toMatchObject({
+      text: "You hold 120 USDC.",
+      tools: [{ name: "getWalletBalances", result: expect.stringContaining("120") }],
+    });
+  });
+
+  it("requires the one-time risk disclosure", async () => {
+    await db.assistantDisclosure.delete({ where: { owner: state.wallet! } });
+    const response = await post({ message: "hi" });
+    expect(response.status).toBe(403);
   });
 
   it("refuses other wallets' conversations, signed-out users, and a missing key", async () => {
@@ -144,7 +185,13 @@ describe("POST /api/agent", () => {
     const id = (await events(await post({ message: "hi" })))[0]!.id as string;
 
     state.wallet = "AgentTest2222222222222222222222222222222222";
+    await db.assistantDisclosure.create({ data: { owner: state.wallet, version: 1 } });
     expect((await post({ conversationId: id, message: "peek" })).status).toBe(404);
+    const peek = await getConversation(
+      new NextRequest(`http://localhost/api/assistant/conversations/${id}`),
+      { params: Promise.resolve({ id }) },
+    );
+    expect(peek.status).toBe(404);
     state.wallet = null;
     expect((await post({ message: "hi" })).status).toBe(401);
     state.wallet = "AgentTest1111111111111111111111111111111111";
@@ -156,10 +203,13 @@ describe("POST /api/agent", () => {
 
   it("allows one response at a time per wallet", async () => {
     state.turns = [message([{ type: "text", text: "slow" }], "end_turn")];
+    let finish!: () => void;
+    state.hold = new Promise((resolve) => (finish = resolve));
     const first = await post({ message: "one" });
-    const second = await post({ message: "two" }); // first stream not consumed yet
+    const second = await post({ message: "two" }); // first still answering
     expect(second.status).toBe(429);
     expect(second.headers.get("retry-after")).toBe("5");
+    finish();
     await events(first);
     state.turns = [message([{ type: "text", text: "ok" }], "end_turn")];
     expect((await post({ message: "three" })).status).toBe(200);

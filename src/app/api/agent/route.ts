@@ -4,6 +4,8 @@ import { z } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
 
 import type { Prisma } from "@/generated/prisma/client";
+import { conversationTitle } from "@/lib/agent/transcript";
+import { hasAcceptedDisclosure } from "@/server/assistant/disclosure";
 import { sessionWallet } from "@/server/auth/session";
 import { db } from "@/server/db";
 import { errorResponse, validationErrorResponse } from "@/server/http";
@@ -34,6 +36,9 @@ export async function POST(request: NextRequest) {
   const client = anthropic();
   if (!client) return errorResponse(503, "The assistant isn't configured (ANTHROPIC_API_KEY)");
 
+  if (!(await hasAcceptedDisclosure(wallet)))
+    return errorResponse(403, "Accept the assistant's risk disclosure first");
+
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return validationErrorResponse(parsed.error);
   const { conversationId, message } = parsed.data;
@@ -53,7 +58,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  conversation ??= await db.agentConversation.create({ data: { owner: wallet, messages: [] } });
+  conversation ??= await db.agentConversation.create({
+    data: { owner: wallet, messages: [], title: conversationTitle(message) },
+  });
   const id = conversation.id;
   const history = conversation.messages as unknown as Anthropic.Beta.Messages.BetaMessageParam[];
   const abort = new AbortController();

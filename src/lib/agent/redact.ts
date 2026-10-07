@@ -43,3 +43,15 @@ export function redactAddresses(text: string): string {
   const redactor = createAddressRedactor();
   return redactor.push(text) + redactor.flush();
 }
+
+const EMBEDDED_ADDRESS =
+  /(?<![1-9A-HJ-NP-Za-km-z])[1-9A-HJ-NP-Za-km-z]{32,44}(?![1-9A-HJ-NP-Za-km-z])/g;
+
+/**
+ * Redaction for structured data such as JSON tool results, where an address
+ * can sit inside quotes or brackets rather than between spaces: any run of
+ * 32–44 base58 characters is replaced.
+ */
+export function redactAddressesInData(text: string): string {
+  return text.replace(EMBEDDED_ADDRESS, REDACTED);
+}

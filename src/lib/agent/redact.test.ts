@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createAddressRedactor, REDACTED, redactAddresses } from "./redact";
+import { createAddressRedactor, REDACTED, redactAddresses, redactAddressesInData } from "./redact";
 
 const MINT = "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp";
 
@@ -30,5 +30,16 @@ describe("address redaction", () => {
     expect(redactor.push("Hello wor")).toBe("Hello ");
     expect(redactor.push("ld")).toBe("");
     expect(redactor.flush()).toBe("world");
+  });
+});
+
+describe("redactAddressesInData", () => {
+  it("redacts addresses inside JSON, leaving other values alone", () => {
+    expect(
+      redactAddressesInData('{"mint":"XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp","usd":1.5}'),
+    ).toBe('{"mint":"[address removed]","usd":1.5}');
+    expect(redactAddressesInData('{"ticker":"NVDAx","note":"2026-10-08T00:00:00Z"}')).toBe(
+      '{"ticker":"NVDAx","note":"2026-10-08T00:00:00Z"}',
+    );
   });
 });

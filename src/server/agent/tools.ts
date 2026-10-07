@@ -197,7 +197,11 @@ async function dispatch(name: string, input: unknown, wallet: string): Promise<T
         usdcBalance: balances.data?.usdc ?? null,
       });
       return result.ok
-        ? { content: json({ accepted: true }), isError: false, plan: result.plan }
+        ? {
+            content: json({ accepted: true, plan: result.plan }),
+            isError: false,
+            plan: result.plan,
+          }
         : { content: json({ accepted: false, errors: result.errors }), isError: true };
     }
     default:

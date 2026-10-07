@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { AssistantChat } from "@/components/assistant/assistant-chat";
+import { DisclosureGate } from "@/components/assistant/disclosure-gate";
 import { SignInGate } from "@/components/invest/sign-in-gate";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = { title: "Assistant · Orchestra" };
 
@@ -11,12 +14,16 @@ export default function AssistantPage() {
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Research assistant</h1>
         <p className="text-sm text-muted-foreground">
-          Ask about Orchestra&apos;s stocks and crypto, and get a plan for your USDC, built from
-          live data.
+          Ask about Orchestra&apos;s stocks and crypto, get a plan for your USDC built from live
+          data, and buy it from your own wallet.
         </p>
       </div>
       <SignInGate>
-        <AssistantChat />
+        <DisclosureGate>
+          <Suspense fallback={<Skeleton className="h-40 w-full" />}>
+            <AssistantChat />
+          </Suspense>
+        </DisclosureGate>
       </SignInGate>
     </main>
   );

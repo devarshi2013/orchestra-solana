@@ -3,22 +3,19 @@ import { z } from "zod";
 import type { Asset } from "@/lib/assets/registry";
 import { MIN_LEG_USD } from "@/lib/invest/plan";
 
+const planItemSchema = z
+  .object({
+    kind: z.enum(["stock", "crypto"]),
+    ticker: z.string().trim().min(1).max(20),
+    usdcAmount: z.number().finite().positive(),
+    reason: z.string().trim().min(1).max(500),
+  })
+  .strict();
+
 /** The assistant's final plan: what to buy with USDC, and why. Never executed by the assistant. */
 export const planSchema = z
   .object({
-    items: z
-      .array(
-        z
-          .object({
-            kind: z.enum(["stock", "crypto"]),
-            ticker: z.string().trim().min(1).max(20),
-            usdcAmount: z.number().finite().positive(),
-            reason: z.string().trim().min(1).max(500),
-          })
-          .strict(),
-      )
-      .min(1)
-      .max(20),
+    items: z.array(planItemSchema).min(1).max(20),
     totalUsdc: z.number().finite().positive(),
     rankingMethod: z.string().trim().min(3).max(300),
   })
@@ -26,9 +23,13 @@ export const planSchema = z
 export type Plan = z.infer<typeof planSchema>;
 
 /** A validated plan, with each item tied to its registry token (symbol, never a mint). */
-export type AcceptedPlan = Omit<Plan, "items"> & {
-  items: (Plan["items"][number] & { symbol: string; name: string })[];
-};
+export const acceptedPlanSchema = planSchema.extend({
+  items: z
+    .array(planItemSchema.extend({ symbol: z.string(), name: z.string() }))
+    .min(1)
+    .max(20),
+});
+export type AcceptedPlan = z.infer<typeof acceptedPlanSchema>;
 
 const CENT = 0.01;
 

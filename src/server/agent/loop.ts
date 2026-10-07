@@ -5,6 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { AcceptedPlan } from "@/lib/agent/plan";
 import { SYSTEM_PROMPT } from "@/lib/agent/prompt";
 import { createAddressRedactor } from "@/lib/agent/redact";
+import { displayToolResult } from "@/lib/agent/transcript";
 
 import { AGENT_TOOLS, type ToolOutcome } from "./tools";
 
@@ -24,8 +25,9 @@ const MAX_JSON_RETRIES = 2;
 export type AgentEvent =
   | { type: "text"; delta: string }
   | { type: "progress"; text: string }
-  | { type: "tool"; name: string; input: unknown }
-  | { type: "tool_result"; name: string; ok: boolean }
+  | { type: "tool"; id: string; name: string; input: unknown }
+  /** `content`: the result as the model saw it, for the "data used" panel (redacted, capped). */
+  | { type: "tool_result"; id: string; name: string; ok: boolean; content: string }
   | { type: "plan"; plan: AcceptedPlan }
   | { type: "error"; message: string };
 
@@ -84,6 +86,8 @@ function describeError(error: unknown): string {
     return "The assistant is busy right now. Try again in a minute.";
   if (error instanceof Anthropic.AuthenticationError)
     return "The assistant isn't configured correctly (API key rejected).";
+  if (error instanceof Anthropic.BadRequestError && /credit balance/i.test(error.message))
+    return "The assistant is unavailable: its Anthropic account is out of credits.";
   if (error instanceof Anthropic.APIError) return "The assistant couldn't respond. Try again.";
   return "Something went wrong while answering. Try again.";
 }
@@ -180,7 +184,7 @@ export async function runAgentTurn(opts: {
       // Run the turn's calls together; all results go back in one user message.
       const results = await Promise.all(
         toolUses.map(async (toolUse): Promise<ToolResult> => {
-          emit({ type: "tool", name: toolUse.name, input: toolUse.input });
+          emit({ type: "tool", id: toolUse.id, name: toolUse.name, input: toolUse.input });
           let outcome = await runTool(toolUse.name, toolUse.input);
           if (toolUse.name === "submit_plan") {
             planAttempts++;
@@ -198,7 +202,13 @@ export async function runAgentTurn(opts: {
               };
             }
           }
-          emit({ type: "tool_result", name: toolUse.name, ok: !outcome.isError });
+          emit({
+            type: "tool_result",
+            id: toolUse.id,
+            name: toolUse.name,
+            ok: !outcome.isError,
+            content: displayToolResult(outcome.content),
+          });
           return {
             type: "tool_result",
             tool_use_id: toolUse.id,

@@ -7,6 +7,15 @@ import {
   type OrderResponse,
 } from "@/lib/jupiter/schemas";
 import type { Asset } from "@/lib/assets/registry";
+import type { ItemQuote } from "@/lib/assistant/review";
+import type { CreateExecution } from "@/lib/assistant/schemas";
+import type {
+  ConversationSummary,
+  ExecutedItem,
+  ExecutionView,
+  PreparedItem,
+  TranscriptTurn,
+} from "@/lib/assistant/views";
 import type { CreateInvestment } from "@/lib/invest/schemas";
 import type { IndicativeQuote, InvestmentView, RunView, SnapshotView } from "@/lib/invest/views";
 import type { MarketData } from "@/lib/symphony/market-data";
@@ -260,5 +269,55 @@ export const assetsApi = {
       `/api/assets/liquidity?mint=${encodeURIComponent(mint)}`,
       { signal },
       trusted<LiquidityCheck>(),
+    ),
+};
+
+export const assistantApi = {
+  disclosure: () =>
+    request("/api/assistant/disclosure", {}, trusted<{ accepted: boolean; version: number }>()),
+  acceptDisclosure: () =>
+    request(
+      "/api/assistant/disclosure",
+      json("POST"),
+      trusted<{ accepted: boolean; version: number }>(),
+    ),
+  balances: (signal?: AbortSignal) =>
+    request(
+      "/api/assistant/balances",
+      { signal },
+      trusted<{ usdc: number | null; sol: number | null; reason: string | null }>(),
+    ),
+  quote: (body: { symbol: string; usdcAmount: number }, signal?: AbortSignal) =>
+    request("/api/assistant/quote", { ...json("POST", body), signal }, trusted<ItemQuote>()),
+  conversations: () =>
+    request("/api/assistant/conversations", {}, trusted<ConversationSummary[]>()),
+  conversation: (id: string) =>
+    request(
+      `/api/assistant/conversations/${id}`,
+      {},
+      trusted<{ id: string; turns: TranscriptTurn[]; executions: number }>(),
+    ),
+  executions: () => request("/api/assistant/executions", {}, trusted<ExecutionView[]>()),
+  execution: (id: string) =>
+    request(`/api/assistant/executions/${id}`, {}, trusted<ExecutionView>()),
+  createExecution: (body: CreateExecution) =>
+    request("/api/assistant/executions", json("POST", body), trusted<ExecutionView>()),
+  prepareItem: (id: string, index: number) =>
+    request(
+      `/api/assistant/executions/${id}/items/${index}`,
+      json("POST", { action: "prepare" }),
+      trusted<PreparedItem>(),
+    ),
+  executeItem: (id: string, index: number, signedTransaction: string) =>
+    request(
+      `/api/assistant/executions/${id}/items/${index}`,
+      json("POST", { action: "execute", signedTransaction }),
+      trusted<ExecutedItem>(),
+    ),
+  abandonItem: (id: string, index: number, reason: string) =>
+    request(
+      `/api/assistant/executions/${id}/items/${index}`,
+      json("POST", { action: "abandon", reason }),
+      trusted<ExecutionView>(),
     ),
 };

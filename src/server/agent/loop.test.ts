@@ -204,6 +204,30 @@ describe("runAgentTurn", () => {
     expect(events.filter((e) => e.type === "tool").map((e) => e.type === "tool" && e.name)).toEqual(
       ["getWalletBalances", "listAssets"],
     );
+    // Each result streams with its call's id, for the "data used" panel.
+    expect(events).toContainEqual({
+      type: "tool_result",
+      id: "t1",
+      name: "getWalletBalances",
+      ok: true,
+      content: '{"data":{"usdc":100},"reason":null}',
+    });
+  });
+
+  it("redacts addresses in streamed tool results", async () => {
+    const { events, result } = await run(
+      [message([toolUse("t1", "listAssets", {})], "tool_use"), message([text("ok")], "end_turn")],
+      async () => ({
+        content: '{"note":"XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp"}',
+        isError: false,
+      }),
+    );
+    const streamed = events.find((e) => e.type === "tool_result");
+    expect(streamed).toMatchObject({ content: '{"note":"[address removed]"}' });
+    // The model itself got the result unchanged.
+    expect(JSON.stringify(result.history[2])).toContain(
+      "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
+    );
   });
 
   it("sends a rejected plan back as an error to fix, then accepts the corrected one", async () => {
@@ -317,6 +341,27 @@ describe("runAgentTurn", () => {
     });
     // user, assistant tool_use, user tool_result: complete and resumable.
     expect(result.history).toHaveLength(3);
+  });
+
+  it("says so when the Anthropic account has no credits", async () => {
+    // Shaped like the API's real response.
+    const noCredits = new Anthropic.BadRequestError(
+      400,
+      {
+        type: "error",
+        error: {
+          type: "invalid_request_error",
+          message: "Your credit balance is too low to access the Anthropic API.",
+        },
+      },
+      undefined,
+      new Headers(),
+    );
+    const { events } = await run([noCredits]);
+    expect(events.at(-1)).toEqual({
+      type: "error",
+      message: "The assistant is unavailable: its Anthropic account is out of credits.",
+    });
   });
 
   it("stops a truncated tool call (max_tokens) instead of running it", async () => {

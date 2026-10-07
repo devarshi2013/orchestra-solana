@@ -1,23 +1,26 @@
 "use client";
 
-import { Loader2, Send, ShieldAlert, Sparkles, SquarePen, TriangleAlert } from "lucide-react";
-import { useRef, useState, type FormEvent } from "react";
+import { Loader2, Send, ShieldAlert, SquarePen, TriangleAlert } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AcceptedPlan } from "@/lib/agent/plan";
-import { formatUsd } from "@/lib/backtest/format";
+import { assistantApi } from "@/lib/api-client";
+import type { ToolCallView } from "@/lib/assistant/views";
 
+import { DataUsed, describeTool } from "./data-used";
 import { Markdown } from "./markdown";
+import { PlanCard } from "./plan-card";
 
 type Turn =
   | { role: "user"; text: string }
   | {
       role: "assistant";
       text: string;
-      activity: string[];
+      tools: ToolCallView[];
       progress: string;
       plan?: AcceptedPlan;
       error?: string;
@@ -29,32 +32,6 @@ const SUGGESTIONS = [
   "Which crypto had the best 1Y return with liquidity above $5M? Plan 100 USDC across the top 3.",
   "Compare NVDAx and SPYx: returns, valuation and price impact for a 50 USDC buy.",
 ];
-
-/** A short description of a tool call for the activity list (never shows raw data). */
-function describeTool(name: string, input: unknown): string {
-  const i = (input ?? {}) as {
-    tickers?: string[];
-    ticker?: string;
-    usdcAmount?: number;
-    kind?: string;
-  };
-  switch (name) {
-    case "listAssets":
-      return `Looking up ${i.kind ? `${i.kind} ` : ""}assets`;
-    case "getStockMetrics":
-      return `Stock metrics: ${(i.tickers ?? []).join(", ")}`;
-    case "getCryptoMetrics":
-      return `Crypto metrics: ${(i.tickers ?? []).join(", ")}`;
-    case "getSwapQuote":
-      return `Quoting ${i.usdcAmount ?? "?"} USDC → ${i.ticker ?? "?"}`;
-    case "getWalletBalances":
-      return "Checking your wallet balance";
-    case "submit_plan":
-      return "Validating the plan";
-    default:
-      return name;
-  }
-}
 
 /** Parses a fetch body of Server-Sent Events into { event, data } records. */
 async function* readEvents(body: ReadableStream<Uint8Array>) {
@@ -75,11 +52,55 @@ async function* readEvents(body: ReadableStream<Uint8Array>) {
   }
 }
 
+/**
+ * The assistant chat: streamed replies, a "data used" panel per answer, and
+ * the plan card. `?c=<id>` reopens a saved chat (from /history).
+ */
 export function AssistantChat() {
+  const router = useRouter();
+  const requested = useSearchParams().get("c");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const conversationId = useRef<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [boughtBefore, setBoughtBefore] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const loaded = useRef<string | null>(null);
+
+  // Reopen a saved chat; skipped for the chat this page just started.
+  useEffect(() => {
+    if (!requested || requested === loaded.current) return;
+    loaded.current = requested;
+    let cancelled = false;
+    assistantApi
+      .conversation(requested)
+      .then((saved) => {
+        if (cancelled) return;
+        setConversationId(saved.id);
+        setBoughtBefore(saved.executions > 0);
+        setLoadError(null);
+        setTurns(
+          saved.turns.map((turn): Turn =>
+            turn.role === "user"
+              ? turn
+              : {
+                  role: "assistant",
+                  text: turn.text,
+                  tools: turn.tools,
+                  progress: "",
+                  plan: turn.plan ?? undefined,
+                  done: true,
+                },
+          ),
+        );
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : String(e));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [requested]);
 
   const updateLast = (change: (turn: Extract<Turn, { role: "assistant" }>) => Partial<Turn>) =>
     setTurns((all) => {
@@ -96,13 +117,13 @@ export function AssistantChat() {
     setTurns((all) => [
       ...all,
       { role: "user", text: message },
-      { role: "assistant", text: "", activity: [], progress: "", done: false },
+      { role: "assistant", text: "", tools: [], progress: "", done: false },
     ]);
     try {
       const response = await fetch("/api/agent", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message, conversationId: conversationId.current ?? undefined }),
+        body: JSON.stringify({ message, conversationId: conversationId ?? undefined }),
       });
       if (!response.ok || !response.body) {
         const body = (await response.json().catch(() => null)) as {
@@ -116,9 +137,15 @@ export function AssistantChat() {
       }
       for await (const event of readEvents(response.body)) {
         switch (event.type) {
-          case "conversation":
-            conversationId.current = event.id as string;
+          case "conversation": {
+            const id = event.id as string;
+            setConversationId(id);
+            if (loaded.current !== id) {
+              loaded.current = id;
+              router.replace(`/assistant?c=${id}`, { scroll: false });
+            }
             break;
+          }
           case "text":
             updateLast((t) => ({ text: t.text + (event.delta as string), progress: "" }));
             break;
@@ -127,7 +154,25 @@ export function AssistantChat() {
             break;
           case "tool":
             updateLast((t) => ({
-              activity: [...t.activity, describeTool(event.name as string, event.input)],
+              tools: [
+                ...t.tools,
+                {
+                  id: event.id as string,
+                  name: event.name as string,
+                  input: event.input,
+                  result: null,
+                  ok: null,
+                },
+              ],
+            }));
+            break;
+          case "tool_result":
+            updateLast((t) => ({
+              tools: t.tools.map((call) =>
+                call.id === event.id
+                  ? { ...call, result: event.content as string, ok: event.ok as boolean }
+                  : call,
+              ),
             }));
             break;
           case "plan":
@@ -156,13 +201,17 @@ export function AssistantChat() {
       <Alert>
         <ShieldAlert />
         <AlertDescription>
-          The assistant researches and proposes; it never trades. Every figure comes from live data
-          tools, and suggestions are limited to Orchestra&apos;s verified assets. This is research,
-          not financial advice.
+          The assistant researches and proposes; it never trades on its own. Every figure comes from
+          live data tools (open &ldquo;Data used&rdquo; to check them), and suggestions are limited
+          to Orchestra&apos;s verified assets. You approve and sign every buy. This is research, not
+          financial advice.
         </AlertDescription>
       </Alert>
 
-      {turns.length === 0 && (
+      {loadError && <p className="text-sm text-destructive">{loadError}</p>}
+      {requested && turns.length === 0 && !loadError && <Skeleton className="h-40 w-full" />}
+
+      {!requested && turns.length === 0 && (
         <div className="grid gap-2 sm:grid-cols-3">
           {SUGGESTIONS.map((s) => (
             <button
@@ -187,22 +236,20 @@ export function AssistantChat() {
             </div>
           ) : (
             <div key={i} className="space-y-3 text-sm">
-              {turn.activity.length > 0 && (
-                <ul className="space-y-0.5 text-xs text-muted-foreground">
-                  {turn.activity.map((a, j) => (
-                    <li key={j} className="flex items-center gap-1.5">
-                      <Sparkles className="size-3" /> {a}
-                    </li>
-                  ))}
-                </ul>
-              )}
               {!turn.done && (
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Loader2 className="size-3 animate-spin" /> {turn.progress || "Thinking…"}
+                  <Loader2 className="size-3 animate-spin" /> {liveStatus(turn)}
                 </p>
               )}
               {turn.text && <Markdown text={turn.text} />}
-              {turn.plan && <PlanCard plan={turn.plan} />}
+              <DataUsed tools={turn.tools} />
+              {turn.plan && (
+                <PlanCard
+                  plan={turn.plan}
+                  conversationId={conversationId}
+                  boughtBefore={boughtBefore}
+                />
+              )}
               {turn.error && (
                 <p className="flex items-center gap-1.5 text-destructive">
                   <TriangleAlert className="size-4" /> {turn.error}
@@ -239,8 +286,12 @@ export function AssistantChat() {
             size="sm"
             disabled={busy}
             onClick={() => {
-              conversationId.current = null;
+              loaded.current = null;
+              setConversationId(null);
+              setBoughtBefore(false);
+              setLoadError(null);
               setTurns([]);
+              router.replace("/assistant", { scroll: false });
             }}
           >
             <SquarePen /> New
@@ -251,44 +302,9 @@ export function AssistantChat() {
   );
 }
 
-function PlanCard({ plan }: { plan: AcceptedPlan }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Proposed plan · {formatUsd(plan.totalUsdc)}</CardTitle>
-        <CardDescription>Ranking: {plan.rankingMethod}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <table className="w-full text-sm">
-          <thead className="text-left text-muted-foreground">
-            <tr>
-              <th className="py-1 font-medium">Asset</th>
-              <th className="py-1 text-right font-medium">USDC</th>
-              <th className="py-1 pl-4 font-medium">Why</th>
-            </tr>
-          </thead>
-          <tbody>
-            {plan.items.map((item) => (
-              <tr key={item.symbol} className="border-t align-top">
-                <td className="py-1.5">
-                  <span className="font-medium">{item.symbol}</span>{" "}
-                  <Badge variant="outline" className="ml-1">
-                    {item.kind}
-                  </Badge>
-                  <div className="text-xs text-muted-foreground">{item.name}</div>
-                </td>
-                <td className="py-1.5 text-right tabular-nums">{formatUsd(item.usdcAmount)}</td>
-                <td className="py-1.5 pl-4 text-muted-foreground">{item.reason}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="text-xs text-muted-foreground">
-          Checked against your wallet&apos;s USDC and the minimum order size. Nothing has been
-          traded: review and sign any trades yourself in Swap or Invest. This is research, not
-          financial advice.
-        </p>
-      </CardContent>
-    </Card>
-  );
+/** What the assistant is doing right now: its latest note, else the running tool call. */
+function liveStatus(turn: Extract<Turn, { role: "assistant" }>): string {
+  if (turn.progress) return turn.progress;
+  const running = [...turn.tools].reverse().find((t) => t.ok === null);
+  return running ? `${describeTool(running.name, running.input)}…` : "Thinking…";
 }
