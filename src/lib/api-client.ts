@@ -7,6 +7,8 @@ import {
   type OrderResponse,
 } from "@/lib/jupiter/schemas";
 import type { MarketData } from "@/lib/symphony/market-data";
+import { symphonySchema } from "@/lib/symphony/schema";
+import type { Symphony } from "@/lib/symphony/types";
 import type { ExecuteBody, OrderQuery } from "@/lib/swap/requests";
 import { tokenInfoSchema, type TokenInfo } from "@/lib/tokens";
 
@@ -90,4 +92,34 @@ export function fetchMarketData(
 ): Promise<MarketData> {
   const params = new URLSearchParams({ mints: mints.join(",") });
   return request(`/api/market-data?${params}`, { signal }, marketDataSchema);
+}
+
+export type SavedDraft = { id: string; updatedAt: string };
+
+const savedDraftSchema: z.ZodType<SavedDraft> = z.object({ id: z.string(), updatedAt: z.string() });
+const draftSchema = z.object({ id: z.string(), symphony: symphonySchema, updatedAt: z.string() });
+
+/** A draft saved from /create, by its id. */
+export function fetchDraft(
+  id: string,
+  signal?: AbortSignal,
+): Promise<{ id: string; symphony: Symphony; updatedAt: string }> {
+  return request(`/api/drafts/${encodeURIComponent(id)}`, { signal }, draftSchema);
+}
+
+export function saveDraft(
+  id: string,
+  symphony: Symphony,
+  signal?: AbortSignal,
+): Promise<SavedDraft> {
+  return request(
+    `/api/drafts/${encodeURIComponent(id)}`,
+    {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ symphony }),
+      signal,
+    },
+    savedDraftSchema,
+  );
 }

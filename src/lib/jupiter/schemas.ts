@@ -75,6 +75,8 @@ export const mintInformationSchema = z.object({
   isVerified: z.boolean().nullish(),
   tags: z.array(z.string()).nullish(),
   organicScore: z.number().nullish(),
+  /** USD liquidity across the token's pools. */
+  liquidity: z.number().nullish(),
   audit: z.object({ isSus: z.boolean().nullish() }).nullish(),
 });
 

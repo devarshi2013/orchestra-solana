@@ -11,6 +11,8 @@ export const tokenInfoSchema = z.object({
   isVerified: z.boolean(),
   /** Flagged by Jupiter's audit (`audit.isSus`). */
   isSus: z.boolean(),
+  /** USD liquidity, when known. */
+  liquidity: z.number().nullable(),
 });
 
 export type TokenInfo = z.infer<typeof tokenInfoSchema>;
@@ -24,6 +26,7 @@ export function toTokenInfo(mint: MintInformation): TokenInfo {
     icon: mint.icon ?? null,
     isVerified: mint.isVerified === true,
     isSus: mint.audit?.isSus === true,
+    liquidity: mint.liquidity ?? null,
   };
 }
 
@@ -46,4 +49,30 @@ export const DEFAULT_TOKENS: readonly TokenInfo[] = [
     name: "Jupiter",
     decimals: 6,
   },
-].map((token) => ({ ...token, icon: null, isVerified: true, isSus: false }));
+].map((token) => ({ ...token, icon: null, isVerified: true, isSus: false, liquidity: null }));
+
+/** Below this USD liquidity, trades move the price and indicators get noisy. */
+export const LOW_LIQUIDITY_USD = 50_000;
+
+export function isLowLiquidity(token: Pick<TokenInfo, "liquidity">): boolean {
+  return token.liquidity !== null && token.liquidity < LOW_LIQUIDITY_USD;
+}
+
+/**
+ * Verified tokens first, then an exact (case-insensitive) symbol match for
+ * `query`, otherwise the API's relevance order.
+ */
+export function rankTokens(tokens: readonly TokenInfo[], query = ""): TokenInfo[] {
+  const wanted = query.trim().toLowerCase();
+  const exact = (token: TokenInfo) =>
+    Number(wanted !== "" && token.symbol.toLowerCase() === wanted);
+  return tokens
+    .map((token, index) => ({ token, index }))
+    .sort(
+      (a, b) =>
+        Number(b.token.isVerified) - Number(a.token.isVerified) ||
+        exact(b.token) - exact(a.token) ||
+        a.index - b.index,
+    )
+    .map(({ token }) => token);
+}

@@ -13,9 +13,20 @@ function createPrismaClient() {
   });
 }
 
-// Reuse one client across hot reloads in development.
-const globalForPrisma = globalThis as unknown as { prisma?: ReturnType<typeof createPrismaClient> };
+// Reuse one client across hot reloads in development, but replace it after
+// `prisma generate`: the regenerated module brings a new PrismaClient class,
+// and the cached client would otherwise not know the new models and fields.
+const globalForPrisma = globalThis as unknown as {
+  prisma?: ReturnType<typeof createPrismaClient>;
+  prismaClass?: typeof PrismaClient;
+};
 
-export const db = globalForPrisma.prisma ?? createPrismaClient();
+const cached = globalForPrisma.prismaClass === PrismaClient ? globalForPrisma.prisma : undefined;
+if (!cached) void globalForPrisma.prisma?.$disconnect();
 
-if (serverEnv.NODE_ENV !== "production") globalForPrisma.prisma = db;
+export const db = cached ?? createPrismaClient();
+
+if (serverEnv.NODE_ENV !== "production") {
+  globalForPrisma.prisma = db;
+  globalForPrisma.prismaClass = PrismaClient;
+}

@@ -10,6 +10,9 @@ export function SiteHeader() {
           <Link href="/" className="font-semibold tracking-tight">
             Orchestra
           </Link>
+          <Link href="/create" className="text-sm text-muted-foreground hover:text-foreground">
+            Create
+          </Link>
           <Link href="/swap" className="text-sm text-muted-foreground hover:text-foreground">
             Swap
           </Link>

@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronDown, ShieldAlert, ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronDown, ShieldAlert, ShieldCheck, TriangleAlert } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,22 +15,29 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { searchTokens } from "@/lib/api-client";
-import { DEFAULT_TOKENS, type TokenInfo } from "@/lib/tokens";
+import { DEFAULT_TOKENS, isLowLiquidity, rankTokens, type TokenInfo } from "@/lib/tokens";
 
 import { TokenAvatar } from "./token-avatar";
 
 type Results = { query: string; tokens: TokenInfo[]; error?: string };
 
+/**
+ * Token search dialog backed by /api/tokens/search. Verified tokens are listed
+ * first; flagged, unverified and low-liquidity tokens carry a warning.
+ * Pass `trigger` to open it from your own button instead of the token chip.
+ */
 export function TokenSelectDialog({
   token,
   onSelect,
   disabled,
   label,
+  trigger,
 }: {
-  token: TokenInfo;
+  token?: TokenInfo;
   onSelect: (token: TokenInfo) => void;
   disabled?: boolean;
   label: string;
+  trigger?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -56,7 +63,7 @@ export function TokenSelectDialog({
   }, [trimmed]);
 
   const current = trimmed && results?.query === trimmed ? results : null;
-  const tokens = trimmed ? (current?.tokens ?? []) : DEFAULT_TOKENS;
+  const tokens = trimmed ? rankTokens(current?.tokens ?? [], trimmed) : DEFAULT_TOKENS;
 
   function select(next: TokenInfo) {
     onSelect(next);
@@ -67,11 +74,13 @@ export function TokenSelectDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" disabled={disabled} aria-label={label} className="h-10 gap-2">
-          <TokenAvatar token={token} className="size-5" />
-          <span className="font-medium">{token.symbol}</span>
-          <ChevronDown className="size-4 opacity-60" />
-        </Button>
+        {trigger ?? (
+          <Button variant="outline" disabled={disabled} aria-label={label} className="h-10 gap-2">
+            {token && <TokenAvatar token={token} className="size-5" />}
+            <span className="font-medium">{token?.symbol ?? "Choose token"}</span>
+            <ChevronDown className="size-4 opacity-60" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -114,6 +123,10 @@ export function TokenSelectDialog({
                 {t.isSus ? (
                   <Badge variant="destructive" className="gap-1">
                     <ShieldAlert className="size-3" /> Flagged
+                  </Badge>
+                ) : isLowLiquidity(t) ? (
+                  <Badge variant="outline" className="gap-1 text-amber-700 dark:text-amber-400">
+                    <TriangleAlert className="size-3" /> Low liquidity
                   </Badge>
                 ) : (
                   !t.isVerified && <Badge variant="outline">Unverified</Badge>
