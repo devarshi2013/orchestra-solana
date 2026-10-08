@@ -4,10 +4,19 @@
 // added (Vercel → Settings → Environment Variables) and the project redeployed.
 import { spawnSync } from "node:child_process";
 
-const exec = (command, args) =>
-  spawnSync(command, args, { stdio: "inherit", shell: false }).status ?? 1;
+// Values pasted into the dashboard from a .env file often keep their quotes.
+const unquote = (value) => {
+  const trimmed = (value ?? "").trim();
+  const quoted = /^(["'])([\s\S]*)\1$/.exec(trimmed);
+  return quoted ? quoted[2].trim() : trimmed;
+};
+const databaseUrl = unquote(process.env.DATABASE_URL);
+const env = { ...process.env, ...(databaseUrl ? { DATABASE_URL: databaseUrl } : {}) };
 
-if (process.env.DATABASE_URL?.trim()) {
+const exec = (command, args) =>
+  spawnSync(command, args, { stdio: "inherit", shell: false, env }).status ?? 1;
+
+if (databaseUrl) {
   console.log("▶ Applying database migrations (prisma migrate deploy)");
   if (exec("pnpm", ["exec", "prisma", "migrate", "deploy"]) !== 0) {
     // Don't block the deploy: the site goes live and /api/health reports the database state.

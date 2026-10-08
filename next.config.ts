@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-import { clientEnvSchema, formatEnvError, serverEnvSchema } from "./src/env/schema";
+import { cleanEnv, clientEnvSchema, formatEnvError, serverEnvSchema } from "./src/env/schema";
 
 // Check the environment on `next dev` / `next build` / `next start`. Locally a
 // misconfiguration fails fast; on Vercel it's a loud warning instead, so a
@@ -12,7 +12,7 @@ if (!process.env.SKIP_ENV_VALIDATION) {
     ["server", serverEnvSchema],
     ["client", clientEnvSchema],
   ] as const) {
-    const result = schema.safeParse(process.env);
+    const result = schema.safeParse(cleanEnv(process.env));
     if (result.success) continue;
     const message = `Invalid ${label} environment variables:\n${formatEnvError(result.error)}`;
     if (!process.env.VERCEL) throw new Error(message);

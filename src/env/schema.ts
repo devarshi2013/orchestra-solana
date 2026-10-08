@@ -14,6 +14,25 @@ const jupiterBaseUrl = z
   })
   .transform((url) => url.replace(/\/+$/, ""));
 
+/**
+ * A value as typed into a hosting dashboard: trimmed, with one matching pair
+ * of surrounding quotes removed ("…" or '…'), since values are often pasted
+ * straight from .env files where they're quoted.
+ */
+export function cleanEnvValue(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
+  const trimmed = value.trim();
+  const quoted = /^(["'])([\s\S]*)\1$/.exec(trimmed);
+  return quoted ? quoted[2]!.trim() : trimmed;
+}
+
+/** process.env with every value cleaned (see cleanEnvValue). */
+export function cleanEnv(
+  env: Record<string, string | undefined>,
+): Record<string, string | undefined> {
+  return Object.fromEntries(Object.entries(env).map(([k, v]) => [k, cleanEnvValue(v)]));
+}
+
 /** Unset or blank (e.g. `KEY=""` copied from .env.example) both read as undefined. */
 const optionalSecret = (schema: z.ZodString) =>
   z.preprocess(

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { serverEnvSchema, type ServerEnv } from "./schema";
+import { cleanEnvValue, serverEnvSchema, type ServerEnv } from "./schema";
 
 const shape = serverEnvSchema.shape;
 type Key = keyof ServerEnv;
@@ -9,7 +9,7 @@ const cache = new Map<Key, unknown>();
 /** One variable, validated with its own schema; throws naming just that variable. */
 function read(key: Key): unknown {
   if (cache.has(key)) return cache.get(key);
-  const result = shape[key].safeParse(process.env[key]);
+  const result = shape[key].safeParse(cleanEnvValue(process.env[key]));
   if (!result.success) {
     const problem = process.env[key] === undefined ? "is not set" : "is invalid";
     throw new Error(
@@ -43,7 +43,7 @@ export function envProblems(): { missing: string[]; invalid: string[] } {
       missing.push(key);
       continue;
     }
-    if (shape[key].safeParse(process.env[key]).success) continue;
+    if (shape[key].safeParse(cleanEnvValue(process.env[key])).success) continue;
     (process.env[key] === undefined || process.env[key]?.trim() === "" ? missing : invalid).push(
       key,
     );
