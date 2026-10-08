@@ -4,14 +4,20 @@
 // added (Vercel → Settings → Environment Variables) and the project redeployed.
 import { spawnSync } from "node:child_process";
 
-const run = (command, args) => {
-  const { status } = spawnSync(command, args, { stdio: "inherit", shell: false });
-  if (status !== 0) process.exit(status ?? 1);
-};
+const exec = (command, args) =>
+  spawnSync(command, args, { stdio: "inherit", shell: false }).status ?? 1;
 
 if (process.env.DATABASE_URL?.trim()) {
   console.log("▶ Applying database migrations (prisma migrate deploy)");
-  run("pnpm", ["exec", "prisma", "migrate", "deploy"]);
+  if (exec("pnpm", ["exec", "prisma", "migrate", "deploy"]) !== 0) {
+    // Don't block the deploy: the site goes live and /api/health reports the database state.
+    console.warn(
+      "\n⚠ Database migrations FAILED (see the error above). Deploying anyway.\n" +
+        "⚠ Check DATABASE_URL in Vercel → Settings → Environment Variables: a postgres:// URL,\n" +
+        "⚠ no quotes, pooled connection string with sslmode=require. Then redeploy.\n" +
+        "⚠ /api/health shows whether the database is reachable and has its tables.\n",
+    );
+  }
 } else {
   console.warn(
     "\n⚠ DATABASE_URL is not set: skipping database migrations.\n" +
@@ -20,4 +26,4 @@ if (process.env.DATABASE_URL?.trim()) {
   );
 }
 
-run("pnpm", ["exec", "next", "build"]);
+process.exit(exec("pnpm", ["exec", "next", "build"]));
