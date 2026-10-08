@@ -21,12 +21,25 @@ const globalForPrisma = globalThis as unknown as {
   prismaClass?: typeof PrismaClient;
 };
 
-const cached = globalForPrisma.prismaClass === PrismaClient ? globalForPrisma.prisma : undefined;
-if (!cached) void globalForPrisma.prisma?.$disconnect();
+let client: ReturnType<typeof createPrismaClient> | undefined;
 
-export const db = cached ?? createPrismaClient();
-
-if (serverEnv.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
-  globalForPrisma.prismaClass = PrismaClient;
+/** The client, created on first use (so importing this module needs no DATABASE_URL). */
+function getClient() {
+  if (client) return client;
+  const cached = globalForPrisma.prismaClass === PrismaClient ? globalForPrisma.prisma : undefined;
+  if (!cached) void globalForPrisma.prisma?.$disconnect();
+  client = cached ?? createPrismaClient();
+  if (serverEnv.NODE_ENV !== "production") {
+    globalForPrisma.prisma = client;
+    globalForPrisma.prismaClass = PrismaClient;
+  }
+  return client;
 }
+
+export const db = new Proxy({} as ReturnType<typeof createPrismaClient>, {
+  get(_target, key) {
+    const real = getClient();
+    const value = Reflect.get(real, key, real);
+    return typeof value === "function" ? value.bind(real) : value;
+  },
+});

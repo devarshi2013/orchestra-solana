@@ -12,7 +12,7 @@ Orchestra is a Next.js 16 app with Postgres (Prisma 7). Vercel hosts the app and
 | Claude (assistant)  | `/api/agent` and `/api/investments/[id]/explanation`, server-side only.                                                                                                                                    |
 | Price history       | `/api/cron/prices`, daily at 00:10 UTC. GeckoTerminal (keyless) by default, or Birdeye when `BIRDEYE_API_KEY` is set (server-side).                                                                        |
 | Rebalance reminders | `/api/cron/rebalances`, daily at 00:20 UTC.                                                                                                                                                                |
-| Database migrations | The `vercel-build` script runs `prisma migrate deploy` before `next build`.                                                                                                                                |
+| Database migrations | `scripts/vercel-build.mjs` runs `prisma migrate deploy` before `next build`, but only when `DATABASE_URL` is set.                                                                                          |
 
 ## Environment variables
 
@@ -35,7 +35,11 @@ Set these in Vercel → Project → Settings → Environment Variables (Producti
 | `RESEND_API_KEY`, `EMAIL_FROM`                                                | no, secret                | Rebalance emails. Without them, emails are only logged.                                                                                  |
 | `VAPID_PRIVATE_KEY` (secret), `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | no                        | Web push (`npx web-push generate-vapid-keys`).                                                                                           |
 
-The build validates these (`src/env/schema.ts`). A missing required variable fails the deploy with a message naming it.
+The build checks these (`src/env/schema.ts`):
+
+- **Locally**, a missing or invalid variable fails the build.
+- **On Vercel**, it's a warning in the build log instead, so the site still deploys. Pages load; requests that need a missing variable fail with an error naming it, until you add it and redeploy.
+- **Without `DATABASE_URL`**, migrations are skipped, so sign-in, drafts, investments, history and the assistant don't work.
 
 ## First deploy
 

@@ -30,7 +30,7 @@ export const serverEnvSchema = z.object({
   JUPITER_API_KEY: z.string().trim().min(1, "JUPITER_API_KEY is required"),
   JUPITER_API_BASE_URL: jupiterBaseUrl,
   /** Server-side Solana RPC (may embed a provider key). Never exposed to the browser. */
-  SOLANA_RPC_URL: z.url(),
+  SOLANA_RPC_URL: z.url().default("https://api.mainnet-beta.solana.com"),
   /**
    * Birdeye Data Services key (X-API-KEY) for historical OHLCV. Optional:
    * without it, /api/cron/prices uses keyless GeckoTerminal instead.
@@ -73,7 +73,7 @@ export const serverEnvSchema = z.object({
 export const clientEnvSchema = z.object({
   NEXT_PUBLIC_SOLANA_CLUSTER: z.enum(["mainnet-beta", "devnet"]).default("mainnet-beta"),
   /** Browser RPC used by the wallet adapter. Use a public or origin-restricted endpoint. */
-  NEXT_PUBLIC_SOLANA_RPC_URL: z.url(),
+  NEXT_PUBLIC_SOLANA_RPC_URL: z.url().default("https://api.mainnet-beta.solana.com"),
   /** Web push public VAPID key; push is offered only when set. */
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
