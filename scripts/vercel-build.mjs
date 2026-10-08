@@ -16,6 +16,11 @@ const env = { ...process.env, ...(databaseUrl ? { DATABASE_URL: databaseUrl } : 
 const exec = (command, args) =>
   spawnSync(command, args, { stdio: "inherit", shell: false, env }).status ?? 1;
 
+// Always generate the Prisma client: it lives in src/generated (git-ignored), and
+// when Vercel restores its build cache, `pnpm install` skips postinstall.
+console.log("▶ Generating the Prisma client (prisma generate)");
+if (exec("pnpm", ["exec", "prisma", "generate"]) !== 0) process.exit(1);
+
 if (databaseUrl) {
   console.log("▶ Applying database migrations (prisma migrate deploy)");
   if (exec("pnpm", ["exec", "prisma", "migrate", "deploy"]) !== 0) {
