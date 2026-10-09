@@ -59,9 +59,9 @@ export function ChatGlow({ className }: { className?: string }) {
         className,
       )}
     >
-      <div className="absolute top-0 left-1/4 size-96 animate-pulse rounded-full bg-violet-500/10 blur-[128px]" />
-      <div className="absolute right-1/4 bottom-0 size-96 animate-pulse rounded-full bg-indigo-500/10 blur-[128px] delay-700" />
-      <div className="absolute top-1/4 right-1/3 size-64 animate-pulse rounded-full bg-fuchsia-500/10 blur-[96px] delay-1000" />
+      <div className="absolute top-0 left-1/4 size-96 animate-pulse rounded-full bg-emerald-500/10 blur-[128px]" />
+      <div className="absolute right-1/4 bottom-0 size-96 animate-pulse rounded-full bg-teal-500/10 blur-[128px] delay-700" />
+      <div className="absolute top-1/4 right-1/3 size-64 animate-pulse rounded-full bg-cyan-500/10 blur-[96px] delay-1000" />
     </div>
   );
 }
@@ -342,7 +342,7 @@ export function AnimatedChatInput({
       {focused && !reduceMotion && (
         <motion.div
           aria-hidden
-          className="pointer-events-none fixed top-0 left-0 -z-10 size-[50rem] rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500 opacity-[0.03] blur-[96px]"
+          className="pointer-events-none fixed top-0 left-0 -z-10 size-[50rem] rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 opacity-[0.03] blur-[96px]"
           style={{ x: glowX, y: glowY }}
         />
       )}
