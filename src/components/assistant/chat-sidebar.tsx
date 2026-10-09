@@ -298,8 +298,8 @@ export function ChatSidebar({
                                   className={cn(
                                     "flex h-8 w-full items-center gap-1.5 rounded-md px-2 pr-8 text-left text-sm transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-ring",
                                     active
-                                      ? "bg-primary/12 font-medium text-foreground"
-                                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                                      ? "bg-primary/14 font-medium text-primary-text"
+                                      : "text-foreground/80 hover:bg-primary/8 hover:text-primary-text",
                                     busy && !active && "cursor-not-allowed opacity-60",
                                   )}
                                 >

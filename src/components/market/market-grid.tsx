@@ -67,8 +67,8 @@ export function MarketGrid({
               className={cn(
                 "rounded-md px-3 py-1 text-sm font-medium transition-[background-color,color,transform] active:scale-95",
                 tab === t.id
-                  ? "bg-card text-foreground shadow-soft"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "bg-primary text-primary-foreground shadow-soft"
+                  : "text-primary-text hover:bg-primary/8",
               )}
             >
               {t.label}

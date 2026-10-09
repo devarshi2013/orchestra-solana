@@ -376,7 +376,7 @@ export function StockBrowser({
                     disabled={disabled}
                     onClick={() => onAsk(`Tell me about ${c.ticker}`)}
                     title={`Ask the assistant about ${c.ticker}`}
-                    className="flex w-full items-start gap-2 rounded-md px-1.5 py-1.5 text-left transition-[background-color,transform] outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99] active:bg-muted disabled:opacity-60"
+                    className="flex w-full items-start gap-2 rounded-md px-1.5 py-1.5 text-left transition-[background-color,transform] outline-none hover:bg-primary/8 focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99] active:bg-muted disabled:opacity-60"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">

@@ -65,7 +65,7 @@ export function SiteFooter() {
                 rel="noopener noreferrer"
                 aria-label="Share Quill on X"
                 title="Share on X"
-                className="inline-flex size-9 items-center justify-center rounded-lg border text-muted-foreground transition-[color,background-color,transform] hover:bg-muted hover:text-foreground active:scale-95"
+                className="inline-flex size-9 items-center justify-center rounded-lg border border-primary/30 text-primary-text transition-[color,background-color,transform] hover:bg-primary/8 hover:text-foreground active:scale-95"
               >
                 <XIcon className="size-4" />
               </a>
@@ -75,7 +75,7 @@ export function SiteFooter() {
                 rel="noopener noreferrer"
                 aria-label="Quill on GitHub"
                 title="GitHub"
-                className="inline-flex size-9 items-center justify-center rounded-lg border text-muted-foreground transition-[color,background-color,transform] hover:bg-muted hover:text-foreground active:scale-95"
+                className="inline-flex size-9 items-center justify-center rounded-lg border border-primary/30 text-primary-text transition-[color,background-color,transform] hover:bg-primary/8 hover:text-foreground active:scale-95"
               >
                 <GitHubIcon className="size-4" />
               </a>

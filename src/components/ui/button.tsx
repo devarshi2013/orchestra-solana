@@ -9,15 +9,17 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        /** The primary action: solid signal orange with ink text, used once or twice per view. */
+        /** The primary action: solid burgundy with cream text. */
         default:
-          "bg-primary font-semibold text-primary-foreground hover:bg-[color-mix(in_oklch,var(--primary),white_10%)]",
+          "bg-primary font-semibold text-primary-foreground shadow-soft hover:bg-primary-hover",
+        /** Burgundy outline and text on the surface. */
         outline:
-          "border-border bg-surface text-foreground shadow-xs hover:border-foreground/20 hover:bg-surface-raised aria-expanded:bg-surface-raised",
+          "border-primary/40 bg-surface text-primary-text shadow-xs hover:border-primary/70 hover:bg-primary/8 aria-expanded:bg-primary/8",
+        /** A soft burgundy tint. */
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_6%)] aria-expanded:bg-secondary",
-        ghost:
-          "text-muted-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
+          "bg-primary/10 text-primary-text hover:bg-primary/16 aria-expanded:bg-primary/16",
+        /** Burgundy text, tinted on hover. */
+        ghost: "text-primary-text hover:bg-primary/8 aria-expanded:bg-primary/10",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:ring-destructive/60 dark:bg-destructive/20 dark:hover:bg-destructive/30",
         link: "h-auto! px-0! text-primary-text underline-offset-4 hover:underline",

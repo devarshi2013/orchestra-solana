@@ -306,8 +306,8 @@ export function AnimatedChatInput({
             className={cn(
               "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
               value.trim() && !busy
-                ? "bg-primary text-primary-foreground hover:brightness-105"
-                : "bg-muted text-muted-foreground",
+                ? "bg-primary text-primary-foreground shadow-soft hover:bg-primary-hover"
+                : "bg-primary/45 text-primary-foreground",
             )}
           >
             {busy ? (
@@ -327,7 +327,7 @@ export function AnimatedChatInput({
               key={command.prefix}
               type="button"
               onClick={() => pick(index)}
-              className="flex items-center gap-2 rounded-lg border border-border bg-card/40 px-3 py-2 text-sm text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-[0.97]"
+              className="flex items-center gap-2 rounded-lg border border-primary/35 bg-card px-3 py-2 text-sm text-primary-text transition-all hover:border-primary/70 hover:bg-primary/8 active:scale-[0.97]"
               initial={reduceMotion ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}

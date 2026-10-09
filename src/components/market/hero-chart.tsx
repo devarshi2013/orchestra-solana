@@ -112,7 +112,7 @@ export function HeroChart({ mint, onSelect }: { mint: string; onSelect: (mint: s
                 "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-[background-color,color,transform] active:scale-95",
                 active
                   ? "border-primary bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  : "border-primary/30 text-primary-text hover:border-primary/60 hover:bg-primary/8",
               )}
             >
               <TokenLogo src={market.stats?.[t.mint]?.icon} symbol={t.symbol} className="size-4" />

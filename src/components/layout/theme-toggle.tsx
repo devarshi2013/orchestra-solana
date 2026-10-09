@@ -48,7 +48,7 @@ export function ThemeToggle() {
       }}
       aria-label={`Switch to ${next} theme`}
       title={`Switch to ${next} theme`}
-      className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-95"
+      className="inline-flex size-9 items-center justify-center rounded-lg text-primary-text transition-colors duration-150 hover:bg-primary/8 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-95"
     >
       <Icon className="size-4" aria-hidden />
     </button>

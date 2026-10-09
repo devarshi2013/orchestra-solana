@@ -36,8 +36,8 @@ const triggerClass = (active: boolean, block?: boolean) =>
   cn(
     "h-8 gap-1 rounded-lg border px-2.5 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
     active
-      ? "border-primary/50 bg-primary/10 text-foreground"
-      : "border-input bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground dark:bg-input/30",
+      ? "border-primary bg-primary text-primary-foreground"
+      : "border-primary/35 bg-surface text-primary-text hover:border-primary/70 hover:bg-primary/8",
     block && "w-full justify-between",
   );
 
