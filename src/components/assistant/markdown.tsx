@@ -1,57 +1,113 @@
-import { Fragment, type ReactNode } from "react";
+import { Children, isValidElement, type ReactNode } from "react";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-/** **bold** inside a line, as React nodes (no HTML injection). */
-function inline(text: string): ReactNode[] {
-  return text
-    .split(/(\*\*[^*]+\*\*)/g)
-    .map((part, i) =>
-      part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
-        <strong key={i}>{part.slice(2, -2)}</strong>
-      ) : (
-        <Fragment key={i}>{part}</Fragment>
-      ),
-    );
+import { cn } from "@/lib/utils";
+
+/** The plain text inside rendered children (for spotting numeric cells). */
+function textOf(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  if (isValidElement<{ children?: ReactNode }>(node)) return textOf(node.props.children);
+  return "";
 }
 
-/** Just enough Markdown for the assistant: paragraphs, headings, bullet/numbered lists, bold. */
+/** Prices, amounts, percentages, multiples: "$1,234.56", "-0.12%", "3.2T", "45.1x", "n/a". */
+const NUMERIC = /^[\s(+−-]*[$€£]?\s?[\d.,]+\s?(%|[KMBT]|x|bps|USDC|SOL)?\)?\s*$|^(n\/a|—|-)$/i;
+const isNumeric = (children: ReactNode) => {
+  const text = textOf(Children.toArray(children)).trim();
+  return text !== "" && NUMERIC.test(text);
+};
+
+const components: Components = {
+  h1: ({ children }) => <h3 className="mt-4 text-base font-semibold first:mt-0">{children}</h3>,
+  h2: ({ children }) => <h3 className="mt-4 text-base font-semibold first:mt-0">{children}</h3>,
+  h3: ({ children }) => <h4 className="mt-3 font-semibold first:mt-0">{children}</h4>,
+  h4: ({ children }) => <h4 className="mt-3 font-semibold first:mt-0">{children}</h4>,
+  p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+  ul: ({ children }) => (
+    <ul className="list-disc space-y-1 pl-5 marker:text-muted-foreground">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="list-decimal space-y-1 pl-5 marker:text-muted-foreground">{children}</ol>
+  ),
+  li: ({ children }) => <li className="pl-0.5">{children}</li>,
+  strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-medium text-primary underline underline-offset-2 hover:no-underline"
+    >
+      {children}
+    </a>
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="border-l-2 border-border pl-3 text-muted-foreground">
+      {children}
+    </blockquote>
+  ),
+  hr: () => <hr className="border-border" />,
+  pre: ({ children }) => (
+    <pre className="overflow-x-auto rounded-lg border bg-muted/50 p-3 font-mono text-xs leading-relaxed">
+      {children}
+    </pre>
+  ),
+  code: ({ className, children }) =>
+    // Fenced blocks carry a language class (or sit in <pre>, styled above); inline code gets a chip.
+    className ? (
+      <code className={className}>{children}</code>
+    ) : (
+      <code className="rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]">{children}</code>
+    ),
+  table: ({ children }) => (
+    // Scrolls sideways on narrow screens instead of overflowing the chat.
+    <div className="max-h-[28rem] overflow-auto rounded-lg border">
+      <table className="w-full border-collapse text-xs tabular-nums sm:text-sm">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => <thead className="sticky top-0 z-10 bg-muted">{children}</thead>,
+  tbody: ({ children }) => (
+    <tbody className="[&>tr]:border-t [&>tr]:border-border [&>tr:nth-child(even)]:bg-muted/40">
+      {children}
+    </tbody>
+  ),
+  th: ({ children, style }) => (
+    <th
+      style={style}
+      className={cn(
+        "px-3 py-2 text-left font-medium whitespace-nowrap text-muted-foreground",
+        isNumeric(children) && "text-right",
+      )}
+    >
+      {children}
+    </th>
+  ),
+  td: ({ children, style }) => (
+    <td
+      style={style}
+      className={cn(
+        "px-3 py-2 align-top",
+        isNumeric(children) && "text-right font-mono whitespace-nowrap",
+      )}
+    >
+      {children}
+    </td>
+  ),
+};
+
+/**
+ * The assistant's replies as GitHub-flavoured Markdown: headings, lists, bold,
+ * links, code and real tables. Raw HTML in the text is not rendered, and
+ * unsafe link protocols are stripped (react-markdown's defaults).
+ */
 export function Markdown({ text }: { text: string }) {
-  const blocks: ReactNode[] = [];
-  let list: { ordered: boolean; items: string[] } | null = null;
-  const flush = () => {
-    if (!list) return;
-    const Tag = list.ordered ? "ol" : "ul";
-    blocks.push(
-      <Tag
-        key={blocks.length}
-        className={list.ordered ? "list-decimal space-y-1 pl-5" : "list-disc space-y-1 pl-5"}
-      >
-        {list.items.map((item, i) => (
-          <li key={i}>{inline(item)}</li>
-        ))}
-      </Tag>,
-    );
-    list = null;
-  };
-  for (const line of text.split("\n")) {
-    const bullet = /^\s*[-*]\s+(.*)$/.exec(line);
-    const numbered = /^\s*\d+[.)]\s+(.*)$/.exec(line);
-    if (bullet || numbered) {
-      const ordered = Boolean(numbered);
-      if (list && list.ordered !== ordered) flush();
-      list ??= { ordered, items: [] };
-      list.items.push((bullet ?? numbered)![1]!);
-      continue;
-    }
-    flush();
-    const heading = /^#{1,4}\s+(.*)$/.exec(line);
-    if (heading)
-      blocks.push(
-        <p key={blocks.length} className="font-semibold">
-          {inline(heading[1]!)}
-        </p>,
-      );
-    else if (line.trim()) blocks.push(<p key={blocks.length}>{inline(line)}</p>);
-  }
-  flush();
-  return <div className="space-y-2">{blocks}</div>;
+  return (
+    <div className="space-y-3 break-words">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {text}
+      </ReactMarkdown>
+    </div>
+  );
 }
