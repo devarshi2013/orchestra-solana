@@ -13,16 +13,16 @@ const resolvePool = (mint: string) =>
 
 /**
  * One token's history for a window, cached for the window's TTL. Uses the
- * configured pool, or the current top pool when there's none or it returns
- * nothing. Throws when no pool has data (failures aren't cached).
+ * configured pool for dashboard tokens, or the current top pool when there's
+ * none or it returns nothing. Callers pass only known mints (dashboard or
+ * registry). Throws when no pool has data (failures aren't cached).
  */
 export function loadCandles(mint: string, window: WindowSpec): Promise<Candle[]> {
   return cached(`market:candles:${mint}:${window.id}`, window.ttlMs, async () => {
     const token = marketToken(mint);
-    if (!token) throw new Error("Not a dashboard token");
-    let pool = token.pool ?? (await resolvePool(mint));
+    let pool = token?.pool ?? (await resolvePool(mint));
     let candles = pool ? await fetchCandles(pool, mint, window) : [];
-    if (candles.length === 0 && token.pool) {
+    if (candles.length === 0 && token?.pool) {
       pool = await resolvePool(mint);
       if (pool && pool !== token.pool) candles = await fetchCandles(pool, mint, window);
     }

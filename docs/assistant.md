@@ -89,6 +89,16 @@ How it behaves:
 - **Failures:** a failed item doesn't stop the others, while declining in the wallet stops the run.
 - **Results:** each item shows its status and a Solscan link, and the summary offers **Retry** for anything not bought.
 
+## How replies render
+
+Replies are GitHub-flavoured Markdown (`src/components/assistant/markdown.tsx`: react-markdown + remark-gfm). Raw HTML from the model is dropped and unsafe link protocols are stripped; links open in a new tab.
+
+- **Tables:** each one sits in its own rounded scroll box, so it never widens the chat on a phone. The header row is sticky, rows are zebra-striped with a hover state. `src/lib/markdown/table-columns.ts` reads each table by column: numeric columns are right-aligned (tabular figures), and change columns (returns, growth, 24h…) get an explicit +/− sign and green/red colour.
+- **Text blocks:** the server puts a blank line between the text of separate model calls in a turn. Without it, "Here they are:" and the table after a tool call ran together and the table showed as raw pipes.
+- **Streaming:** `src/lib/markdown/streaming.ts` holds back what would flash as raw syntax: a table until its delimiter row arrives (a skeleton shows meanwhile), a row until its line ends, an unmatched `**`, and an unfinished comparison block.
+- **Comparison blocks:** for 2+ stocks compared on market cap, 1Y return and P/E, the prompt asks for a fenced `comparison` block of JSON (`src/lib/markdown/comparison.ts`, validated with Zod). It renders as `ComparisonTable`: sortable columns, logos, Jupiter's live price and a 7-day sparkline per row, from `GET /api/market/compare?tickers=` (`src/server/market/compare.ts`). Tickers resolve through the registry only. Every issuer's token is priced and a stock whose tokens disagree by over 5% shows no price, since a thin token's Jupiter price can be far off. Sparklines use the xStocks token's GeckoTerminal history (Ondo tokens trade mostly by RFQ, and their pools record bad prints); isolated bad prints are dropped and a noisy history isn't drawn. Invalid JSON falls back to a plain table.
+- **Preview:** in development, `/dev/chat-preview` renders sample replies (`markdown.fixtures.ts`), including half-streamed ones.
+
 ## Browse stocks
 
 Next to the chat, the **Browse stocks** panel (`src/components/assistant/stock-browser.tsx`) lists every registry company from `GET /api/stocks` (no mints): sector chips, search, a stock/ETF toggle, and each company's liquidity badge. Clicking one sends "Tell me about TICKER" to the assistant.
@@ -100,6 +110,8 @@ Before first use, the browser shows a one-time disclosure: AI can be wrong, it's
 ## Tests
 
 - `src/server/agent/loop.test.ts`: the loop against a fake streaming client.
+- `src/components/assistant/markdown.test.tsx`, `src/lib/markdown/*.test.ts`: tables, signs and colours, streamed tables in chunks, comparison blocks and their fallback.
+- `src/server/market/compare.test.ts`: registry-only tickers, issuer price cross-check, sparkline bad prints.
 - `src/server/agent/tools.test.ts`: stock-only tools and plan rejection.
 - `src/app/api/agent/route.test.ts`: SSE, history round-trip, validation, 503, 429.
 - `src/lib/agent/plan.test.ts`, `redact.test.ts`, `transcript.test.ts`.

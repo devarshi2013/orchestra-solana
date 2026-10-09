@@ -212,6 +212,16 @@ describe("runAgentTurn", () => {
     });
   });
 
+  it("separates text blocks with a blank line so Markdown after a tool call still parses", async () => {
+    const { textOut } = await run([
+      message([text("I'll check the stocks."), toolUse("t1", "listStocks", {})], "tool_use"),
+      message([text("Here they are:\n| A | B |\n|---|---|\n| 1 | 2 |")], "end_turn"),
+    ]);
+    expect(textOut).toBe(
+      "I'll check the stocks.\n\nHere they are:\n| A | B |\n|---|---|\n| 1 | 2 |",
+    );
+  });
+
   it("redacts addresses in streamed tool results", async () => {
     const { events, result } = await run(
       [message([toolUse("t1", "listStocks", {})], "tool_use"), message([text("ok")], "end_turn")],

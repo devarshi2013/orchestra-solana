@@ -112,6 +112,8 @@ export async function runAgentTurn(opts: {
   let plan: AcceptedPlan | null = null;
   let planAttempts = 0;
   let jsonRetries = 0;
+  /** Whether any text has gone to the browser this turn. */
+  let sentText = false;
   const usage: AgentUsage = { modelCalls: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 };
 
   try {
@@ -125,16 +127,26 @@ export async function runAgentTurn(opts: {
       let message: Message;
       try {
         for await (const event of stream) {
-          if (event.type === "content_block_delta") {
+          if (event.type === "content_block_start" && event.content_block.type === "text") {
+            // Each text block is its own paragraph: glued to the previous one, a table
+            // after "Here they are:" wouldn't parse as a table.
+            if (sentText) emit({ type: "text", delta: "\n\n" });
+          } else if (event.type === "content_block_delta") {
             if (event.delta.type === "text_delta") {
               const safe = redactor.push(event.delta.text);
-              if (safe) emit({ type: "text", delta: safe });
+              if (safe) {
+                emit({ type: "text", delta: safe });
+                sentText = true;
+              }
             } else if (event.delta.type === "thinking_delta" && event.delta.thinking.trim()) {
               emit({ type: "progress", text: event.delta.thinking });
             }
           } else if (event.type === "content_block_stop") {
             const rest = redactor.flush();
-            if (rest) emit({ type: "text", delta: rest });
+            if (rest) {
+              emit({ type: "text", delta: rest });
+              sentText = true;
+            }
           }
         }
         message = await stream.finalMessage();

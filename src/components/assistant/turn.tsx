@@ -10,9 +10,18 @@ import type { AssistantTurn } from "@/hooks/use-agent-chat";
 import { DataUsed, describeTool } from "./data-used";
 import { Markdown } from "./markdown";
 
+/** A progress note as plain text: Markdown marks (**, #, `) would show literally here. */
+export function plainNote(text: string): string {
+  return text
+    .replace(/\*\*|__|`/g, "")
+    .replace(/^\s*#{1,6}\s+/gm, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** What the assistant is doing right now: its latest note, else the running tool call. */
 function liveStatus(turn: AssistantTurn): string {
-  if (turn.progress) return turn.progress;
+  if (turn.progress) return plainNote(turn.progress);
   const running = [...turn.tools].reverse().find((t) => t.ok === null);
   return running ? describeTool(running.name, running.input) : "Thinking";
 }
@@ -41,7 +50,7 @@ export function AssistantTurnView({ turn, cards }: { turn: AssistantTurn; cards?
           <Skeleton className="h-3.5 w-2/3" />
         </div>
       )}
-      {turn.text && <Markdown text={turn.text} />}
+      {turn.text && <Markdown text={turn.text} streaming={!turn.done} />}
       <DataUsed tools={turn.tools} />
       {cards}
       {turn.error && (
