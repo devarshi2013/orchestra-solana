@@ -12,7 +12,7 @@
    - **Where history lives:** the browser keeps the conversation and sends it back as `history`, exactly as the previous reply's `history` event returned it (validated, capped at ~600 KB).
    - **What the client can't fake:** thinking blocks carry the API's signatures, so they can't be altered.
    - **What it could fake:** an edited tool result could only mislead the sender's own chat.
-   - **Plans are re-checked:** every plan is validated again on the server against the live registry and wallet balance before it's shown, and each buy is re-quoted before signing.
+   - **Plans are re-checked:** every plan is validated again on the server against the stock registry and the live wallet balance before it's shown, and each buy is re-quoted before signing.
 4. **The tool-use loop** (`src/server/agent/loop.ts`) streams each model turn as Server-Sent Events:
    - **Events:** `text`, `progress`, `tool`, `tool_result`, `plan`, `error`, `history` and `done`.
    - **Tool calls:** all of a turn's calls run together, and their results go back in one message.
@@ -32,13 +32,13 @@
 
 ## Tools (`src/server/agent/tools.ts`)
 
-| Tool                | What it returns                                                                                                  |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `listAssets`        | The listed tokenized stocks (ticker, token symbol, issuer, sector, hours), optionally by sector. Never mints     |
-| `getStockMetrics`   | Market cap, P/E, revenue growth, 1M/6M/1Y returns (Financial Modeling Prep; null with a reason when unavailable) |
-| `getSwapQuote`      | A live Jupiter quote for spending USDC on one stock: tokens out, price impact, fees. Never a transaction         |
-| `getWalletBalances` | The connected wallet's USDC and SOL                                                                              |
-| `submit_plan`       | Validates the final plan; errors go back to the model to fix                                                     |
+| Tool                | What it returns                                                                                                                    |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `listStocks`        | Registry companies by sector, industry, type (stock/ETF), search and minimum liquidity; echoes what it searched. Never mints       |
+| `getStockMetrics`   | Market cap, P/E, revenue growth, 1M/6M/1Y returns (Financial Modeling Prep; null with a reason when unavailable)                   |
+| `getSwapQuote`      | A live Jupiter quote for spending USDC on one stock, from the cheapest issuer: tokens out, price impact, fees. Never a transaction |
+| `getWalletBalances` | The connected wallet's USDC and SOL                                                                                                |
+| `submit_plan`       | Validates the final plan; errors go back to the model to fix                                                                       |
 
 **The wallet is never a model input**: balance and quote tools always use the connected wallet. Every tool call is logged as one JSON line, without keys.
 
@@ -46,7 +46,7 @@
 
 | Rule                            | How it's enforced                                                                                            |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Only listed stocks              | `submit_plan` resolves every ticker against the live registry's stocks; anything else is rejected            |
+| Only registry stocks            | `submit_plan` resolves every ticker against the stock registry; anything else is rejected                    |
 | Never output a mint address     | No tool returns one; the stream also redacts any 32–44-character base58 token (`src/lib/agent/redact.ts`)    |
 | Every number from a tool result | The prompt requires it; tools return null with a reason instead of estimating; "Data used" shows each result |
 | Never execute                   | No tool can trade. Buying happens in the browser, one wallet signature per swap                              |
@@ -54,8 +54,8 @@
 ## Plan validation (`src/lib/agent/plan.ts`)
 
 - **Format:** the plan is `{ items: [{ kind: "stock", ticker, usdcAmount, reason }], totalUsdc, rankingMethod }`.
-- **Each item** resolves to exactly one registry stock. Ambiguous tickers (NVDA → NVDAx or NVDAon) must use the token symbol.
-- **No duplicates**, and every item is at least $10 (`MIN_ORDER_USD`).
+- **Each item** resolves to a registry company. A ticker (NVDA) leaves the issuer to the buy, which quotes every issuer and takes the cheapest route; a token symbol (NVDAx) pins that issuer.
+- **No duplicates** (the same company twice, even via different issuers), and every item is at least $10 (`MIN_ORDER_USD`).
 - **The total** equals the items' sum and fits the wallet's live USDC.
 
 Failures go back to the model as an error result. After three, it's told to stop and explain.
@@ -65,8 +65,8 @@ Failures go back to the model as an error result. After three, it's told to stop
 The plan card (`src/components/assistant/plan-card.tsx`) shows each stock with:
 
 - **its amount**, editable or removable;
-- **a fresh Jupiter quote**: tokens out, price impact and fees, from `POST /api/assistant/quote` and server-paced to fit the Jupiter rate limit;
-- **warnings** (`src/lib/assistant/review.ts`): high price impact, thin liquidity, outside US market hours, or no buildable quote.
+- **a fresh Jupiter quote** from the cheapest issuer (shown with its liquidity badge): tokens out, price impact and fees, from `POST /api/assistant/quote` and server-paced to fit the Jupiter rate limit;
+- **warnings** (`src/lib/assistant/review.ts`): high price impact, low or thin liquidity, outside US market hours (not for pre-IPO tokens), or no buildable quote.
 
 **Pre-flight checks:**
 
@@ -85,9 +85,13 @@ The plan card (`src/components/assistant/plan-card.tsx`) shows each stock with:
 How it behaves:
 
 - **Signing:** each stock is its own wallet prompt; nothing is signed automatically.
-- **Token addresses:** they come from the asset registry, matched by token symbol.
+- **Token addresses:** the server's quote returns the chosen token from the stock registry; the model never supplies one.
 - **Failures:** a failed item doesn't stop the others, while declining in the wallet stops the run.
 - **Results:** each item shows its status and a Solscan link, and the summary offers **Retry** for anything not bought.
+
+## Browse stocks
+
+Next to the chat, the **Browse stocks** panel (`src/components/assistant/stock-browser.tsx`) lists every registry company from `GET /api/stocks` (no mints): sector chips, search, a stock/ETF toggle, and each company's liquidity badge. Clicking one sends "Tell me about TICKER" to the assistant.
 
 ## Disclosure
 
@@ -100,4 +104,4 @@ Before first use, the browser shows a one-time disclosure: AI can be wrong, it's
 - `src/app/api/agent/route.test.ts`: SSE, history round-trip, validation, 503, 429.
 - `src/lib/agent/plan.test.ts`, `redact.test.ts`, `transcript.test.ts`.
 - `src/lib/assistant/review.test.ts`, `market-hours.test.ts`.
-- `src/lib/assets/tools.test.ts`.
+- `src/lib/stocks/*.test.ts`: sync verification, liquidity tiers, sector mapping, registry filters, best-issuer selection.

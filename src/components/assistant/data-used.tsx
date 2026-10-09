@@ -8,12 +8,20 @@ import type { ToolCallView } from "@/lib/assistant/views";
 export function describeTool(name: string, input: unknown): string {
   const i = (input ?? {}) as {
     tickers?: string[];
+    sector?: string;
+    industry?: string;
+    type?: string;
+    search?: string;
     ticker?: string;
     usdcAmount?: number;
   };
   switch (name) {
-    case "listAssets":
-      return "Looked up the listed stocks";
+    case "listStocks": {
+      const filters = [i.sector, i.industry, i.type === "etf" ? "ETFs" : i.type, i.search]
+        .filter(Boolean)
+        .join(" · ");
+      return `Browsed stocks: ${filters || "all sectors"}`;
+    }
     case "getStockMetrics":
       return `Stock metrics: ${(i.tickers ?? []).join(", ")}`;
     case "getSwapQuote":

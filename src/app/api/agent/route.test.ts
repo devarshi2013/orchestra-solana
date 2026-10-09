@@ -25,7 +25,6 @@ vi.mock("@/server/agent/tools", async (importOriginal) => ({
     return { content: '{"data":{"usdc":120,"sol":0.3},"reason":null}', isError: false };
   },
 }));
-vi.mock("@/server/assets/registry", () => ({ getRegistry: vi.fn() }));
 vi.mock("@/server/agent/client", () => ({
   anthropic: () =>
     state.hasKey

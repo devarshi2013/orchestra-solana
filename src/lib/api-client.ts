@@ -6,7 +6,6 @@ import {
   type ExecuteResponse,
   type OrderResponse,
 } from "@/lib/jupiter/schemas";
-import type { Asset } from "@/lib/assets/registry";
 import type { ItemQuote } from "@/lib/assistant/review";
 import type { ExecuteBody, OrderQuery } from "@/lib/swap/requests";
 
@@ -77,13 +76,24 @@ const json = (method: string, body?: unknown): RequestInit => ({
   body: body === undefined ? undefined : JSON.stringify(body),
 });
 
-export type RegistryView = { builtAt: string; stocks: Asset[]; crypto: Asset[] };
-
-export const assetsApi = {
-  registry: (signal?: AbortSignal) => request("/api/assets", { signal }, trusted<RegistryView>()),
+export type StockCompany = {
+  ticker: string;
+  companyName: string;
+  type: "stock" | "etf";
+  sector: string;
+  industry: string | null;
+  preIpo: boolean;
+  liquidityTier: "high" | "medium" | "low";
+  issuers: { issuer: string; symbol: string; liquidityTier: "high" | "medium" | "low" }[];
 };
 
 export const assistantApi = {
+  stocks: (signal?: AbortSignal) =>
+    request(
+      "/api/stocks",
+      { signal },
+      trusted<{ syncedAt: string; sectors: string[]; companies: StockCompany[] }>(),
+    ),
   balances: (wallet: string, signal?: AbortSignal) =>
     request(
       `/api/assistant/balances?${new URLSearchParams({ wallet })}`,

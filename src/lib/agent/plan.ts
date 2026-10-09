@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import type { Asset } from "@/lib/assets/registry";
+import { resolveTicker } from "@/lib/stocks/registry";
+import type { StockEntry } from "@/lib/stocks/types";
 import { MIN_ORDER_USD } from "@/lib/units";
 
 const planItemSchema = z
@@ -36,13 +37,13 @@ const CENT = 0.01;
 /**
  * Server-side checks on a submitted plan. Every message is written for the
  * model to act on, so a failed plan can be sent back for it to fix:
- * - every ticker resolves to exactly one registry asset of that kind (not USDC);
+ * - every ticker (or token symbol) is a company in the stock registry, once;
  * - every item meets Jupiter's minimum order size;
  * - totalUsdc equals the items' sum, and fits the wallet's USDC balance.
  */
 export function validatePlan(
   input: unknown,
-  ctx: { assets: readonly Asset[]; usdcBalance: number | null; minOrderUsd?: number },
+  ctx: { stocks: readonly StockEntry[]; usdcBalance: number | null; minOrderUsd?: number },
 ): { ok: true; plan: AcceptedPlan } | { ok: false; errors: string[] } {
   const parsed = planSchema.safeParse(input);
   if (!parsed.success)
@@ -54,39 +55,31 @@ export function validatePlan(
   const items: AcceptedPlan["items"] = [];
 
   for (const item of plan.items) {
-    const wanted = item.ticker.replace(/^\$/, "").toUpperCase();
-    const ofKind = ctx.assets.filter((a) => a.kind === item.kind);
-    const bySymbol = ofKind.filter((a) => a.symbol.replace(/^\$/, "").toUpperCase() === wanted);
-    const byTicker = ofKind.filter((a) => a.ticker.toUpperCase() === wanted);
-    const matches = bySymbol.length === 1 ? bySymbol : byTicker;
-    if (matches.length === 0) {
-      errors.push(
-        `"${item.ticker}" is not a ${item.kind} in the asset registry; use listAssets to pick one.`,
-      );
+    const found = resolveTicker(item.ticker, ctx.stocks);
+    if (!found.ok) {
+      errors.push(found.reason);
       continue;
     }
-    if (matches.length > 1) {
-      errors.push(
-        `"${item.ticker}" is ambiguous (${matches.map((a) => a.symbol).join(", ")}); use the token symbol.`,
-      );
-      continue;
-    }
-    const asset = matches[0]!;
-    if (asset.cash) {
-      errors.push(`"${item.ticker}" is USDC, which the plan spends; leave it out.`);
-      continue;
-    }
-    if (seen.has(asset.mint)) {
+    if (seen.has(found.ticker)) {
       errors.push(`"${item.ticker}" appears more than once; combine it into one item.`);
       continue;
     }
-    seen.add(asset.mint);
+    seen.add(found.ticker);
     if (item.usdcAmount < minOrder) {
       errors.push(
         `"${item.ticker}" is ${item.usdcAmount} USDC, below the ${minOrder} USDC minimum order size.`,
       );
     }
-    items.push({ ...item, symbol: asset.symbol, name: asset.name });
+    // A token symbol pins that issuer; a company ticker lets the buy pick the cheapest issuer.
+    const pinned =
+      found.candidates.length === 1 &&
+      found.candidates[0]!.symbol.toUpperCase() === item.ticker.replace(/^\$/, "").toUpperCase();
+    items.push({
+      ...item,
+      ticker: found.ticker,
+      symbol: pinned ? found.candidates[0]!.symbol : found.ticker,
+      name: found.companyName,
+    });
   }
 
   const sum = plan.items.reduce((total, item) => total + item.usdcAmount, 0);

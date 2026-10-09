@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { SOL_MINT, USDC_MINT } from "@/lib/assets/allowlist";
 import type { MintInformation } from "@/lib/jupiter/schemas";
 
 export const tokenInfoSchema = z.object({
@@ -31,8 +30,9 @@ export function toTokenInfo(mint: MintInformation): TokenInfo {
   };
 }
 
-// Mint addresses come only from the asset registry (src/lib/assets).
-export { SOL_MINT, USDC_MINT } from "@/lib/assets/allowlist";
+/** Wrapped SOL and USDC on Solana mainnet: what plans spend and pay fees with. Stock mints come only from src/lib/stocks. */
+export const SOL_MINT = "So11111111111111111111111111111111111111112";
+export const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
 /** Quick picks shown before the user searches. Mainnet mints. */
 export const DEFAULT_TOKENS: readonly TokenInfo[] = [

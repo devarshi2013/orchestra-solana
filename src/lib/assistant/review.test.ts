@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { SwapQuote } from "@/lib/assets/tools";
+import type { SwapQuote } from "@/lib/stocks/tools";
 
 import { itemWarnings, preflight, solNeeded, type ItemQuote } from "./review";
 
@@ -9,7 +9,10 @@ const WEEKEND = new Date("2026-10-10T15:00Z");
 
 const swapQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote => ({
   ticker: "NVDA",
+  companyName: "NVIDIA",
   symbol: "NVDAx",
+  issuer: "xStocks (Backed)",
+  liquidityTier: "high",
   usdcIn: 50,
   expectedOut: 0.27,
   minimumOut: 0.268,
@@ -20,6 +23,7 @@ const swapQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote => ({
   gasless: false,
   router: "metis",
   warning: null,
+  issuersCompared: [],
   executed: false,
   quotedAt: "2026-10-08T15:00:00Z",
   ...overrides,
@@ -28,21 +32,26 @@ const quoted = (quote: SwapQuote | null, extra: Partial<ItemQuote> = {}): ItemQu
   symbol: quote?.symbol ?? "NVDAx",
   quote,
   reason: quote ? null : "No route",
-  liquidityUsd: null,
-  hours: "24/5",
+  token: {
+    symbol: quote?.symbol ?? "NVDAx",
+    issuer: "xStocks (Backed)",
+    mint: "mint",
+    decimals: 8,
+    liquidityTier: "high",
+    hours: "24/5",
+    preIpo: false,
+  },
   ...extra,
 });
 
 describe("itemWarnings", () => {
-  it("has nothing to say about a liquid crypto buy", () => {
-    expect(itemWarnings({ kind: "crypto", usdcAmount: 50 }, quoted(swapQuote()), WEEKEND)).toEqual(
-      [],
-    );
+  it("has nothing to say about a liquid stock in market hours", () => {
+    expect(itemWarnings({ kind: "stock", usdcAmount: 50 }, quoted(swapQuote()), OPEN)).toEqual([]);
   });
 
   it("flags high and very high price impact", () => {
     const high = itemWarnings(
-      { kind: "crypto", usdcAmount: 50 },
+      { kind: "stock", usdcAmount: 50 },
       quoted(swapQuote({ priceImpactPct: 1.5 })),
       OPEN,
     );
@@ -50,31 +59,38 @@ describe("itemWarnings", () => {
       { kind: "impact", severity: "warn", message: "High price impact (1.50%)" },
     ]);
     const severe = itemWarnings(
-      { kind: "crypto", usdcAmount: 50 },
+      { kind: "stock", usdcAmount: 50 },
       quoted(swapQuote({ priceImpactPct: 7 })),
       OPEN,
     );
     expect(severe[0]!.message).toMatch(/^Very high price impact \(7\.00%\)/);
   });
 
-  it("flags thin liquidity from the quote or the pool size", () => {
+  it("flags thin liquidity from the quote or a low-liquidity token", () => {
     const fromQuote = itemWarnings(
-      { kind: "crypto", usdcAmount: 50 },
+      { kind: "stock", usdcAmount: 50 },
       quoted(swapQuote({ thinLiquidity: true })),
       OPEN,
     );
     expect(fromQuote.map((w) => w.kind)).toEqual(["liquidity"]);
-    const fromPool = itemWarnings(
-      { kind: "crypto", usdcAmount: 5000 },
-      quoted(swapQuote(), { liquidityUsd: 100_000 }),
+    const low = quoted(swapQuote());
+    const fromTier = itemWarnings(
+      { kind: "stock", usdcAmount: 50 },
+      { ...low, token: { ...low.token!, liquidityTier: "low" } },
       OPEN,
     );
-    expect(fromPool[0]!.message).toBe(
-      "Thin liquidity: $100,000.00 in the pool for a $5,000.00 buy",
-    );
+    expect(fromTier[0]!.message).toBe("Low liquidity: NVDAx moves noticeably even on small buys");
   });
 
-  it("warns about stocks outside US market hours only", () => {
+  it("warns about stocks outside US market hours, except pre-IPO tokens", () => {
+    const pre = quoted(swapQuote());
+    expect(
+      itemWarnings(
+        { kind: "stock", usdcAmount: 50 },
+        { ...pre, token: { ...pre.token!, preIpo: true } },
+        WEEKEND,
+      ),
+    ).toEqual([]);
     expect(itemWarnings({ kind: "stock", usdcAmount: 50 }, quoted(swapQuote()), OPEN)).toEqual([]);
     expect(
       itemWarnings({ kind: "stock", usdcAmount: 50 }, quoted(swapQuote()), WEEKEND).map(
@@ -84,11 +100,11 @@ describe("itemWarnings", () => {
   });
 
   it("blocks items without a buildable quote", () => {
-    expect(itemWarnings({ kind: "crypto", usdcAmount: 50 }, quoted(null), OPEN)).toEqual([
+    expect(itemWarnings({ kind: "stock", usdcAmount: 50 }, quoted(null), OPEN)).toEqual([
       { kind: "quote", severity: "block", message: "No quote: No route" },
     ]);
     const unbuildable = itemWarnings(
-      { kind: "crypto", usdcAmount: 50 },
+      { kind: "stock", usdcAmount: 50 },
       quoted(swapQuote({ warning: "Insufficient balance: …" })),
       OPEN,
     );
@@ -99,11 +115,11 @@ describe("itemWarnings", () => {
 describe("preflight", () => {
   const items = [
     { symbol: "NVDAx", kind: "stock" as const, usdcAmount: 30 },
-    { symbol: "SOL", kind: "crypto" as const, usdcAmount: 20 },
+    { symbol: "SPY", kind: "stock" as const, usdcAmount: 20 },
   ];
   const quotes = new Map([
     ["NVDAx", quoted(swapQuote())],
-    ["SOL", quoted(swapQuote({ symbol: "SOL", gasless: true, networkFeesSol: null }))],
+    ["SPY", quoted(swapQuote({ symbol: "SPYon", gasless: true, networkFeesSol: null }))],
   ]);
   const base = {
     wallet: { connected: true, canSign: true },
@@ -149,7 +165,7 @@ describe("preflight", () => {
     expect(solNeeded(items, quotes)).toBeCloseTo(0.0021);
     expect(status({ ...base, balances: { usdc: 60, sol: 0.001 } }).sol).toBe(false);
     // An item without a quote yet counts a conservative fee.
-    expect(solNeeded([...items, { symbol: "JUP" }], quotes)).toBeCloseTo(0.0071);
+    expect(solNeeded([...items, { symbol: "AAPL" }], quotes)).toBeCloseTo(0.0071);
   });
 
   it("waits while balances and quotes load, and blocks unquotable items", () => {
@@ -158,7 +174,7 @@ describe("preflight", () => {
     expect(
       status({ ...base, quotes: new Map([["NVDAx", quotes.get("NVDAx")!]]) }).quotes,
     ).toBeNull();
-    const blocked = new Map(quotes).set("SOL", quoted(null, { symbol: "SOL" }));
+    const blocked = new Map(quotes).set("SPY", quoted(null, { symbol: "SPY" }));
     expect(status({ ...base, quotes: blocked }).quotes).toBe(false);
   });
 });

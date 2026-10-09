@@ -1,5 +1,5 @@
-import { MAX_TEST_QUOTE_IMPACT_PCT } from "@/lib/assets/config";
-import type { SwapQuote } from "@/lib/assets/tools";
+import { TIER_LIMITS } from "@/lib/stocks/sync-core";
+import type { SwapQuote } from "@/lib/stocks/tools";
 import { MIN_ORDER_USD } from "@/lib/units";
 import { formatUsd } from "@/lib/format";
 
@@ -11,26 +11,33 @@ import { describeClosedMarket, usMarketSession } from "./market-hours";
  * the plan card re-evaluates them as amounts, quotes, balances and time change.
  */
 
-export type ItemKind = "stock" | "crypto";
+export type ItemKind = "stock";
+
+/** The registry token a quote chose (the cheapest issuer); its mint is what gets bought. */
+export type ChosenToken = {
+  symbol: string;
+  issuer: string;
+  mint: string;
+  decimals: number;
+  liquidityTier: "high" | "medium" | "low";
+  hours: string;
+  preIpo: boolean;
+};
 
 /** A fresh quote for one plan item, from POST /api/assistant/quote. */
 export type ItemQuote = {
+  /** What the plan asked for: a company ticker (best issuer) or a token symbol. */
   symbol: string;
   quote: SwapQuote | null;
   /** Why there's no quote. */
   reason: string | null;
-  /** Pool liquidity from the registry, USD (null for most stocks). */
-  liquidityUsd: number | null;
-  /** The issuer's trading schedule, stocks only. */
-  hours: string | null;
+  token: ChosenToken | null;
 };
 
 /** Price impact (absolute %) from which a buy is flagged. */
-export const HIGH_IMPACT_PCT = MAX_TEST_QUOTE_IMPACT_PCT;
+export const HIGH_IMPACT_PCT = TIER_LIMITS.medium;
 /** Price impact (absolute %) that's a severe cost. */
 export const SEVERE_IMPACT_PCT = 5;
-/** A buy above this share of the pool's liquidity is flagged as thin. */
-export const THIN_LIQUIDITY_SHARE = 0.02;
 /** Network fee assumed per non-gasless swap when Jupiter doesn't say, SOL. */
 export const FALLBACK_FEE_SOL = 0.005;
 
@@ -69,22 +76,20 @@ export function itemWarnings(
     });
   }
 
-  const liquidity = quoted?.liquidityUsd ?? null;
-  if (
-    quote?.thinLiquidity ||
-    (liquidity !== null && item.usdcAmount > liquidity * THIN_LIQUIDITY_SHARE)
-  ) {
+  const token = quoted?.token ?? null;
+  if (token?.liquidityTier === "low" || quote?.thinLiquidity) {
     warnings.push({
       kind: "liquidity",
       severity: "warn",
       message:
-        liquidity !== null
-          ? `Thin liquidity: ${formatUsd(liquidity)} in the pool for a ${formatUsd(item.usdcAmount)} buy`
-          : "Thin liquidity: this size moves the price",
+        token?.liquidityTier === "low"
+          ? `Low liquidity: ${token.symbol} moves noticeably even on small buys`
+          : `Thin liquidity: ${formatUsd(item.usdcAmount)} moves the price`,
     });
   }
 
-  if (item.kind === "stock") {
+  // Pre-IPO tokens have no public market to be closed; everything else follows US hours.
+  if (item.kind === "stock" && !token?.preIpo) {
     const session = usMarketSession(now);
     if (!session.open) {
       warnings.push({

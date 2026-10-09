@@ -24,7 +24,7 @@ export type BuyStep = "waiting" | "quoting" | "signing" | "sending" | "bought" |
 export type BuyItem = {
   symbol: string;
   name: string;
-  /** From the asset registry (never from the model). */
+  /** From the stock registry via the server's quote (never from the model). */
   mint: string;
   decimals: number;
   usdcAmount: number;

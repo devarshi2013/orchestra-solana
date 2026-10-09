@@ -1,11 +1,5 @@
 /**
- * Runs once per server start. Kicks off the asset registry's verification
- * against Jupiter (about 20 paced requests) without blocking startup.
+ * Runs once per server start. Nothing to warm: the stock registry is a static
+ * file built by `pnpm sync:stocks`.
  */
-export async function register() {
-  if (process.env.NEXT_RUNTIME !== "nodejs") return;
-  if (process.env.NEXT_PHASE === "phase-production-build" || process.env.SKIP_ENV_VALIDATION)
-    return;
-  const { warmRegistry } = await import("@/server/assets/registry");
-  warmRegistry();
-}
+export async function register() {}

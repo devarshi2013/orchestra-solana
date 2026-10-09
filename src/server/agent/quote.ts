@@ -1,32 +1,37 @@
 import "server-only";
 
-import { getSwapQuote, getWalletBalances, resolveAsset } from "@/lib/assets/tools";
 import type { ItemQuote } from "@/lib/assistant/review";
-import { getRegistry } from "@/server/assets/registry";
-import { paced } from "@/server/jupiter/pace";
+import { getWalletBalances, quoteBestIssuer } from "@/lib/stocks/tools";
+import { ISSUER_NAMES } from "@/lib/stocks/types";
 
 /**
- * A fresh quote for one plan item from `wallet`: the same live Jupiter quote
- * the assistant used, plus the registry's pool liquidity and trading hours for
- * the item's warnings. Paced, so a plan's quotes stay inside the Jupiter plan's
- * rate limit. Never builds anything the browser could sign.
+ * A fresh quote for one plan item from `wallet`: every issuer's token for the
+ * company quoted (paced within Jupiter's rate limit) and the cheapest chosen.
+ * Returns that token's registry details, including the mint the buy will use;
+ * the mint comes from the registry, never from the model. Never builds
+ * anything the browser could sign.
  */
 export async function quoteItem(
   wallet: string,
   input: { symbol: string; usdcAmount: number },
 ): Promise<ItemQuote> {
-  const registry = await getRegistry();
-  const found = resolveAsset(registry.stocks, input.symbol);
-  const asset = "asset" in found ? found.asset : null;
-  const result = await paced(() =>
-    getSwapQuote({ ticker: input.symbol, usdcAmount: input.usdcAmount, wallet }),
-  );
+  const result = await quoteBestIssuer(input.symbol, input.usdcAmount, wallet);
+  if (!result.data)
+    return { symbol: input.symbol, quote: null, reason: result.reason, token: null };
+  const { entry, quote } = result.data;
   return {
     symbol: input.symbol,
-    quote: result.data,
-    reason: result.reason,
-    liquidityUsd: asset?.liquidityUsd ?? null,
-    hours: asset?.hours ?? null,
+    quote,
+    reason: null,
+    token: {
+      symbol: entry.symbol,
+      issuer: ISSUER_NAMES[entry.issuer],
+      mint: entry.mint,
+      decimals: entry.decimals,
+      liquidityTier: entry.liquidityTier,
+      hours: entry.hours,
+      preIpo: entry.preIpo,
+    },
   };
 }
 

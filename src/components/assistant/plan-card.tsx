@@ -18,8 +18,8 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LiquidityBadge } from "@/components/assistant/liquidity-badge";
 import { Input } from "@/components/ui/input";
-import { useAssetRegistry } from "@/hooks/use-asset-registry";
 import { useNow } from "@/hooks/use-now";
 import { usePlanBuy, type BuyItem, type BuyStep } from "@/hooks/use-plan-buy";
 import { usePlanQuotes, useWalletFunds } from "@/hooks/use-plan-quotes";
@@ -59,7 +59,6 @@ const STEP_LABEL: Record<BuyStep, string> = {
 export function PlanCard({ plan }: { plan: AcceptedPlan }) {
   const { connected, publicKey, signTransaction } = useWallet();
   const wallet = publicKey?.toBase58() ?? null;
-  const { registry } = useAssetRegistry();
   const [draft, setDraft] = useState<DraftItem[]>(() =>
     plan.items.map((item) => ({ ...item, amountText: String(item.usdcAmount) })),
   );
@@ -83,10 +82,10 @@ export function PlanCard({ plan }: { plan: AcceptedPlan }) {
     quoting,
     now,
   });
-  // Mints come from the asset registry, matched by token symbol: never from the model.
-  const stocks = registry?.stocks ?? [];
-  const unresolved = draft.filter((d) => !stocks.some((a) => a.symbol === d.symbol));
-  const ready = checks.every((c) => c.ok === true) && registry !== null && unresolved.length === 0;
+  // The token to buy (the cheapest issuer, with its mint) comes from the
+  // server's quote, which reads it from the stock registry: never from the model.
+  const tokenOf = (symbol: string) => quotes.get(symbol)?.token ?? null;
+  const ready = checks.every((c) => c.ok === true) && draft.every((d) => tokenOf(d.symbol));
 
   const setAmount = (symbol: string, amountText: string) =>
     setDraft((all) => all.map((d) => (d.symbol === symbol ? { ...d, amountText } : d)));
@@ -95,12 +94,12 @@ export function PlanCard({ plan }: { plan: AcceptedPlan }) {
   const approve = async () => {
     if (!ready) return;
     const toBuy: BuyItem[] = draft.map((d) => {
-      const asset = stocks.find((a) => a.symbol === d.symbol)!;
+      const token = tokenOf(d.symbol)!;
       return {
-        symbol: asset.symbol,
-        name: asset.name,
-        mint: asset.mint,
-        decimals: asset.decimals,
+        symbol: token.symbol,
+        name: `${d.name} · ${token.issuer}`,
+        mint: token.mint,
+        decimals: token.decimals,
         usdcAmount: parseAmount(d.amountText),
         step: "waiting",
         signature: null,
@@ -259,12 +258,6 @@ export function PlanCard({ plan }: { plan: AcceptedPlan }) {
                   </li>
                 ))}
               </ul>
-              {unresolved.length > 0 && registry && (
-                <p className="text-xs text-destructive">
-                  Not in the asset registry: {unresolved.map((d) => d.symbol).join(", ")}. Remove
-                  {unresolved.length === 1 ? " it" : " them"} to continue.
-                </p>
-              )}
               {fundsError && <p className="text-xs text-destructive">{fundsError}</p>}
             </div>
 
@@ -313,8 +306,13 @@ function PlanRow({
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-medium">{item.name}</span>
             <Badge variant="outline">{item.symbol}</Badge>
-            {item.ticker !== item.symbol && (
-              <span className="text-xs text-muted-foreground">{item.ticker}</span>
+            {quote?.token && (
+              <>
+                <span className="text-xs text-muted-foreground">
+                  via {quote.token.symbol} ({quote.token.issuer})
+                </span>
+                <LiquidityBadge tier={quote.token.liquidityTier} />
+              </>
             )}
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">{item.reason}</p>

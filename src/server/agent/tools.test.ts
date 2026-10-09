@@ -11,29 +11,34 @@ const USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 const WALLET = "2bQ6SPX7mz5DHa7hunC9L1QUdGuHpLuKBNKA11MkFSeQ";
 const state = vi.hoisted(() => ({ usdc: "100000000" }));
 
-vi.mock("@/server/assets/registry", () => {
-  const stock = (ticker: string, symbol: string, mint: string) => ({
-    kind: "stock",
+vi.mock("@/lib/stocks/registry.generated.json", () => {
+  const stock = (ticker: string, symbol: string, mint: string, sector: string) => ({
     ticker,
-    symbol,
-    name: ticker,
+    companyName: ticker,
+    type: "stock",
+    sector,
+    industry: null,
     mint,
-    category: "Stock",
     issuer: "xstocks",
-    hours: "24/5",
+    liquidityTier: "high",
+    symbol,
     decimals: 8,
-    icon: null,
-    liquidityUsd: null,
-    volume24hUsd: null,
+    hours: "24/5",
+    preIpo: false,
+    sectorSource: "nasdaq",
+    testImpactPct: 0.05,
   });
   return {
-    getRegistry: async () => ({
+    default: {
+      syncedAt: "2026-10-09T00:00:00Z",
+      testQuoteUsdc: 100,
+      sources: {},
       stocks: [
-        stock("NVDA", "NVDAx", "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh"),
-        stock("AAPL", "AAPLx", "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp"),
+        stock("NVDA", "NVDAx", "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh", "Technology"),
+        stock("AAPL", "AAPLx", "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp", "Technology"),
+        stock("JPM", "JPMx", "XsMAqkcKsUewDrzVkait4e5u4y8REgtyS7jWgCpLV2C", "Financials"),
       ],
-      crypto: [],
-    }),
+    },
   };
 });
 vi.mock("@/server/solana/rpc", () => ({
@@ -60,13 +65,21 @@ beforeEach(() => {
   state.usdc = "100000000"; // 100 USDC
 });
 
-describe("listAssets (agent tool)", () => {
-  it("lists only stocks, with no mints", async () => {
-    const outcome = await runAgentTool("listAssets", {}, WALLET);
+describe("listStocks (agent tool)", () => {
+  type Listing = { data: { searched: { sectors: string[] }; companies: { ticker: string }[] } };
+
+  it("lists registry companies by sector, says what it searched, and never returns mints", async () => {
+    const outcome = await runAgentTool("listStocks", { sector: "tech" }, WALLET);
     expect(outcome.isError).toBe(false);
-    const data = (JSON.parse(outcome.content) as { data: { symbol: string }[] }).data;
-    expect(data.map((a) => a.symbol)).toEqual(["NVDAx", "AAPLx"]);
+    const { data } = JSON.parse(outcome.content) as Listing;
+    expect(data.searched.sectors).toEqual(["Technology"]);
+    expect(data.companies.map((c) => c.ticker)).toEqual(["AAPL", "NVDA"]);
     expect(outcome.content).not.toContain("Xsc9qvGR");
+  });
+
+  it("explains an unknown sector", async () => {
+    const outcome = await runAgentTool("listStocks", { sector: "crypto" }, WALLET);
+    expect(outcome.content).toMatch(/Unknown sector.*Health Care/);
   });
 });
 
@@ -78,7 +91,7 @@ describe("submit_plan (agent tool)", () => {
       WALLET,
     );
     expect(outcome.isError).toBe(false);
-    expect(outcome.plan?.items.map((i) => i.symbol)).toEqual(["NVDAx", "AAPLx"]);
+    expect(outcome.plan?.items.map((i) => i.symbol)).toEqual(["NVDAx", "AAPL"]);
     expect(outcome.content).not.toContain(USDC);
   });
 

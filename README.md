@@ -2,7 +2,7 @@
 
 An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain English (for example "three large US tech stocks for 200 USDC"):
 
-- The assistant researches the tokenized stocks Orchestra lists (xStocks and Ondo) with live data, and shows every tool call it used.
+- The assistant researches **every tokenized stock and ETF buyable through Jupiter** (xStocks, Ondo Global Markets and PreStocks), by sector, with live data, and shows every tool call it used.
 - It proposes a plan, with **live Jupiter quotes** for each stock.
 - It **swaps your USDC for the stock tokens only after you approve each swap in your wallet**.
 
@@ -11,14 +11,14 @@ An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain Engli
 - **Non-custodial.** Your wallet signs every swap (`signTransaction`; the app never sends from the wallet), and Orchestra never holds keys or funds. No Jupiter products that deposit into custodial vaults (Trigger v2 / DCA).
 - **No custom smart contracts or on-chain programs.** All execution goes through Jupiter's Swap v2 REST API (`/order` + `/execute`).
 - **Keys stay on the server.** The browser calls our `/api/*` routes, which call Jupiter (`src/server/jupiter/client.ts`) and Claude (`src/server/agent/client.ts`). Never use `lite-api.jup.ag`.
-- **Registry-only assets.** The assistant can only suggest stocks from the verified registry (`src/lib/assets/registry.ts`). Token addresses come from the registry, never from the AI.
+- **Registry-only stocks.** The assistant can only suggest stocks from the stock registry (`src/lib/stocks/registry.generated.json`), built only from the issuers' official lists and verified on Jupiter. Token addresses come from the registry, never from the AI.
 - **No invented numbers.** Every figure the assistant states comes from a tool result, which the user can inspect under "Data used".
 
 ## Pages
 
-| Route        | What it does                                                                                                                                                                                        |
-| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/assistant` | The chatbot: streamed answers, "Data used" panels, plan cards with live quotes, warnings (price impact, liquidity, US market hours), pre-flight checks, and wallet-approved buys with Solscan links |
+| Route        | What it does                                                                                                                                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/assistant` | The chatbot, with a "Browse stocks" panel (sector chips, search, stock/ETF, liquidity badges): streamed answers, "Data used" panels, plan cards with live quotes, warnings (price impact, liquidity, US market hours), pre-flight checks, and wallet-approved buys with Solscan links |
 
 There's **no database**:
 
@@ -34,7 +34,7 @@ Next.js 16 (App Router) · TypeScript (strict) · Tailwind v4 · shadcn/ui · `@
 
 ## Getting started
 
-Requirements: Node ≥ 20.9 and pnpm.
+Requirements: Node ≥ 22.6 and pnpm.
 
 ```bash
 pnpm install
@@ -59,25 +59,26 @@ Import `serverEnv` from `@/env/server` (guarded by `server-only`) and `clientEnv
 
 ## Scripts
 
-| Script                                       | Description                             |
-| -------------------------------------------- | --------------------------------------- |
-| `pnpm dev` / `build` / `start`               | Next.js                                 |
-| `pnpm check`                                 | typecheck + lint + format check + tests |
-| `pnpm typecheck`                             | `next typegen && tsc --noEmit`          |
-| `pnpm lint` / `lint:fix`                     | ESLint                                  |
-| `pnpm format` / `format:check`               | Prettier, with Tailwind class sorting   |
-| `pnpm test` / `test:watch` / `test:coverage` | Vitest                                  |
-| `pnpm assets:sync-stocks`                    | Refresh the issuers' stock token lists  |
+| Script                                       | Description                                                                 |
+| -------------------------------------------- | --------------------------------------------------------------------------- |
+| `pnpm dev` / `build` / `start`               | Next.js                                                                     |
+| `pnpm check`                                 | typecheck + lint + format check + tests                                     |
+| `pnpm typecheck`                             | `next typegen && tsc --noEmit`                                              |
+| `pnpm lint` / `lint:fix`                     | ESLint                                                                      |
+| `pnpm format` / `format:check`               | Prettier, with Tailwind class sorting                                       |
+| `pnpm test` / `test:watch` / `test:coverage` | Vitest                                                                      |
+| `pnpm sync:stocks`                           | Rebuild the stock registry (full, ~30 min); `pnpm build` runs a `--refresh` |
 
 ## Layout
 
 ```
-docs/                        Assistant, assets, tokenized stocks, Jupiter API notes, deployment
+docs/                        Assistant, tokenized stocks (issuers, sync), Jupiter API notes, deployment
 src/app/                     Pages (/ and /assistant) and /api route handlers
 src/components/assistant/    Chat, plan card, data-used panels, disclosure and wallet gates
 src/hooks/                   Chat stream, plan quotes, plan buying
 src/lib/agent/               System prompt, plan validation, address redaction
-src/lib/assets/              Stock registry, asset tools (listAssets, metrics, quotes, balances)
+src/lib/stocks/              Stock registry + sync logic, best-issuer choice, tools (listStocks, metrics, quotes, balances)
+scripts/sync-stocks.ts       Builds the stock registry from the issuers' official lists
 src/server/agent/            Claude tool-use loop, tools, rate limit
 src/server/jupiter/          Keyed Jupiter client (order, execute, prices, tokens)
 src/env/                     Zod env schemas

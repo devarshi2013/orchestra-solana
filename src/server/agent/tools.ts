@@ -4,11 +4,17 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 
 import { validatePlan, type AcceptedPlan } from "@/lib/agent/plan";
-import { getStockMetrics, getSwapQuote, getWalletBalances, listAssets } from "@/lib/assets/tools";
-import { getRegistry } from "@/server/assets/registry";
+import { STOCKS } from "@/lib/stocks/registry";
+import {
+  getStockMetrics,
+  getSwapQuote,
+  getWalletBalances,
+  listStocksTool,
+} from "@/lib/stocks/tools";
+import { SECTORS } from "@/lib/stocks/types";
 
 /**
- * The assistant's tools: the stock tools (src/lib/assets/tools.ts) plus
+ * The assistant's tools: the stock tools (src/lib/stocks/tools.ts) plus
  * submit_plan. The wallet is never a model input: balances and quotes always
  * use the connected wallet, injected here.
  */
@@ -18,12 +24,28 @@ type Tool = Anthropic.Beta.Messages.BetaTool;
 /** Stable order and content: tools are part of the cached prompt prefix. */
 export const AGENT_TOOLS: Tool[] = [
   {
-    name: "listAssets",
+    name: "listStocks",
     description:
-      "List the tokenized US stocks Orchestra lists (the only assets you may suggest), with ticker, token symbol, issuer, sector and trading hours. Optionally filter by sector (e.g. 'Technology', 'ETF').",
+      "List the tokenized stocks and ETFs buyable through Jupiter on Solana (the only assets you may suggest). Each company has its ticker, name, type, sector, industry, liquidity tier (high/medium/low, from a test quote's price impact) and the issuers' token symbols. Filter by sector, industry, type, search text and minimum liquidity; most liquid first, up to 60 per call. `searched` echoes what was searched.",
     input_schema: {
       type: "object",
-      properties: { sector: { type: "string" } },
+      properties: {
+        sector: {
+          type: "string",
+          description: `One of: ${SECTORS.join(", ")}. Aliases like "tech", "banks", "healthcare", "oil" work.`,
+        },
+        industry: {
+          type: "string",
+          description: 'Part of an industry name, e.g. "semiconductor", "bank", "oil".',
+        },
+        type: { type: "string", enum: ["stock", "etf"] },
+        search: { type: "string", description: "Part of a ticker, token symbol or company name." },
+        minLiquidity: {
+          type: "string",
+          enum: ["high", "medium", "low"],
+          description: '"high" = high only, "medium" = high and medium, "low" = all.',
+        },
+      },
       additionalProperties: false,
     },
   },
@@ -38,7 +60,7 @@ export const AGENT_TOOLS: Tool[] = [
         tickers: {
           type: "array",
           items: { type: "string" },
-          description: "Tickers or token symbols from listAssets, e.g. NVDAx, AAPLx (max 20).",
+          description: "Tickers from listStocks, e.g. NVDA, AAPL (max 20).",
         },
       },
       required: ["tickers"],
@@ -48,12 +70,15 @@ export const AGENT_TOOLS: Tool[] = [
   {
     name: "getSwapQuote",
     description:
-      "A live Jupiter quote for spending `usdcAmount` USDC from the user's wallet on one stock token: tokens out, price impact %, fees, and a warning if the wallet can't make the trade. Only quotes; never trades.",
+      "A live Jupiter quote for spending `usdcAmount` USDC from the user's wallet on one stock. A ticker quotes every issuer's token and returns the cheapest (issuersCompared lists them all); a token symbol (e.g. NVDAx) quotes only that issuer. Returns tokens out, price impact %, fees, liquidity tier, and a warning if the wallet can't make the trade. Only quotes; never trades.",
     strict: true,
     input_schema: {
       type: "object",
       properties: {
-        ticker: { type: "string", description: "Ticker or token symbol from listAssets." },
+        ticker: {
+          type: "string",
+          description: "Ticker (best issuer) or token symbol (that issuer) from listStocks.",
+        },
         usdcAmount: { type: "number", description: "USDC to spend, in whole USDC." },
       },
       required: ["ticker", "usdcAmount"],
@@ -151,8 +176,8 @@ export async function runAgentTool(
 async function dispatch(name: string, input: unknown, wallet: string): Promise<ToolOutcome> {
   const ok = (value: unknown): ToolOutcome => ({ content: json(value), isError: false });
   switch (name) {
-    case "listAssets":
-      return ok(await listAssets(input));
+    case "listStocks":
+      return ok(await listStocksTool(input ?? {}));
     case "getStockMetrics": {
       const args = tickersInput.safeParse(input);
       if (!args.success) return invalid(args.error);
@@ -169,9 +194,9 @@ async function dispatch(name: string, input: unknown, wallet: string): Promise<T
       return ok(await getWalletBalances(wallet));
     }
     case "submit_plan": {
-      const [registry, balances] = await Promise.all([getRegistry(), getWalletBalances(wallet)]);
+      const balances = await getWalletBalances(wallet);
       const result = validatePlan(input, {
-        assets: registry.stocks,
+        stocks: STOCKS,
         usdcBalance: balances.data?.usdc ?? null,
       });
       return result.ok

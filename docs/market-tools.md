@@ -1,26 +1,26 @@
 # Stock tools
 
-`src/lib/assets/tools.ts` holds server-side functions, e.g. for an assistant's
-tool list (`ASSET_TOOLS`). Each one validates its input with Zod and returns
+`src/lib/stocks/tools.ts` holds server-side functions, e.g. for an assistant's
+tool list (`STOCK_TOOLS`). Each one validates its input with Zod and returns
 `{ data, reason }`: the data, or `null` and why.
 
-- **Assets are named by ticker or token symbol and resolved only through the
-  registry** ([assets.md](./assets.md)). No tool accepts a mint address, so
-  nothing outside the registry can be looked up or quoted. A ticker shared by
-  two issuers (`AAPL` → AAPLx and AAPLon) is refused as ambiguous for quotes;
-  the token symbol must be used.
+- **Stocks are named by ticker or token symbol and resolved only through the
+  stock registry** ([tokenized-stocks.md](./tokenized-stocks.md)). No tool
+  accepts or returns a mint address, so nothing outside the registry can be
+  looked up or quoted. A ticker (`NVDA`) means every issuer's token, and quotes
+  pick the cheapest; a token symbol (`NVDAon`) means that issuer only.
 - **Numbers are never estimated.** Any missing figure is `null`, and the
   per-asset `missing` map says why (e.g. `"Not applicable to an ETF or fund"`,
   or the provider's error).
 - **Market data is cached for 15 minutes** (`src/server/cache.ts`; failures are
   not cached). Swap quotes and wallet balances are always live.
 
-| Tool                                           | Returns                                                                                                                                                                                   | Sources                                 |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| `listAssets({ sector? })`                      | The registry's tokenized stocks (ticker, symbol, name, sector, issuer, hours)                                                                                                             | Registry                                |
-| `getStockMetrics(tickers[])`                   | Per company: market cap, P/E (TTM), latest annual revenue growth %, 1M/6M/1Y returns %, ETF flag, which tokens represent it                                                               | Financial Modeling Prep                 |
-| `getSwapQuote({ ticker, usdcAmount, wallet })` | Tokens out, minimum out, price impact %, fee bps, network fees (SOL), router, gasless, a warning if the wallet can't make the trade. `executed: false`; the transaction is never returned | Jupiter `/order` (with `taker`) and RPC |
-| `getWalletBalances(wallet)`                    | Native SOL and USDC                                                                                                                                                                       | Solana RPC                              |
+| Tool                                                                    | Returns                                                                                                                                                                                                                                                                    | Sources                                 |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `listStocksTool({ sector?, industry?, type?, search?, minLiquidity? })` | Registry companies, most liquid first (up to 60): ticker, name, stock/ETF, sector, industry, liquidity tier, issuers' token symbols; `searched` echoes the sectors and filters used. An unknown sector fails with the list of valid ones                                   | Registry                                |
+| `getStockMetrics(tickers[])`                                            | Per company: market cap, P/E (TTM), latest annual revenue growth %, 1M/6M/1Y returns %, ETF flag, which tokens represent it                                                                                                                                                | Financial Modeling Prep                 |
+| `getSwapQuote({ ticker, usdcAmount, wallet })`                          | The cheapest issuer's quote (`issuersCompared` lists every issuer's total cost): tokens out, minimum out, price impact %, fee bps, network fees (SOL), router, gasless, a warning if the wallet can't make the trade. `executed: false`; the transaction is never returned | Jupiter `/order` (with `taker`) and RPC |
+| `getWalletBalances(wallet)`                                             | Native SOL and USDC                                                                                                                                                                                                                                                        | Solana RPC                              |
 
 ## Stock data: Financial Modeling Prep
 
@@ -61,11 +61,17 @@ returns the transaction.
   becomes `warning`.
 - **RFQ (JupiterZ) quotes don't check the wallet's balance** (seen live with
   NVDAx), so the tool also reads the wallet's USDC and warns when it's short.
-- **`thinLiquidity`:** price impact above the thin-liquidity threshold (1%).
+- **`thinLiquidity`:** price impact above the medium-liquidity limit (1%).
+- **Several issuers:** each issuer's token is quoted in turn (paced within
+  Jupiter's rate limit, at most 4) and the lowest |price impact| + fee wins,
+  preferring quotes Jupiter can build for this wallet
+  (`quoteBestIssuer`, `src/lib/stocks/best.ts`).
 
 ## Tests
 
-- `src/lib/assets/tools.test.ts`: every tool with mocked registry, FMP,
-  Jupiter and RPC. Covers successful lookups and every null-with-reason case.
+- `src/lib/stocks/tools.test.ts`: best-issuer selection with mocked Jupiter
+  orders.
+- `src/lib/stocks/registry.test.ts`: sector, industry, type, search and
+  liquidity filters; ticker resolution.
 - `src/server/market/fmp.test.ts`: request URLs, keys, and error and 404
   handling.

@@ -8,7 +8,6 @@ vi.hoisted(() => {
   });
 });
 // The loop only needs the tool definitions, not the tools' dependencies.
-vi.mock("@/server/assets/registry", () => ({ getRegistry: vi.fn() }));
 
 import type { AcceptedPlan } from "@/lib/agent/plan";
 
@@ -163,9 +162,9 @@ describe("runAgentTurn", () => {
     const { result, tool, events } = await run([
       message(
         [
-          thinking("Checking the wallet and the assets."),
+          thinking("Checking the wallet and the stocks."),
           toolUse("t1", "getWalletBalances", {}),
-          toolUse("t2", "listAssets", { sector: "Technology" }),
+          toolUse("t2", "listStocks", { sector: "Technology" }),
         ],
         "tool_use",
       ),
@@ -173,7 +172,7 @@ describe("runAgentTurn", () => {
     ]);
     expect(tool.mock.calls).toEqual([
       ["getWalletBalances", {}],
-      ["listAssets", { sector: "Technology" }],
+      ["listStocks", { sector: "Technology" }],
     ]);
     expect(result.history[2]).toEqual({
       role: "user",
@@ -194,14 +193,14 @@ describe("runAgentTurn", () => {
     });
     // The thinking block is echoed back unchanged (preserved thinking).
     expect((result.history[1] as { content: Block[] }).content[0]).toEqual(
-      thinking("Checking the wallet and the assets."),
+      thinking("Checking the wallet and the stocks."),
     );
     expect(events).toContainEqual({
       type: "progress",
-      text: "Checking the wallet and the assets.",
+      text: "Checking the wallet and the stocks.",
     });
     expect(events.filter((e) => e.type === "tool").map((e) => e.type === "tool" && e.name)).toEqual(
-      ["getWalletBalances", "listAssets"],
+      ["getWalletBalances", "listStocks"],
     );
     // Each result streams with its call's id, for the "data used" panel.
     expect(events).toContainEqual({
@@ -215,7 +214,7 @@ describe("runAgentTurn", () => {
 
   it("redacts addresses in streamed tool results", async () => {
     const { events, result } = await run(
-      [message([toolUse("t1", "listAssets", {})], "tool_use"), message([text("ok")], "end_turn")],
+      [message([toolUse("t1", "listStocks", {})], "tool_use"), message([text("ok")], "end_turn")],
       async () => ({
         content: '{"note":"XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp"}',
         isError: false,
@@ -275,7 +274,7 @@ describe("runAgentTurn", () => {
 
   it("stops on a refusal without running that turn's tools", async () => {
     const { result, tool, events } = await run([
-      message([toolUse("t1", "listAssets", {})], "refusal"),
+      message([toolUse("t1", "listStocks", {})], "refusal"),
     ]);
     expect(tool).not.toHaveBeenCalled();
     expect(events).toContainEqual({
@@ -290,7 +289,7 @@ describe("runAgentTurn", () => {
       message(
         [
           text("Let me check. "),
-          toolUse("old", "listAssets", {}),
+          toolUse("old", "listStocks", {}),
           fallback(),
           toolUse("new", "getWalletBalances", {}),
         ],
@@ -375,7 +374,7 @@ describe("runAgentTurn", () => {
 
 describe("echoableContent", () => {
   it("keeps everything when there was no fallback", () => {
-    const content = [thinking("x"), text("y"), toolUse("a", "listAssets", {})];
+    const content = [thinking("x"), text("y"), toolUse("a", "listStocks", {})];
     expect(echoableContent(content)).toBe(content);
   });
 });

@@ -52,8 +52,7 @@ export function usePlanQuotes(items: Wanted[], wallet: string | null, enabled: b
               symbol: item.symbol,
               quote: null,
               reason: error instanceof Error ? error.message : "Couldn't get a quote",
-              liquidityUsd: null,
-              hours: null,
+              token: null,
             };
           }
           if (abort.signal.aborted) return;

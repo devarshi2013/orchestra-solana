@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "sync:stocks": "node --experimental-strip-types --no-warnings=ExperimentalWarning scripts/sync-stocks.ts",
+    "build": "pnpm sync:stocks --refresh && next build",
     "start": "next start",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
@@ -14,8 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test",
-    "assets:sync-stocks": "node scripts/sync-stock-sources.mjs"
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",
@@ -52,6 +52,6 @@
   },
   "packageManager": "pnpm@12.8.1",
   "engines": {
-    "node": ">=20.9"
+    "node": ">=22.6"
   }
 }
