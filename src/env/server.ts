@@ -23,26 +23,18 @@ function read(key: Key): unknown {
 
 /**
  * Server env. Each variable is validated when first read, on its own, so a
- * missing secret only fails the features that use it (e.g. no DATABASE_URL
- * doesn't break wallet sign-in), with an error naming that variable.
+ * missing secret only fails the features that use it (e.g. no ANTHROPIC_API_KEY
+ * doesn't break swaps), with an error naming that variable.
  */
 export const serverEnv: ServerEnv = new Proxy({} as ServerEnv, {
   get: (_target, key) => (typeof key === "string" && key in shape ? read(key as Key) : undefined),
 });
 
-/** Optional in the schema (development has fallbacks) but required in production. */
-const REQUIRED_IN_PRODUCTION: Key[] = ["SESSION_SECRET", "CRON_SECRET"];
-
 /** Which variables are missing or invalid (names only, never values), for /api/health. */
 export function envProblems(): { missing: string[]; invalid: string[] } {
   const missing: string[] = [];
   const invalid: string[] = [];
-  const production = process.env.NODE_ENV === "production";
   for (const key of Object.keys(shape) as Key[]) {
-    if (production && REQUIRED_IN_PRODUCTION.includes(key) && !process.env[key]?.trim()) {
-      missing.push(key);
-      continue;
-    }
     if (shape[key].safeParse(cleanEnvValue(process.env[key])).success) continue;
     (process.env[key] === undefined || process.env[key]?.trim() === "" ? missing : invalid).push(
       key,

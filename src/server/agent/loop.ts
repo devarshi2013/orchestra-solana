@@ -3,7 +3,6 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 
 import type { AcceptedPlan } from "@/lib/agent/plan";
-import type { SymphonyProposal } from "@/lib/assistant/views";
 import { SYSTEM_PROMPT } from "@/lib/agent/prompt";
 import { createAddressRedactor } from "@/lib/agent/redact";
 import { displayToolResult } from "@/lib/agent/transcript";
@@ -30,7 +29,6 @@ export type AgentEvent =
   /** `content`: the result as the model saw it, for the "data used" panel (redacted, capped). */
   | { type: "tool_result"; id: string; name: string; ok: boolean; content: string }
   | { type: "plan"; plan: AcceptedPlan }
-  | { type: "symphony"; id: string; proposal: SymphonyProposal }
   | { type: "error"; message: string };
 
 /** The slice of the SDK client the loop uses (so tests can supply a fake). */
@@ -104,29 +102,12 @@ export async function runAgentTurn(opts: {
   client: AgentClient;
   history: MessageParam[];
   userText: string;
-  /**
-   * What the user is looking at (e.g. the symphony open in the editor), sent
-   * as a separate text block before their message. Starts with CONTEXT_TAG so
-   * transcripts can hide it.
-   */
-  context?: string;
   runTool: (name: string, input: unknown) => Promise<ToolOutcome>;
   emit: (event: AgentEvent) => void;
   signal?: AbortSignal;
 }): Promise<{ history: MessageParam[]; plan: AcceptedPlan | null; usage: AgentUsage }> {
   const { client, runTool, emit, signal } = opts;
-  const messages: MessageParam[] = [
-    ...opts.history,
-    opts.context
-      ? {
-          role: "user",
-          content: [
-            { type: "text", text: opts.context },
-            { type: "text", text: opts.userText },
-          ],
-        }
-      : { role: "user", content: opts.userText },
-  ];
+  const messages: MessageParam[] = [...opts.history, { role: "user", content: opts.userText }];
   let stable = messages.length;
   let plan: AcceptedPlan | null = null;
   let planAttempts = 0;
@@ -205,9 +186,6 @@ export async function runAgentTurn(opts: {
         toolUses.map(async (toolUse): Promise<ToolResult> => {
           emit({ type: "tool", id: toolUse.id, name: toolUse.name, input: toolUse.input });
           let outcome = await runTool(toolUse.name, toolUse.input);
-          if (outcome.symphony) {
-            emit({ type: "symphony", id: toolUse.id, proposal: outcome.symphony });
-          }
           if (toolUse.name === "submit_plan") {
             planAttempts++;
             if (outcome.plan) {

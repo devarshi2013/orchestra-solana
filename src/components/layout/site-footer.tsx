@@ -1,10 +1,9 @@
 import Link from "next/link";
 
 const LINKS = [
-  { href: "/create", label: "Create" },
-  { href: "/backtest", label: "Backtest" },
-  { href: "/assets", label: "Assets" },
-  { href: "/history", label: "History" },
+  { href: "/assistant", label: "Assistant" },
+  { href: "/assets", label: "Stocks" },
+  { href: "/swap", label: "Swap" },
 ];
 
 export function SiteFooter() {
@@ -14,8 +13,8 @@ export function SiteFooter() {
         <div className="space-y-1">
           <p className="text-sm font-semibold">Orchestra</p>
           <p className="max-w-md type-caption">
-            Non-custodial: your wallet signs every trade, and Orchestra never holds funds. Research,
-            not financial advice.
+            Non-custodial: your wallet approves every swap, and Orchestra never holds funds.
+            Tokenized stocks are securities with eligibility rules. Research, not financial advice.
           </p>
         </div>
         <nav aria-label="Footer">

@@ -56,7 +56,7 @@ export const CRYPTO_ALLOWLIST = [
 }[];
 
 /**
- * The cash asset. Listed so symphonies can hold it, but never offered as an
+ * The cash asset (what plans spend). Listed for balances and quotes, but never offered as an
  * investment pick.
  */
 export const CASH_ASSET = {

@@ -2,7 +2,7 @@
  * The one-time risk disclosure every wallet accepts before using the
  * assistant. Changing the points? Bump the version so everyone accepts again.
  */
-export const ASSISTANT_DISCLOSURE_VERSION = 1;
+export const ASSISTANT_DISCLOSURE_VERSION = 2;
 
 export const DISCLOSURE_POINTS = [
   {
@@ -18,7 +18,7 @@ export const DISCLOSURE_POINTS = [
     text: "Ondo and xStocks tokens are securities with eligibility rules: they aren't available to US persons, xStocks excludes the UK, and other countries may restrict them. Only buy them if you're eligible where you live.",
   },
   {
-    title: "Crypto is volatile",
-    text: "Crypto prices can fall sharply and quickly, and you can lose everything you put in.",
+    title: "You can lose money",
+    text: "Stock prices can fall sharply, and tokenized stocks add on-chain risks: issuer pauses, thin liquidity and price gaps outside US market hours.",
   },
 ] as const;

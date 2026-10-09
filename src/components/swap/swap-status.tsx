@@ -2,7 +2,6 @@ import { CheckCircle2, ExternalLink, Loader2, XCircle } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { clientEnv } from "@/env/client";
 import type { SwapState } from "@/hooks/use-swap";
 import { formatBaseUnits } from "@/lib/amount";
 import { solscanTxUrl } from "@/lib/solana";
@@ -12,7 +11,7 @@ import type { TokenInfo } from "@/lib/tokens";
 function SolscanLink({ signature }: { signature: string }) {
   return (
     <a
-      href={solscanTxUrl(signature, clientEnv.NEXT_PUBLIC_SOLANA_CLUSTER)}
+      href={solscanTxUrl(signature, "mainnet-beta")}
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1 font-medium underline underline-offset-4"

@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 import type { Asset } from "@/lib/assets/registry";
-import { MIN_LEG_USD } from "@/lib/invest/plan";
+import { MIN_ORDER_USD } from "@/lib/units";
 
 const planItemSchema = z
   .object({
-    kind: z.enum(["stock", "crypto"]),
+    kind: z.enum(["stock"]),
     ticker: z.string().trim().min(1).max(20),
     usdcAmount: z.number().finite().positive(),
     reason: z.string().trim().min(1).max(500),
@@ -48,7 +48,7 @@ export function validatePlan(
   if (!parsed.success)
     return { ok: false, errors: [`Malformed plan: ${z.prettifyError(parsed.error)}`] };
   const plan = parsed.data;
-  const minOrder = ctx.minOrderUsd ?? MIN_LEG_USD;
+  const minOrder = ctx.minOrderUsd ?? MIN_ORDER_USD;
   const errors: string[] = [];
   const seen = new Set<string>();
   const items: AcceptedPlan["items"] = [];

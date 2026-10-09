@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
   Object.assign(process.env, {
-    DATABASE_URL: "postgresql://u:p@localhost:5432/db",
     JUPITER_API_KEY: "jup_test_key",
     JUPITER_API_BASE_URL: "https://api.jup.ag",
     SOLANA_RPC_URL: "https://api.mainnet-beta.solana.com",

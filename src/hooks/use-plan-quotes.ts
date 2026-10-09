@@ -15,7 +15,7 @@ const keyOf = (item: Wanted) => `${item.symbol}:${item.usdcAmount}`;
  * re-quoted (after a short pause in typing); `refresh()` re-quotes them all.
  * The server paces Jupiter calls, so quotes arrive one by one.
  */
-export function usePlanQuotes(items: Wanted[], enabled: boolean) {
+export function usePlanQuotes(items: Wanted[], wallet: string | null, enabled: boolean) {
   const [quoted, setQuoted] = useState<Record<string, { key: string; quote: ItemQuote }>>({});
   const [inFlight, setInFlight] = useState(0);
   const [refreshes, setRefreshes] = useState(0);
@@ -24,7 +24,7 @@ export function usePlanQuotes(items: Wanted[], enabled: boolean) {
   const key = items.map(keyOf).join("|");
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !wallet) return;
     const wanted: Wanted[] = key
       ? key.split("|").map((k) => {
           const at = k.lastIndexOf(":");
@@ -45,7 +45,7 @@ export function usePlanQuotes(items: Wanted[], enabled: boolean) {
         for (const item of stale) {
           let quote: ItemQuote;
           try {
-            quote = await assistantApi.quote(item, abort.signal);
+            quote = await assistantApi.quote({ ...item, wallet }, abort.signal);
           } catch (error) {
             if (abort.signal.aborted) return;
             quote = {
@@ -68,7 +68,7 @@ export function usePlanQuotes(items: Wanted[], enabled: boolean) {
       clearTimeout(timer);
       abort.abort();
     };
-  }, [key, enabled, refreshes]);
+  }, [key, enabled, refreshes, wallet]);
 
   /** Only quotes for the amounts currently entered. */
   const quotes = useMemo(() => {
@@ -85,16 +85,16 @@ export function usePlanQuotes(items: Wanted[], enabled: boolean) {
 }
 
 /** The wallet's USDC and SOL for the pre-flight checks; `reload()` after buying. */
-export function useWalletFunds(enabled: boolean) {
+export function useWalletFunds(wallet: string | null) {
   const [funds, setFunds] = useState<{ usdc: number; sol: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loads, setLoads] = useState(0);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!wallet) return;
     const abort = new AbortController();
     assistantApi
-      .balances(abort.signal)
+      .balances(wallet, abort.signal)
       .then((result) => {
         if (result.usdc === null || result.sol === null) {
           setError(result.reason ?? "Couldn't read your wallet");
@@ -107,7 +107,7 @@ export function useWalletFunds(enabled: boolean) {
         if (!abort.signal.aborted) setError(e instanceof Error ? e.message : String(e));
       });
     return () => abort.abort();
-  }, [enabled, loads]);
+  }, [wallet, loads]);
 
   const reload = useCallback(() => setLoads((n) => n + 1), []);
   return { funds, error, reload };

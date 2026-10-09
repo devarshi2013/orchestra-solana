@@ -1,80 +1,96 @@
 # Orchestra
 
-Build rule-based Solana token portfolios ("symphonies") visually, backtest them, and run them with periodic rebalancing. Inspired by [Composer](https://composer.trade).
+An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain English (for example "three large US tech stocks for 200 USDC"):
 
-> **Status:** scaffold only. No features yet.
+- The assistant researches the tokenized stocks Orchestra lists (xStocks and Ondo) with live data, and shows every tool call it used.
+- It proposes a plan, with **live Jupiter quotes** for each stock.
+- It **swaps your USDC for the stock tokens only after you approve each swap in your wallet**.
 
 ## Ground rules
 
-- **No custom smart contracts or on-chain programs.** All on-chain execution goes through Jupiter's REST APIs.
-- **Non-custodial.** The user's wallet signs every transaction. We never hold keys or funds, and we never use Jupiter products that deposit into custodial vaults (Trigger v2 / DCA). See [docs/jupiter-api.md §0](docs/jupiter-api.md).
-- **The Jupiter API key is server-only.** The browser calls our `/api/*` route handlers, which forward requests to `api.jup.ag` through `src/server/jupiter/client.ts`. Never use `lite-api.jup.ag`.
+- **Non-custodial.** Your wallet signs every swap (`signTransaction`; the app never sends from the wallet), and Orchestra never holds keys or funds. No Jupiter products that deposit into custodial vaults (Trigger v2 / DCA).
+- **No custom smart contracts or on-chain programs.** All execution goes through Jupiter's Swap v2 REST API (`/order` + `/execute`).
+- **Keys stay on the server.** The browser calls our `/api/*` routes, which call Jupiter (`src/server/jupiter/client.ts`) and Claude (`src/server/agent/client.ts`). Never use `lite-api.jup.ag`.
+- **Registry-only assets.** The assistant can only suggest stocks from the verified registry (`src/lib/assets/registry.ts`). Token addresses come from the registry, never from the AI.
+- **No invented numbers.** Every figure the assistant states comes from a tool result, which the user can inspect under "Data used".
+
+## Pages
+
+| Route        | What it does                                                                                                                                                                                        |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/assistant` | The chatbot: streamed answers, "Data used" panels, plan cards with live quotes, warnings (price impact, liquidity, US market hours), pre-flight checks, and wallet-approved buys with Solscan links |
+| `/assets`    | The tokenized stocks the assistant can use, with live prices                                                                                                                                        |
+| `/swap`      | A plain Jupiter swap, using the same non-custodial flow                                                                                                                                             |
+
+There's **no database**:
+
+- **Chats:** they live in the browser tab, which sends the conversation back with each message.
+- **Plans:** every plan is re-checked on the server against the live registry and wallet balance.
+- **Disclosure:** the one-time risk disclosure is remembered in the browser.
+
+See [docs/assistant.md](docs/assistant.md).
 
 ## Stack
 
-Next.js 16 (App Router, Cache Components) · TypeScript (strict) · Tailwind v4 · shadcn/ui · Zustand · `@solana/web3.js` + `@solana/wallet-adapter` · Zod · Prisma 7 + Postgres · Vitest · ESLint + Prettier · pnpm
+Next.js 16 (App Router) · TypeScript (strict) · Tailwind v4 · shadcn/ui · `@solana/web3.js` + `@solana/wallet-adapter` · Anthropic SDK (Claude) · Zod · Vitest · pnpm
 
 ## Getting started
 
-Requirements: Node ≥ 20.9, pnpm, and Docker (for local Postgres).
+Requirements: Node ≥ 20.9 and pnpm.
 
 ```bash
-pnpm install                      # also runs `prisma generate`
-cp .env.example .env.local        # read by Next.js
-cp .env.example .env              # read by the Prisma CLI
-# then set JUPITER_API_KEY (https://developers.jup.ag/portal) in both files
-
-pnpm db:up                        # start Postgres in Docker
-pnpm db:migrate                   # apply migrations (none yet)
-pnpm dev                          # http://localhost:3000
+pnpm install
+cp .env.example .env.local   # then fill in the keys below
+pnpm dev                     # http://localhost:3000
 ```
 
 ## Environment
 
-Variables are validated with Zod in [`src/env/schema.ts`](src/env/schema.ts). `next dev` and `next build` fail fast if any are invalid. Set `SKIP_ENV_VALIDATION=1` only for jobs that have no secrets, such as lint-only CI.
+Variables are validated with Zod in [`src/env/schema.ts`](src/env/schema.ts). Blank values count as unset.
 
-| Variable                     | Scope   | Purpose                                                                 |
-| ---------------------------- | ------- | ----------------------------------------------------------------------- |
-| `DATABASE_URL`               | server  | Postgres connection string                                              |
-| `JUPITER_API_KEY`            | server  | Sent as `x-api-key` to `api.jup.ag`                                     |
-| `JUPITER_API_BASE_URL`       | server  | Defaults to `https://api.jup.ag`; `lite-api` is rejected                |
-| `SOLANA_RPC_URL`             | server  | RPC for server-side reads (can hold a provider key)                     |
-| `NEXT_PUBLIC_SOLANA_CLUSTER` | browser | `mainnet-beta` (default) or `devnet`. Jupiter swaps are mainnet-only.   |
-| `NEXT_PUBLIC_SOLANA_RPC_URL` | browser | RPC for the wallet adapter. Use a public or origin-restricted endpoint. |
+| Variable                     | Scope   | Required | Purpose                                                                               |
+| ---------------------------- | ------- | -------- | ------------------------------------------------------------------------------------- |
+| `JUPITER_API_KEY`            | server  | yes      | Sent as `x-api-key` to `api.jup.ag` (https://developers.jup.ag/portal)                |
+| `JUPITER_API_BASE_URL`       | server  | no       | Defaults to `https://api.jup.ag`; `lite-api` is rejected                              |
+| `ANTHROPIC_API_KEY`          | server  | for chat | Claude API key; without it the assistant answers 503                                  |
+| `MARKET_DATA_API_KEY`        | server  | no       | Financial Modeling Prep key for stock fundamentals (market cap, P/E, growth, returns) |
+| `SOLANA_RPC_URL`             | server  | no       | Server RPC for balances; defaults to the public mainnet RPC (may hold a provider key) |
+| `NEXT_PUBLIC_SOLANA_RPC_URL` | browser | no       | Wallet-adapter RPC; defaults to the public mainnet RPC. Never put a secret here       |
 
-Import `serverEnv` from `@/env/server` (guarded by `server-only`) and `clientEnv` from `@/env/client`. ESLint stops client code (`src/components`, `src/hooks`, `src/stores`) from importing server modules.
+Import `serverEnv` from `@/env/server` (guarded by `server-only`) and `clientEnv` from `@/env/client`. `GET /api/health` reports missing variables by name (never values).
 
 ## Scripts
 
-| Script                                                    | Description                                                  |
-| --------------------------------------------------------- | ------------------------------------------------------------ |
-| `pnpm dev` / `build` / `start`                            | Next.js                                                      |
-| `pnpm check`                                              | typecheck + lint + format check + tests                      |
-| `pnpm typecheck`                                          | `next typegen && tsc --noEmit`                               |
-| `pnpm lint` / `lint:fix`                                  | ESLint (Next core-web-vitals + TypeScript + Prettier compat) |
-| `pnpm format` / `format:check`                            | Prettier, with Tailwind class sorting                        |
-| `pnpm test` / `test:watch` / `test:coverage`              | Vitest                                                       |
-| `pnpm db:up` / `db:generate` / `db:migrate` / `db:studio` | Docker Postgres and Prisma                                   |
+| Script                                       | Description                             |
+| -------------------------------------------- | --------------------------------------- |
+| `pnpm dev` / `build` / `start`               | Next.js                                 |
+| `pnpm check`                                 | typecheck + lint + format check + tests |
+| `pnpm typecheck`                             | `next typegen && tsc --noEmit`          |
+| `pnpm lint` / `lint:fix`                     | ESLint                                  |
+| `pnpm format` / `format:check`               | Prettier, with Tailwind class sorting   |
+| `pnpm test` / `test:watch` / `test:coverage` | Vitest                                  |
+| `pnpm assets:sync-stocks`                    | Refresh the issuers' stock token lists  |
 
 ## Layout
 
 ```
-docs/jupiter-api.md          Jupiter endpoints, params, response shapes, and where they differ from the brief
-prisma/schema.prisma         DB schema (no models yet)
-prisma.config.ts             Prisma 7 CLI config (datasource URL comes from here, not the schema)
-src/app/                     App Router pages and /api route handlers
-src/components/ui/           shadcn/ui components (`pnpm dlx shadcn@latest add <name>`)
-src/components/providers/    Client providers (Solana wallet)
-src/env/                     Zod env schemas: server.ts (server-only), client.ts
-src/server/                  Server-only code: db.ts (Prisma), jupiter/client.ts (keyed fetch)
-src/generated/prisma/        Generated Prisma client (git-ignored)
+docs/                        Assistant, assets, tokenized stocks, Jupiter API notes, deployment
+src/app/                     Pages (/, /assistant, /assets, /swap) and /api route handlers
+src/components/assistant/    Chat, plan card, data-used panels, disclosure and wallet gates
+src/hooks/                   Chat stream, plan quotes, plan buying, swap flow
+src/lib/agent/               System prompt, plan validation, address redaction
+src/lib/assets/              Stock registry, asset tools (listAssets, metrics, quotes, balances)
+src/server/agent/            Claude tool-use loop, tools, rate limit
+src/server/jupiter/          Keyed Jupiter client (order, execute, prices, tokens)
+src/env/                     Zod env schemas
 ```
 
 ## Wallets
 
-Phantom, Backpack and Jupiter Wallet all implement the [Wallet Standard](https://github.com/wallet-standard/wallet-standard), so the wallet adapter detects them without per-wallet packages (`wallets={[]}`). Wallets only **sign** (`signTransaction`). Signed transactions go back through our API to Jupiter's `/execute`, which handles landing. This matters for RFQ routes, where the market maker co-signs during `/execute`.
+Phantom, Backpack, Jupiter Wallet and other [Wallet Standard](https://github.com/wallet-standard/wallet-standard) wallets are detected automatically. Wallets only **sign** (`signTransaction`). Signed transactions go back through our API to Jupiter's `/execute`, which lands them; for RFQ routes the market maker co-signs there.
 
 ## Notes
 
-- Next.js is pinned to **16.3.8**. pnpm's `minimumReleaseAge` policy rejected 16.4.0 because it was published less than 24h before scaffolding. You can bump it once it has aged.
+- Tokenized stocks are securities with eligibility rules: they aren't available to US persons, and other regions restrict them (see [docs/tokenized-stocks.md](docs/tokenized-stocks.md)).
+- This is research, not financial advice.
 - `AGENTS.md` contains a block that `next dev` regenerates. Keep it committed.

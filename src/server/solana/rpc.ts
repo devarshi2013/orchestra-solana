@@ -3,7 +3,7 @@ import "server-only";
 import { Connection, PublicKey, type ParsedTransactionWithMeta } from "@solana/web3.js";
 
 import { serverEnv } from "@/env/server";
-import type { Balance } from "@/lib/invest/plan";
+import type { Balance } from "@/lib/units";
 import { SOL_MINT } from "@/lib/tokens";
 
 const TOKEN_PROGRAM = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");

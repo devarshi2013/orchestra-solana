@@ -8,14 +8,9 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export const NAV = [
-  { href: "/create", label: "Create" },
   { href: "/assistant", label: "Assistant" },
-  { href: "/invest", label: "Invest" },
-  { href: "/assets", label: "Assets" },
+  { href: "/assets", label: "Stocks" },
   { href: "/swap", label: "Swap" },
-  { href: "/symphonies", label: "Symphonies" },
-  { href: "/backtest", label: "Backtest" },
-  { href: "/history", label: "History" },
 ] as const;
 
 const linkClass =
@@ -25,7 +20,7 @@ const linkClass =
 export function NavLinks() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+    <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
       {NAV.map(({ href, label }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
@@ -51,7 +46,7 @@ export function NavLinks() {
 /** Before the URL is known (prerender): the same links, none highlighted. */
 export function NavLinksFallback() {
   return (
-    <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
+    <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
       {NAV.map(({ href, label }) => (
         <Link
           key={href}
@@ -83,7 +78,7 @@ export function MobileNav() {
   }, [open]);
 
   return (
-    <div className="lg:hidden">
+    <div className="md:hidden">
       <button
         type="button"
         aria-expanded={open}
@@ -100,7 +95,7 @@ export function MobileNav() {
           aria-label="Main"
           className="absolute inset-x-0 top-full border-b bg-background px-4 py-3 shadow-lift"
         >
-          <ul className="mx-auto grid max-w-6xl grid-cols-2 gap-1 sm:grid-cols-4">
+          <ul className="mx-auto grid max-w-6xl grid-cols-3 gap-1">
             {NAV.map(({ href, label }) => {
               const active = pathname === href || pathname.startsWith(`${href}/`);
               return (

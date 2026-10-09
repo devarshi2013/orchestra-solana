@@ -1,4 +1,4 @@
-import { AudioWaveform, Plus } from "lucide-react";
+import { AudioWaveform, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -31,8 +31,8 @@ export function SiteHeader() {
         </Suspense>
         <span className="flex-1" />
         <Button asChild size="sm" className="hidden sm:inline-flex">
-          <Link href="/create">
-            <Plus /> New symphony
+          <Link href="/assistant">
+            <Sparkles /> Ask the assistant
           </Link>
         </Button>
         <ThemeToggle />

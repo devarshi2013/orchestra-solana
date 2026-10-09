@@ -1,51 +1,50 @@
 "use client";
 
 import { ShieldAlert } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { assistantApi } from "@/lib/api-client";
-import { DISCLOSURE_POINTS } from "@/lib/assistant/disclosure";
+import { ASSISTANT_DISCLOSURE_VERSION, DISCLOSURE_POINTS } from "@/lib/assistant/disclosure";
+
+const KEY = `orchestra-disclosure-v${ASSISTANT_DISCLOSURE_VERSION}`;
+const listeners = new Set<() => void>();
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
+const readAccepted = () => {
+  try {
+    return localStorage.getItem(KEY) === "accepted";
+  } catch {
+    return false;
+  }
+};
 
 /**
- * Shows the assistant only once the wallet has accepted the risk disclosure
- * (once per wallet, stored server-side; the API refuses chats and purchases
- * without it).
+ * Shows the assistant only once this browser has accepted the risk
+ * disclosure (remembered locally; bumping ASSISTANT_DISCLOSURE_VERSION asks
+ * again).
  */
 export function DisclosureGate({ children }: { children: ReactNode }) {
-  const [accepted, setAccepted] = useState<boolean | null>(null);
+  // null while server rendering, so the page never flashes the wrong state.
+  const accepted = useSyncExternalStore<boolean | null>(subscribe, readAccepted, () => null);
   const [checked, setChecked] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [sessionAccepted, setSessionAccepted] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    assistantApi
-      .disclosure()
-      .then((result) => !cancelled && setAccepted(result.accepted))
-      .catch((e: unknown) => !cancelled && setError(e instanceof Error ? e.message : String(e)));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const accept = async () => {
-    setBusy(true);
-    setError(null);
+  const accept = () => {
     try {
-      await assistantApi.acceptDisclosure();
-      setAccepted(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
+      localStorage.setItem(KEY, "accepted");
+    } catch {
+      // Storage blocked (private mode): accept for this page view only.
+      setSessionAccepted(true);
     }
+    listeners.forEach((l) => l());
   };
 
-  if (accepted) return <>{children}</>;
-  if (accepted === null && !error) return <Skeleton className="h-64 w-full" />;
+  if (accepted || sessionAccepted) return <>{children}</>;
+  if (accepted === null) return <Skeleton className="h-64 w-full" />;
   return (
     <Card className="mx-auto max-w-xl">
       <CardHeader>
@@ -71,12 +70,11 @@ export function DisclosureGate({ children }: { children: ReactNode }) {
             className="mt-0.5 size-4 accent-primary"
           />
           I understand the AI can be wrong, its plans aren&apos;t financial advice, tokenized stocks
-          are securities I must be eligible to buy, and crypto is volatile.
+          are securities I must be eligible to buy, and I can lose money.
         </label>
-        <Button onClick={() => void accept()} disabled={!checked || busy}>
-          {busy ? "Saving…" : "Accept and continue"}
+        <Button onClick={accept} disabled={!checked}>
+          Accept and continue
         </Button>
-        {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>
     </Card>
   );

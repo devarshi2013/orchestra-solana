@@ -10,15 +10,12 @@ export function describeTool(name: string, input: unknown): string {
     tickers?: string[];
     ticker?: string;
     usdcAmount?: number;
-    kind?: string;
   };
   switch (name) {
     case "listAssets":
-      return `Looked up ${i.kind ? `${i.kind} ` : ""}assets`;
+      return "Looked up the listed stocks";
     case "getStockMetrics":
       return `Stock metrics: ${(i.tickers ?? []).join(", ")}`;
-    case "getCryptoMetrics":
-      return `Crypto metrics: ${(i.tickers ?? []).join(", ")}`;
     case "getSwapQuote":
       return `Jupiter quote: ${i.usdcAmount ?? "?"} USDC → ${i.ticker ?? "?"}`;
     case "getWalletBalances":

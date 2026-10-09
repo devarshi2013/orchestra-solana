@@ -1,55 +1,44 @@
 # Deploying to production (Vercel)
 
-Orchestra is a Next.js 16 app with Postgres (Prisma 7). Vercel hosts the app and runs its two daily cron jobs (`vercel.json`). The database must be a hosted Postgres that Vercel can reach. The local `docker-compose.yml` database is for development only.
+Orchestra is a Next.js 16 app with **no database** and **no cron jobs**. Vercel hosts it; `pnpm build` is the build command.
 
 ## What runs where
 
-| Piece               | Where                                                                                                                                                                                                      |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pages and UI        | Browser. The only env it sees is `NEXT_PUBLIC_*` (cluster and RPC URL; never secrets).                                                                                                                     |
-| `/api/*` routes     | Vercel serverless functions (Node). All provider keys are used only here, behind `server-only`.                                                                                                            |
-| Jupiter swaps       | The browser asks `/api/swap/order` for an unsigned transaction. The **user's wallet signs** it (`signTransaction`; the app never holds keys) and `/api/swap/execute` forwards the signed bytes to Jupiter. |
-| Claude (assistant)  | `/api/agent` and `/api/investments/[id]/explanation`, server-side only.                                                                                                                                    |
-| Price history       | `/api/cron/prices`, daily at 00:10 UTC. GeckoTerminal (keyless) by default, or Birdeye when `BIRDEYE_API_KEY` is set (server-side).                                                                        |
-| Rebalance reminders | `/api/cron/rebalances`, daily at 00:20 UTC.                                                                                                                                                                |
-| Database migrations | `scripts/vercel-build.mjs` runs `prisma migrate deploy` before `next build`, but only when `DATABASE_URL` is set.                                                                                          |
+| Piece             | Where                                                                                                                                                                 |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pages and UI      | Browser. The only env it sees is `NEXT_PUBLIC_SOLANA_RPC_URL` (never a secret).                                                                                       |
+| `/api/*` routes   | Vercel serverless functions (Node). Every provider key is used only here, behind `server-only`.                                                                       |
+| Claude            | `/api/agent`, server-side only.                                                                                                                                       |
+| Jupiter swaps     | The browser gets an unsigned order from `/api/swap/order`, the **user's wallet signs it** (the app never holds keys), and `/api/swap/execute` forwards it to Jupiter. |
+| Chats, disclosure | In the browser (no database).                                                                                                                                         |
 
 ## Environment variables
 
-Set these in Vercel → Project → Settings → Environment Variables (Production), never in code. Values marked _secret_ must not be shared or committed.
+Set these in Vercel → Project → Settings → Environment Variables (Production and Preview), never in code.
 
-| Variable                                                                      | Required                  | Notes                                                                                                                                    |
-| ----------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                                                                | **yes**, secret           | Hosted Postgres, e.g. Neon or Vercel Postgres. Use the **pooled** connection string with `sslmode=require`.                              |
-| `JUPITER_API_KEY`                                                             | **yes**, secret           | From https://developers.jup.ag/portal.                                                                                                   |
-| `SOLANA_RPC_URL`                                                              | **yes**                   | Server RPC. The public endpoint works but is rate-limited; a provider URL (Helius, Triton…) is better, and is secret if it embeds a key. |
-| `NEXT_PUBLIC_SOLANA_RPC_URL`                                                  | **yes**                   | Browser RPC for the wallet. Public, so use a public or origin-restricted endpoint.                                                       |
-| `NEXT_PUBLIC_SOLANA_CLUSTER`                                                  | no                        | Defaults to `mainnet-beta` (Jupiter is mainnet-only).                                                                                    |
-| `SESSION_SECRET`                                                              | **yes**, secret           | At least 32 characters (`openssl rand -hex 32`). Sign-in fails in production without it.                                                 |
-| `CRON_SECRET`                                                                 | **yes**, secret           | At least 16 characters. Vercel Cron sends it automatically; the cron routes refuse requests without it.                                  |
-| `APP_URL`                                                                     | **yes**                   | The production URL, e.g. `https://orchestra.vercel.app` (used in emails).                                                                |
-| `ANTHROPIC_API_KEY`                                                           | for the assistant, secret | Without it, the assistant answers 503 and everything else works.                                                                         |
-| `BIRDEYE_API_KEY`                                                             | no, secret                | Longer price history.                                                                                                                    |
-| `MARKET_DATA_API_KEY`                                                         | no, secret                | Stock fundamentals (Financial Modeling Prep).                                                                                            |
-| `COINGECKO_API_KEY`                                                           | no, secret                | Higher CoinGecko rate limit.                                                                                                             |
-| `RESEND_API_KEY`, `EMAIL_FROM`                                                | no, secret                | Rebalance emails. Without them, emails are only logged.                                                                                  |
-| `VAPID_PRIVATE_KEY` (secret), `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | no                        | Web push (`npx web-push generate-vapid-keys`).                                                                                           |
+| Variable                     | Required         | Notes                                                                          |
+| ---------------------------- | ---------------- | ------------------------------------------------------------------------------ |
+| `JUPITER_API_KEY`            | **yes**, secret  | From https://developers.jup.ag/portal                                          |
+| `ANTHROPIC_API_KEY`          | for chat, secret | Without it, the assistant answers 503 and the rest works                       |
+| `MARKET_DATA_API_KEY`        | no, secret       | Financial Modeling Prep, for stock fundamentals                                |
+| `JUPITER_API_BASE_URL`       | no               | Defaults to `https://api.jup.ag`                                               |
+| `SOLANA_RPC_URL`             | no               | Defaults to the public mainnet RPC; a provider URL is better (secret if keyed) |
+| `NEXT_PUBLIC_SOLANA_RPC_URL` | no               | Browser RPC; defaults to the public mainnet RPC. Must not contain a secret     |
 
-The build checks these (`src/env/schema.ts`):
+How the variables are checked:
 
-- **Locally**, a missing or invalid variable fails the build.
-- **On Vercel**, it's a warning in the build log instead, so the site still deploys. Pages load; requests that need a missing variable fail with an error naming it, until you add it and redeploy.
-- **Without `DATABASE_URL`**, migrations are skipped, so sign-in, drafts, investments, history and the assistant don't work.
+- **Blank values** count as unset.
+- **Quotes:** values pasted with surrounding quotes are accepted.
+- **Missing values:** on Vercel, a missing variable is a build warning rather than a failure; requests that need it return an error naming it.
+- **Health check:** `GET /api/health` lists missing variables by name (never values).
 
-## First deploy
+## Deploying
 
-1. Create a hosted Postgres database and copy its pooled connection string.
-2. In Vercel, **Add New → Project** and import `devarshi2013/orchestra-solana`. Vercel detects Next.js and pnpm and uses the `vercel-build` script automatically.
-3. Add the environment variables above, then click **Deploy**.
-4. After the deploy, open `/api/cron/prices` from the Vercel dashboard (Cron Jobs → Run) once, so price history starts filling. Until it has run, backtests and today's allocation show "no stored prices".
+1. In Vercel, import the GitHub repo. It detects Next.js and pnpm.
+2. Add the variables above.
+3. Deploy. Every push to `main` redeploys.
 
-## Limits to know
+## Limits
 
-- **Function duration:** `/api/agent` streams for up to 300 s (`maxDuration`). That needs Fluid compute (on by default for new projects) or a paid plan.
-- **Cron:** the Hobby plan allows daily cron jobs, which is what `vercel.json` uses.
-- **Rate limits:** the assistant's per-wallet rate limit lives in memory, so each function instance counts separately.
+- `/api/agent` streams for up to 300 s (`maxDuration`). That needs Fluid compute (the default for new projects) or a paid plan.
+- The chat rate limit is per client IP and lives in memory, so each function instance counts separately.

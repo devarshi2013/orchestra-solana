@@ -1,7 +1,7 @@
 import { MAX_TEST_QUOTE_IMPACT_PCT } from "@/lib/assets/config";
 import type { SwapQuote } from "@/lib/assets/tools";
-import { MIN_LEG_USD } from "@/lib/invest/plan";
-import { formatUsd } from "@/lib/backtest/format";
+import { MIN_ORDER_USD } from "@/lib/units";
+import { formatUsd } from "@/lib/format";
 
 import { describeClosedMarket, usMarketSession } from "./market-hours";
 
@@ -125,7 +125,7 @@ export function preflight(input: {
 }): PreflightCheck[] {
   const { wallet, balances, items, quotes } = input;
   const total = items.reduce((sum, item) => sum + item.usdcAmount, 0);
-  const small = items.filter((item) => !(item.usdcAmount >= MIN_LEG_USD));
+  const small = items.filter((item) => !(item.usdcAmount >= MIN_ORDER_USD));
   const sol = solNeeded(items, quotes);
   const blocked = items.filter((item) =>
     itemWarnings(item, quotes.get(item.symbol), input.now).some((w) => w.severity === "block"),
@@ -148,8 +148,8 @@ export function preflight(input: {
         items.length === 0
           ? "Add at least one item"
           : small.length === 0
-            ? `Every item is at least ${formatUsd(MIN_LEG_USD)}`
-            : `Minimum order is ${formatUsd(MIN_LEG_USD)}: raise or remove ${small.map((i) => i.symbol).join(", ")}`,
+            ? `Every item is at least ${formatUsd(MIN_ORDER_USD)}`
+            : `Minimum order is ${formatUsd(MIN_ORDER_USD)}: raise or remove ${small.map((i) => i.symbol).join(", ")}`,
     },
     {
       id: "usdc",

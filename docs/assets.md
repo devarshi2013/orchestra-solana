@@ -6,14 +6,11 @@
 **It is the only source of mint addresses in Orchestra.** No mint is ever typed
 in, pasted in, or supplied by a model:
 
-- The `/create` editor's asset picker lists only registry assets. There is no
-  free-text mint field.
-- `validateSymphony` reports any other mint as "Not in Orchestra's asset
-  registry", including mints pasted into the JSON editor.
-- `POST /api/investments` refuses symphonies with unlisted mints. Starting a
-  rebalance refuses a symphony whose token has since been delisted.
-- Saving a draft only starts price tracking for listed mints.
-- Mints the app's own code needs (SOL, USDC, the example symphonies) come from
+- The assistant's tools accept only tickers or token symbols and resolve them
+  against the registry's stocks; `submit_plan` rejects anything else.
+- "Approve & buy" looks up each plan item's mint in the registry by token
+  symbol; the model never supplies one.
+- Mints the app's own code needs (SOL, USDC) come from
   `src/lib/assets/allowlist.ts`.
 
 The `/swap` page is a general-purpose swap tool, not an investing feature, so
@@ -51,7 +48,7 @@ builds the list without blocking startup, then rebuilds it every 6 hours
 | Cap                         | 60 picks                                                                                                                                                    | 80                             |
 
 **Stablecoins are never investment picks.** USDC is in the registry only as
-**cash**: symphonies can hold it, but it is labelled Cash.
+**cash**: it is what plans spend, and it is never offered as a pick.
 
 On 2026-10-07 these settings gave **22 stocks** (20 xStocks, 2 Ondo) and **40
 crypto**: SOL and liquid-staking SOL, wBTC, cbBTC, ETH, DeFi tokens (JUP, RAY,

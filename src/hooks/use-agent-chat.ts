@@ -3,8 +3,7 @@
 import { useCallback, useState } from "react";
 
 import type { AcceptedPlan } from "@/lib/agent/plan";
-import type { AgentContext } from "@/lib/assistant/schemas";
-import type { SymphonyProposal, ToolCallView, TranscriptTurn } from "@/lib/assistant/views";
+import type { ToolCallView } from "@/lib/assistant/views";
 
 export type AssistantTurn = {
   role: "assistant";
@@ -12,8 +11,6 @@ export type AssistantTurn = {
   tools: ToolCallView[];
   progress: string;
   plan?: AcceptedPlan;
-  /** createSymphony proposals, keyed by tool call id. */
-  symphonies: (SymphonyProposal & { id: string })[];
   error?: string;
   done: boolean;
 };
@@ -38,32 +35,16 @@ async function* readEvents(body: ReadableStream<Uint8Array>) {
   }
 }
 
-/** A saved conversation's turns, as the chat shows them. */
-export const fromTranscript = (turns: TranscriptTurn[]): ChatTurn[] =>
-  turns.map((turn): ChatTurn =>
-    turn.role === "user"
-      ? turn
-      : {
-          role: "assistant",
-          text: turn.text,
-          tools: turn.tools,
-          progress: "",
-          plan: turn.plan ?? undefined,
-          symphonies: turn.symphonies,
-          done: true,
-        },
-  );
-
 /**
  * A conversation with the assistant over POST /api/agent: streamed text,
- * progress, tool calls with their results, plans and symphony proposals.
- * Used by /assistant and the "Ask AI" panels (which send a context).
+ * progress, tool calls with their results, and plans. There's no database:
+ * the conversation lives in this hook (in memory), and each request sends it
+ * back as the `history` the previous reply returned.
  */
-export function useAgentChat(opts: { onConversation?: (id: string) => void } = {}) {
+export function useAgentChat(wallet: string | null) {
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [busy, setBusy] = useState(false);
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const { onConversation } = opts;
+  const [history, setHistory] = useState<unknown[]>([]);
 
   const updateLast = (change: (turn: AssistantTurn) => Partial<AssistantTurn>) =>
     setTurns((all) => {
@@ -73,20 +54,20 @@ export function useAgentChat(opts: { onConversation?: (id: string) => void } = {
     });
 
   const send = useCallback(
-    async (text: string, context?: AgentContext) => {
+    async (text: string) => {
       const message = text.trim();
-      if (!message || busy) return;
+      if (!message || busy || !wallet) return;
       setBusy(true);
       setTurns((all) => [
         ...all,
         { role: "user", text: message },
-        { role: "assistant", text: "", tools: [], symphonies: [], progress: "", done: false },
+        { role: "assistant", text: "", tools: [], progress: "", done: false },
       ]);
       try {
         const response = await fetch("/api/agent", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ message, conversationId: conversationId ?? undefined, context }),
+          body: JSON.stringify({ wallet, message, history }),
         });
         if (!response.ok || !response.body) {
           const body = (await response.json().catch(() => null)) as {
@@ -99,10 +80,6 @@ export function useAgentChat(opts: { onConversation?: (id: string) => void } = {
         }
         for await (const event of readEvents(response.body)) {
           switch (event.type) {
-            case "conversation":
-              setConversationId(event.id as string);
-              onConversation?.(event.id as string);
-              break;
             case "text":
               updateLast((t) => ({ text: t.text + (event.delta as string), progress: "" }));
               break;
@@ -135,13 +112,8 @@ export function useAgentChat(opts: { onConversation?: (id: string) => void } = {
             case "plan":
               updateLast(() => ({ plan: event.plan as AcceptedPlan }));
               break;
-            case "symphony":
-              updateLast((t) => ({
-                symphonies: [
-                  ...t.symphonies,
-                  { id: event.id as string, ...(event.proposal as SymphonyProposal) },
-                ],
-              }));
+            case "history":
+              setHistory(event.messages as unknown[]);
               break;
             case "error":
               updateLast(() => ({ error: event.message as string }));
@@ -155,19 +127,13 @@ export function useAgentChat(opts: { onConversation?: (id: string) => void } = {
         setBusy(false);
       }
     },
-    [busy, conversationId, onConversation],
+    [busy, history, wallet],
   );
 
   const reset = useCallback(() => {
-    setConversationId(null);
+    setHistory([]);
     setTurns([]);
   }, []);
 
-  /** Shows a saved conversation and continues it. */
-  const restore = useCallback((id: string, saved: ChatTurn[]) => {
-    setConversationId(id);
-    setTurns(saved);
-  }, []);
-
-  return { turns, busy, conversationId, send, reset, restore };
+  return { turns, busy, send, reset };
 }

@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
   Object.assign(process.env, {
-    DATABASE_URL: "postgresql://u:p@localhost:5432/db",
     JUPITER_API_KEY: "jup_test_key",
     SOLANA_RPC_URL: "https://api.mainnet-beta.solana.com",
   });
@@ -100,12 +99,12 @@ function fakeClient(turns: (Message | "json-error" | Error)[]) {
 const plan: AcceptedPlan = {
   items: [
     {
-      kind: "crypto",
-      ticker: "SOL",
+      kind: "stock",
+      ticker: "NVDA",
       usdcAmount: 50,
       reason: "Highest 1Y return",
-      symbol: "SOL",
-      name: "Solana",
+      symbol: "NVDAx",
+      name: "NVIDIA",
     },
   ],
   totalUsdc: 50,
@@ -166,7 +165,7 @@ describe("runAgentTurn", () => {
         [
           thinking("Checking the wallet and the assets."),
           toolUse("t1", "getWalletBalances", {}),
-          toolUse("t2", "listAssets", { kind: "crypto" }),
+          toolUse("t2", "listAssets", { sector: "Technology" }),
         ],
         "tool_use",
       ),
@@ -174,7 +173,7 @@ describe("runAgentTurn", () => {
     ]);
     expect(tool.mock.calls).toEqual([
       ["getWalletBalances", {}],
-      ["listAssets", { kind: "crypto" }],
+      ["listAssets", { sector: "Technology" }],
     ]);
     expect(result.history[2]).toEqual({
       role: "user",
@@ -243,7 +242,7 @@ describe("runAgentTurn", () => {
         return ++attempt === 1
           ? {
               content:
-                '{"accepted":false,"errors":["\\"DOGE\\" is not a crypto in the asset registry"]}',
+                '{"accepted":false,"errors":["\\"DOGE\\" is not a stock in the asset registry"]}',
               isError: true,
             }
           : { content: '{"accepted":true}', isError: false, plan };
@@ -252,48 +251,6 @@ describe("runAgentTurn", () => {
     expect(result.history[2]).toMatchObject({ content: [{ tool_use_id: "p1", is_error: true }] });
     expect(result.plan).toEqual(plan);
     expect(events.filter((e) => e.type === "plan")).toEqual([{ type: "plan", plan }]);
-  });
-
-  it("streams an accepted symphony proposal, and none for a rejected one", async () => {
-    const proposal = {
-      tree: { name: "Trend", root: { type: "asset" as const, ticker: "SOL" } },
-      backtest: null,
-      backtestNote: "No stored price history",
-    };
-    let call = 0;
-    const { events } = await run(
-      [
-        message([toolUse("s1", "createSymphony", { symphony: {} })], "tool_use"),
-        message([toolUse("s2", "createSymphony", { symphony: {} })], "tool_use"),
-        message([text("Here it is.")], "end_turn"),
-      ],
-      async () =>
-        ++call === 1
-          ? { content: '{"accepted":false,"errors":["root: bad"]}', isError: true }
-          : { content: '{"accepted":true}', isError: false, symphony: proposal },
-    );
-    expect(events.filter((e) => e.type === "symphony")).toEqual([
-      { type: "symphony", id: "s2", proposal },
-    ]);
-  });
-
-  it("sends the context as its own block before the user's message", async () => {
-    const { client, calls } = fakeClient([message([text("ok")], "end_turn")]);
-    await runAgentTurn({
-      client,
-      history: [],
-      userText: "Explain it",
-      context: "<orchestra-context>tree</orchestra-context>",
-      runTool: vi.fn(),
-      emit: () => {},
-    });
-    expect(calls[0]!.messages[0]).toEqual({
-      role: "user",
-      content: [
-        { type: "text", text: "<orchestra-context>tree</orchestra-context>" },
-        { type: "text", text: "Explain it" },
-      ],
-    });
   });
 
   it("tells the model to stop after repeated invalid plans", async () => {

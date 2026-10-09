@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
   Object.assign(process.env, {
-    DATABASE_URL: "postgresql://u:p@localhost:5432/db",
     JUPITER_API_KEY: "jup_test_key",
     SOLANA_RPC_URL: "https://api.mainnet-beta.solana.com",
   });
@@ -15,7 +14,6 @@ const mocks = vi.hoisted(() => ({
   fetchPriceChange: vi.fn(),
   fetchRatiosTtm: vi.fn(),
   fetchAnnualGrowth: vi.fn(),
-  fetchDailyPrices: vi.fn(),
   jupiterFetch: vi.fn(),
   getOrder: vi.fn(),
   getWalletBalances: vi.fn(),
@@ -29,7 +27,6 @@ vi.mock("@/server/market/fmp", () => ({
   fetchRatiosTtm: mocks.fetchRatiosTtm,
   fetchAnnualGrowth: mocks.fetchAnnualGrowth,
 }));
-vi.mock("@/server/market/coingecko", () => ({ fetchDailyPrices: mocks.fetchDailyPrices }));
 vi.mock("@/server/jupiter/client", async (importOriginal) => ({
   ...(await importOriginal<typeof JupiterClient>()),
   jupiterFetch: mocks.jupiterFetch,
@@ -44,8 +41,6 @@ import { clearCache } from "@/server/cache";
 import { JupiterApiError } from "@/server/jupiter/client";
 
 import {
-  coinGeckoPacing,
-  getCryptoMetrics,
   getStockMetrics,
   getSwapQuote,
   getWalletBalances,
@@ -124,18 +119,6 @@ const USDC = asset({
   cash: true,
 });
 
-const DAY = 86_400_000;
-/** `days + 1` daily prices ending now, compounding `dailyPct` a day. */
-const series = (days: number, dailyPct: number): [number, number][] => {
-  const now = Date.now();
-  return Array.from({ length: days + 1 }, (_, i) => [
-    now - (days - i) * DAY,
-    100 * (1 + dailyPct / 100) ** i,
-  ]);
-};
-
-coinGeckoPacing.gapMs = 0;
-
 beforeEach(() => {
   vi.clearAllMocks();
   clearCache();
@@ -164,24 +147,14 @@ describe("resolveAsset", () => {
 });
 
 describe("listAssets", () => {
-  it("lists everything, or filters by kind, sector or category", async () => {
-    expect((await listAssets()).data).toHaveLength(6);
-    expect((await listAssets({ kind: "stock" })).data?.map((a) => a.symbol)).toEqual([
-      "NVDAx",
-      "NVDAon",
-      "SPYx",
-    ]);
+  it("lists only the tokenized stocks, optionally by sector", async () => {
+    expect((await listAssets()).data?.map((a) => a.symbol)).toEqual(["NVDAx", "NVDAon", "SPYx"]);
     expect((await listAssets({ sector: "etf" })).data?.map((a) => a.symbol)).toEqual(["SPYx"]);
-    expect((await listAssets({ category: "Cash" })).data).toEqual([
-      expect.objectContaining({ symbol: "USDC", cash: true, issuer: null }),
-    ]);
-    expect((await listAssets({ kind: "stock" })).data?.[1]).toMatchObject({
-      issuer: "Ondo Global Markets",
-    });
+    expect((await listAssets()).data?.[1]).toMatchObject({ issuer: "Ondo Global Markets" });
   });
 
   it("rejects unknown inputs and reports an unavailable registry", async () => {
-    expect((await listAssets({ mint: "abc" })).reason).toMatch(/Invalid input/);
+    expect((await listAssets({ kind: "crypto" })).reason).toMatch(/Invalid input/);
     mocks.getRegistry.mockRejectedValueOnce(new Error("Jupiter down"));
     expect(await listAssets()).toEqual({
       data: null,
@@ -303,81 +276,12 @@ describe("getStockMetrics", () => {
   });
 });
 
-describe("getCryptoMetrics", () => {
-  const stats = (tokens: object[]) => mocks.jupiterFetch.mockResolvedValue(Response.json(tokens));
-  const solStats = {
-    id: SOL_MINT,
-    symbol: "SOL",
-    name: "Wrapped SOL",
-    decimals: 9,
-    usdPrice: 117.06,
-    mcap: 6.3e10,
-    liquidity: 9.8e8,
-    stats24h: { buyVolume: 1.5e9, sellVolume: 2e9 },
-  };
-
-  it("combines Jupiter stats with returns and volatility from a year of prices", async () => {
-    stats([solStats]);
-    mocks.fetchDailyPrices.mockResolvedValue(series(365, 0.1));
-    const metrics = (await getCryptoMetrics(["SOL"])).data?.[0]?.data;
-    expect(metrics).toMatchObject({
-      ticker: "SOL",
-      priceUsd: 117.06,
-      marketCapUsd: 6.3e10,
-      volume24hUsd: 3.5e9,
-      liquidityUsd: 9.8e8,
-      missing: {},
-    });
-    expect(metrics?.return7DPct).toBeCloseTo((1.001 ** 7 - 1) * 100, 6);
-    expect(metrics?.return1YPct).toBeCloseTo((1.001 ** 365 - 1) * 100, 6);
-    expect(metrics?.volatility30DPct).toBeCloseTo(0, 6); // a steady trend has no volatility
-    expect(mocks.fetchDailyPrices).toHaveBeenCalledWith(SOL_MINT, 365);
-  });
-
-  it("leaves returns it can't compute as null, with the reason", async () => {
-    stats([solStats]);
-    mocks.fetchDailyPrices.mockResolvedValue(series(40, 1));
-    const metrics = (await getCryptoMetrics(["SOL"])).data?.[0]?.data;
-    expect(metrics).toMatchObject({ return30DPct: expect.any(Number), return1YPct: null });
-    expect(metrics?.missing).toEqual({ return1YPct: "Less than 365 days of price history" });
-
-    clearCache();
-    mocks.fetchDailyPrices.mockResolvedValue(null);
-    const unlisted = (await getCryptoMetrics(["SOL"])).data?.[0]?.data;
-    expect(unlisted?.missing.return7DPct).toBe("CoinGecko doesn't list this token");
-    expect(unlisted?.volatility30DPct).toBeNull();
-  });
-
-  it("reports Jupiter failures and unknown tickers without inventing values", async () => {
-    mocks.jupiterFetch.mockRejectedValue(new Error("Jupiter API 503"));
-    mocks.fetchDailyPrices.mockRejectedValue(new Error("CoinGecko 429"));
-    const results = (await getCryptoMetrics(["JUP", "DOGE"])).data!;
-    expect(results[0]?.data).toMatchObject({ priceUsd: null, return7DPct: null });
-    expect(results[0]?.data?.missing).toMatchObject({
-      priceUsd: "Jupiter's Tokens API failed: Jupiter API 503",
-      return7DPct: "CoinGecko 429",
-    });
-    expect(results[1]).toEqual({
-      ticker: "DOGE",
-      data: null,
-      reason: `"DOGE" isn't in Orchestra's asset registry`,
-    });
-  });
-
-  it("marks a token Jupiter didn't return", async () => {
-    stats([]);
-    mocks.fetchDailyPrices.mockResolvedValue(series(365, 0));
-    const metrics = (await getCryptoMetrics(["JUP"])).data?.[0]?.data;
-    expect(metrics?.missing.priceUsd).toBe("Jupiter's Tokens API didn't return this token");
-  });
-});
-
 describe("getSwapQuote", () => {
   const order = (overrides: object = {}) => ({
     requestId: "r1",
     transaction: "BASE64TX",
     inputMint: USDC_MINT,
-    outputMint: SOL_MINT,
+    outputMint: SPYX.mint,
     inAmount: "100000000",
     outAmount: "850000000",
     otherAmountThreshold: "845000000",
@@ -397,20 +301,20 @@ describe("getSwapQuote", () => {
     });
   });
 
-  it("quotes USDC → asset for the wallet and never returns the transaction", async () => {
+  it("quotes USDC → stock for the wallet and never returns the transaction", async () => {
     mocks.getOrder.mockResolvedValue(order());
-    const result = await getSwapQuote({ ticker: "SOL", usdcAmount: 100, wallet: WALLET });
+    const result = await getSwapQuote({ ticker: "SPYx", usdcAmount: 100, wallet: WALLET });
     expect(mocks.getOrder).toHaveBeenCalledWith({
       inputMint: USDC_MINT,
-      outputMint: SOL_MINT,
+      outputMint: SPYX.mint,
       amount: "100000000",
       taker: WALLET,
     });
     expect(result.data).toMatchObject({
-      symbol: "SOL",
+      symbol: "SPYx",
       usdcIn: 100,
-      expectedOut: 0.85,
-      minimumOut: 0.845,
+      expectedOut: 8.5,
+      minimumOut: 8.45,
       priceImpactPct: 0.05,
       thinLiquidity: false,
       feeBps: 2,
@@ -436,36 +340,36 @@ describe("getSwapQuote", () => {
   it("warns when the wallet holds less USDC than quoted, even if Jupiter (RFQ) didn't check", async () => {
     mocks.getOrder.mockResolvedValue(order({ router: "jupiterz", gasless: true }));
     mocks.getWalletBalances.mockResolvedValue({});
-    const result = await getSwapQuote({ ticker: "SOL", usdcAmount: 100, wallet: WALLET });
+    const result = await getSwapQuote({ ticker: "SPYx", usdcAmount: 100, wallet: WALLET });
     expect(result.data?.warning).toBe("The wallet holds 0 USDC, less than the 100 USDC quoted");
 
     mocks.getWalletBalances.mockRejectedValue(new Error("rpc down"));
     expect(
-      (await getSwapQuote({ ticker: "SOL", usdcAmount: 100, wallet: WALLET })).data?.warning,
+      (await getSwapQuote({ ticker: "SPYx", usdcAmount: 100, wallet: WALLET })).data?.warning,
     ).toBeNull();
   });
 
-  it("refuses ambiguous tickers, USDC itself, invalid input and failed quotes", async () => {
+  it("refuses ambiguous tickers, non-stocks, invalid input and failed quotes", async () => {
     expect((await getSwapQuote({ ticker: "NVDA", usdcAmount: 10, wallet: WALLET })).reason).toMatch(
       /use the token symbol/,
     );
-    expect((await getSwapQuote({ ticker: "USDC", usdcAmount: 10, wallet: WALLET })).reason).toMatch(
-      /pick another asset/,
+    expect((await getSwapQuote({ ticker: "SOL", usdcAmount: 10, wallet: WALLET })).reason).toMatch(
+      /isn't in Orchestra's asset registry/,
     );
-    expect((await getSwapQuote({ ticker: "SOL", usdcAmount: 0, wallet: WALLET })).reason).toMatch(
+    expect((await getSwapQuote({ ticker: "SPYx", usdcAmount: 0, wallet: WALLET })).reason).toMatch(
       /Invalid input/,
     );
-    expect((await getSwapQuote({ ticker: "SOL", usdcAmount: 10, wallet: "nope" })).reason).toMatch(
+    expect((await getSwapQuote({ ticker: "SPYx", usdcAmount: 10, wallet: "nope" })).reason).toMatch(
       /Invalid input/,
     );
     expect(
-      (await getSwapQuote({ ticker: "SOL", usdcAmount: 10, wallet: WALLET, mint: SOL_MINT }))
+      (await getSwapQuote({ ticker: "SPYx", usdcAmount: 10, wallet: WALLET, mint: SPYX.mint }))
         .reason,
     ).toMatch(/Invalid input/);
     mocks.getOrder.mockRejectedValue(
       new JupiterApiError(400, JSON.stringify({ error: "Failed to get quotes" }), null),
     );
-    expect(await getSwapQuote({ ticker: "SOL", usdcAmount: 10, wallet: WALLET })).toEqual({
+    expect(await getSwapQuote({ ticker: "SPYx", usdcAmount: 10, wallet: WALLET })).toEqual({
       data: null,
       reason: "Jupiter couldn't quote this: Failed to get quotes",
     });

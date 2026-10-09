@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { SolanaWalletProvider } from "@/components/providers/wallet-provider";
-import { RebalanceBanner } from "@/components/invest/rebalance-banner";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { themeScript } from "@/components/layout/theme-toggle";
 import { SiteHeader } from "@/components/site-header";
@@ -23,7 +21,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Orchestra",
-  description: "Build, backtest and run rule-based Solana token portfolios.",
+  description:
+    "An AI research assistant for tokenized US stocks on Solana: live Jupiter quotes, wallet-approved swaps.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -40,10 +39,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         <SolanaWalletProvider>
           <SiteHeader />
-          {/* Reads the URL (usePathname), so it streams in rather than blocking prerender. */}
-          <Suspense fallback={null}>
-            <RebalanceBanner />
-          </Suspense>
           <div id="main" className="flex flex-1 flex-col">
             {children}
           </div>

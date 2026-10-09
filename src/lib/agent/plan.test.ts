@@ -17,69 +17,32 @@ const asset = (o: Partial<Asset>): Asset => ({
   volume24hUsd: null,
   ...o,
 });
+const stock = (ticker: string, symbol: string, issuer: "xstocks" | "ondo") =>
+  asset({ kind: "stock", ticker, symbol, name: ticker, mint: symbol.toLowerCase(), issuer });
 const assets = [
-  asset({ kind: "crypto", ticker: "SOL", symbol: "SOL", name: "Solana", mint: "sol" }),
-  asset({ kind: "crypto", ticker: "WIF", symbol: "$WIF", name: "dogwifhat", mint: "wif" }),
-  asset({
-    kind: "crypto",
-    ticker: "USDC",
-    symbol: "USDC",
-    name: "USD Coin",
-    mint: "usdc",
-    cash: true,
-  }),
-  asset({
-    kind: "stock",
-    ticker: "NVDA",
-    symbol: "NVDAx",
-    name: "NVIDIA",
-    mint: "nvdax",
-    issuer: "xstocks",
-  }),
-  asset({
-    kind: "stock",
-    ticker: "NVDA",
-    symbol: "NVDAon",
-    name: "NVIDIA",
-    mint: "nvdaon",
-    issuer: "ondo",
-  }),
-  asset({
-    kind: "stock",
-    ticker: "SPY",
-    symbol: "SPYx",
-    name: "SP500",
-    mint: "spyx",
-    issuer: "xstocks",
-  }),
+  stock("NVDA", "NVDAx", "xstocks"),
+  stock("NVDA", "NVDAon", "ondo"),
+  stock("SPY", "SPYx", "xstocks"),
+  stock("AAPL", "AAPLx", "xstocks"),
 ];
-const plan = (
-  items: { kind: "stock" | "crypto"; ticker: string; usdcAmount: number }[],
-  total?: number,
-) => ({
-  items: items.map((i) => ({ ...i, reason: "because" })),
+const plan = (items: { ticker: string; usdcAmount: number }[], total?: number) => ({
+  items: items.map((i) => ({ kind: "stock", ...i, reason: "because" })),
   totalUsdc: total ?? items.reduce((s, i) => s + i.usdcAmount, 0),
-  rankingMethod: "best 1Y return with liquidity above $5M",
+  rankingMethod: "largest US tech by market cap",
 });
 
 describe("validatePlan", () => {
-  it("accepts a plan within budget, resolving tickers to registry tokens", () => {
+  it("accepts a stock plan within budget, resolving tickers to registry tokens", () => {
     const result = validatePlan(
       plan([
-        { kind: "crypto", ticker: "SOL", usdcAmount: 60 },
-        { kind: "stock", ticker: "NVDAx", usdcAmount: 25 },
-        { kind: "stock", ticker: "spy", usdcAmount: 15 },
-        { kind: "crypto", ticker: "WIF", usdcAmount: 10 },
+        { ticker: "NVDAx", usdcAmount: 60 },
+        { ticker: "spy", usdcAmount: 25 },
+        { ticker: "AAPL", usdcAmount: 15 },
       ]),
       { assets, usdcBalance: 110 },
     );
     expect(result.ok).toBe(true);
-    expect(result.ok && result.plan.items.map((i) => i.symbol)).toEqual([
-      "SOL",
-      "NVDAx",
-      "SPYx",
-      "$WIF",
-    ]);
+    expect(result.ok && result.plan.items.map((i) => i.symbol)).toEqual(["NVDAx", "SPYx", "AAPLx"]);
     expect(JSON.stringify(result)).not.toMatch(/"mint"/);
   });
 
@@ -87,51 +50,52 @@ describe("validatePlan", () => {
     const result = validatePlan(
       plan(
         [
-          { kind: "crypto", ticker: "DOGE", usdcAmount: 20 },
-          { kind: "stock", ticker: "NVDA", usdcAmount: 20 },
-          { kind: "crypto", ticker: "USDC", usdcAmount: 20 },
-          { kind: "crypto", ticker: "SOL", usdcAmount: 5 },
-          { kind: "stock", ticker: "SOL", usdcAmount: 20 },
+          { ticker: "DOGE", usdcAmount: 20 },
+          { ticker: "NVDA", usdcAmount: 20 },
+          { ticker: "SPYx", usdcAmount: 5 },
         ],
         70,
       ),
-      { assets, usdcBalance: 50 },
+      { assets, usdcBalance: 40 },
     );
     expect(result).toEqual({
       ok: false,
       errors: [
-        `"DOGE" is not a crypto in the asset registry; use listAssets to pick one.`,
+        `"DOGE" is not a stock in the asset registry; use listAssets to pick one.`,
         `"NVDA" is ambiguous (NVDAx, NVDAon); use the token symbol.`,
-        `"USDC" is USDC, which the plan spends; leave it out.`,
-        `"SOL" is 5 USDC, below the 10 USDC minimum order size.`,
-        `"SOL" is not a stock in the asset registry; use listAssets to pick one.`,
-        "totalUsdc is 70 but the items add up to 85.",
-        "totalUsdc 70 exceeds the wallet's 50 USDC.",
+        `"SPYx" is 5 USDC, below the 10 USDC minimum order size.`,
+        "totalUsdc is 70 but the items add up to 45.",
+        "totalUsdc 70 exceeds the wallet's 40 USDC.",
       ],
     });
   });
 
-  it("rejects duplicates, malformed plans and an unreadable balance", () => {
+  it("rejects duplicates, crypto or malformed plans, and an unreadable balance", () => {
     const dup = validatePlan(
       plan([
-        { kind: "crypto", ticker: "SOL", usdcAmount: 10 },
-        { kind: "crypto", ticker: "sol", usdcAmount: 10 },
+        { ticker: "NVDAx", usdcAmount: 10 },
+        { ticker: "nvdax", usdcAmount: 10 },
       ]),
       { assets, usdcBalance: 100 },
     );
     expect(dup).toMatchObject({
       ok: false,
-      errors: [`"sol" appears more than once; combine it into one item.`],
+      errors: [`"nvdax" appears more than once; combine it into one item.`],
     });
     expect(validatePlan({ items: [], totalUsdc: 0 }, { assets, usdcBalance: 1 })).toMatchObject({
       ok: false,
       errors: [expect.stringContaining("Malformed plan")],
     });
+    const crypto = {
+      ...plan([{ ticker: "SOL", usdcAmount: 10 }]),
+      items: [{ kind: "crypto", ticker: "SOL", usdcAmount: 10, reason: "because" }],
+    };
+    expect(validatePlan(crypto, { assets, usdcBalance: 100 })).toMatchObject({
+      ok: false,
+      errors: [expect.stringContaining("Malformed plan")],
+    });
     expect(
-      validatePlan(plan([{ kind: "crypto", ticker: "SOL", usdcAmount: 10 }]), {
-        assets,
-        usdcBalance: null,
-      }),
+      validatePlan(plan([{ ticker: "NVDAx", usdcAmount: 10 }]), { assets, usdcBalance: null }),
     ).toMatchObject({ ok: false, errors: [expect.stringContaining("couldn't be read")] });
   });
 
@@ -139,9 +103,9 @@ describe("validatePlan", () => {
     const result = validatePlan(
       plan(
         [
-          { kind: "crypto", ticker: "SOL", usdcAmount: 33.33 },
-          { kind: "crypto", ticker: "WIF", usdcAmount: 33.33 },
-          { kind: "stock", ticker: "SPYx", usdcAmount: 33.34 },
+          { ticker: "NVDAx", usdcAmount: 33.33 },
+          { ticker: "AAPLx", usdcAmount: 33.33 },
+          { ticker: "SPYx", usdcAmount: 33.34 },
         ],
         100.005,
       ),

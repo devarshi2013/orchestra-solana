@@ -3,29 +3,17 @@ import "server-only";
 import { z } from "zod";
 
 import { MAX_TEST_QUOTE_IMPACT_PCT } from "@/lib/assets/config";
-import { annualizedVolatility, returnOver, type PricePoint } from "@/lib/assets/metrics";
-import { ISSUER_NAMES, jupiterTokenSchema, type Asset } from "@/lib/assets/registry";
-import { toBaseUnits, toUnits, USDC_DECIMALS } from "@/lib/invest/plan";
+import { ISSUER_NAMES, type Asset } from "@/lib/assets/registry";
+import { toBaseUnits, toUnits, USDC_DECIMALS } from "@/lib/units";
 import { base58AddressSchema } from "@/lib/jupiter/schemas";
 import { classifyOrderError } from "@/lib/swap/errors";
 import { SOL_MINT, USDC_MINT } from "@/lib/tokens";
 import { getRegistry } from "@/server/assets/registry";
 
 import { resolveAsset } from "./resolve";
-import {
-  createSymphony,
-  createSymphonyInput,
-  explainRebalance,
-  getSymphony,
-  listMySymphonies,
-  runBacktestInput,
-  runSymphonyBacktest,
-  symphonyIdInput,
-} from "./symphony-tools";
 import { cached } from "@/server/cache";
-import { JupiterApiError, jupiterFetch } from "@/server/jupiter/client";
+import { JupiterApiError } from "@/server/jupiter/client";
 import { getOrder } from "@/server/jupiter/swap";
-import { fetchDailyPrices } from "@/server/market/coingecko";
 import {
   fetchAnnualGrowth,
   fetchPriceChange,
@@ -48,13 +36,6 @@ import { getWalletBalances as readWalletBalances } from "@/server/solana/rpc";
  */
 
 export { resolveAsset } from "./resolve";
-export {
-  createSymphony,
-  explainRebalance,
-  getSymphony,
-  listMySymphonies,
-  runSymphonyBacktest as runBacktest,
-} from "./symphony-tools";
 
 export type ToolResult<T> = { data: T; reason: null } | { data: null; reason: string };
 const ok = <T>(data: T): ToolResult<T> => ({ data, reason: null });
@@ -94,26 +75,20 @@ const tickerSchema = z
 
 export const listAssetsInput = z
   .object({
-    kind: z.enum(["stock", "crypto"]).optional(),
-    /** Stocks: sector (or Stock / ETF when the issuer gives none). */
+    /** Sector (or Stock / ETF when the issuer gives none), e.g. Technology. */
     sector: z.string().trim().min(1).max(60).optional(),
-    /** Crypto: category, e.g. Major, DeFi, Meme, Liquid staking, Cash. */
-    category: z.string().trim().min(1).max(60).optional(),
   })
   .strict();
 
-export type AssetSummary = Pick<
-  Asset,
-  "kind" | "ticker" | "symbol" | "name" | "category" | "hours"
-> & {
+export type AssetSummary = Pick<Asset, "ticker" | "symbol" | "name" | "category" | "hours"> & {
   issuer: string | null;
-  cash: boolean;
 };
 
+/** The tokenized US stocks Orchestra lists (the only assets the assistant may suggest). */
 export async function listAssets(input: unknown = {}): Promise<ToolResult<AssetSummary[]>> {
   const args = parse(listAssetsInput, input);
   if ("reason" in args) return fail(args.reason);
-  const { kind, sector, category } = args.value;
+  const { sector } = args.value;
   let registry;
   try {
     registry = await getRegistry();
@@ -121,23 +96,17 @@ export async function listAssets(input: unknown = {}): Promise<ToolResult<AssetS
     return fail(`Asset registry unavailable: ${message(error)}`);
   }
   const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-  const assets = [...registry.stocks, ...registry.crypto].filter(
-    (a) =>
-      (!kind || a.kind === kind) &&
-      (!sector || (a.kind === "stock" && same(a.category, sector))) &&
-      (!category || (a.kind === "crypto" && same(a.category, category))),
-  );
   return ok(
-    assets.map((a) => ({
-      kind: a.kind,
-      ticker: a.ticker,
-      symbol: a.symbol,
-      name: a.name,
-      category: a.category,
-      hours: a.hours,
-      issuer: a.issuer ? ISSUER_NAMES[a.issuer] : null,
-      cash: Boolean(a.cash),
-    })),
+    registry.stocks
+      .filter((a) => !sector || same(a.category, sector))
+      .map((a) => ({
+        ticker: a.ticker,
+        symbol: a.symbol,
+        name: a.name,
+        category: a.category,
+        hours: a.hours,
+        issuer: a.issuer ? ISSUER_NAMES[a.issuer] : null,
+      })),
   );
 }
 
@@ -281,141 +250,6 @@ export async function getStockMetrics(
   return ok(results);
 }
 
-// --- getCryptoMetrics ---------------------------------------------------------
-
-const tokenStatsSchema = z.array(
-  jupiterTokenSchema.extend({
-    usdPrice: z.number().nullish(),
-    mcap: z.number().nullish(),
-  }),
-);
-type TokenStats = z.infer<typeof tokenStatsSchema>[number];
-
-/** Jupiter Tokens API stats, one batch request per uncached set of mints. */
-async function tokenStats(mints: readonly string[]): Promise<Map<string, TokenStats>> {
-  const key = `jup:stats:${[...mints].sort().join(",")}`;
-  const list = await cached(key, MARKET_DATA_TTL_MS, async () => {
-    const response = await jupiterFetch("tokens/v2/search", { query: { query: mints.join(",") } });
-    return tokenStatsSchema.parse(await response.json());
-  });
-  return new Map(list.map((t) => [t.id, t]));
-}
-
-export type CryptoMetrics = {
-  ticker: string;
-  symbol: string;
-  name: string;
-  category: string;
-  priceUsd: number | null;
-  marketCapUsd: number | null;
-  volume24hUsd: number | null;
-  liquidityUsd: number | null;
-  return7DPct: number | null;
-  return30DPct: number | null;
-  return1YPct: number | null;
-  /** Annualized standard deviation of the last 30 daily returns, percent. */
-  volatility30DPct: number | null;
-  sources: string[];
-  fetchedAt: string;
-  missing: Missing;
-};
-
-function cryptoMetrics(
-  asset: Asset,
-  stats: TokenStats | undefined,
-  history: { value: PricePoint[] | null; error?: string },
-): CryptoMetrics {
-  const missing: Missing = {};
-  const field = (name: string, value: number | null | undefined, why: string) => {
-    if (value === null || value === undefined || !Number.isFinite(value)) {
-      missing[name] = why;
-      return null;
-    }
-    return value;
-  };
-  const noStats = stats
-    ? "Jupiter returned no value"
-    : "Jupiter's Tokens API didn't return this token";
-  const noHistory = history.error ?? "CoinGecko doesn't list this token";
-  const points = history.value;
-  const tooShort = (days: number) =>
-    points ? `Less than ${days} days of price history` : noHistory;
-  const ret = (days: number) => (points ? returnOver(points, days) : null);
-  const volume = stats
-    ? (stats.stats24h?.buyVolume ?? 0) + (stats.stats24h?.sellVolume ?? 0)
-    : null;
-
-  return {
-    ticker: asset.ticker,
-    symbol: asset.symbol,
-    name: asset.name,
-    category: asset.category,
-    priceUsd: field("priceUsd", stats?.usdPrice, noStats),
-    marketCapUsd: field("marketCapUsd", stats?.mcap, noStats),
-    volume24hUsd: field("volume24hUsd", stats?.stats24h ? volume : null, noStats),
-    liquidityUsd: field("liquidityUsd", stats?.liquidity, noStats),
-    return7DPct: field("return7DPct", ret(7), tooShort(7)),
-    return30DPct: field("return30DPct", ret(30), tooShort(30)),
-    return1YPct: field("return1YPct", ret(365), tooShort(365)),
-    volatility30DPct: field(
-      "volatility30DPct",
-      points ? annualizedVolatility(points, 30) : null,
-      tooShort(31),
-    ),
-    sources: ["Jupiter Tokens API", "CoinGecko"],
-    fetchedAt: new Date().toISOString(),
-    missing,
-  };
-}
-
-/** CoinGecko allows ~30 requests/minute (Demo); history requests are spaced. Mutable for tests. */
-export const coinGeckoPacing = { gapMs: 2100 };
-let nextCoinGecko = 0;
-async function pacedHistory(mint: string): Promise<PricePoint[] | null> {
-  return cached(`cg:daily:${mint}`, MARKET_DATA_TTL_MS, async () => {
-    const wait = nextCoinGecko - Date.now();
-    nextCoinGecko = Math.max(Date.now(), nextCoinGecko) + coinGeckoPacing.gapMs;
-    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
-    return fetchDailyPrices(mint, 365);
-  });
-}
-
-/** Price, size, liquidity, returns and volatility for registry crypto (by ticker or symbol). */
-export async function getCryptoMetrics(
-  input: unknown,
-): Promise<ToolResult<PerTicker<CryptoMetrics>[]>> {
-  const args = parse(tickersInput, input);
-  if ("reason" in args) return fail(args.reason);
-  let crypto: Asset[];
-  try {
-    crypto = (await getRegistry()).crypto;
-  } catch (error) {
-    return fail(`Asset registry unavailable: ${message(error)}`);
-  }
-  const resolved = args.value.map((ticker) => ({ ticker, ...resolveAsset(crypto, ticker) }));
-  const assets = resolved.flatMap((r) => ("asset" in r ? [r.asset] : []));
-
-  const stats = assets.length
-    ? await settle(tokenStats([...new Set(assets.map((a) => a.mint))]))
-    : { value: new Map<string, TokenStats>() };
-  const results: PerTicker<CryptoMetrics>[] = [];
-  for (const r of resolved) {
-    if (!("asset" in r)) {
-      results.push({ ticker: r.ticker, ...fail<CryptoMetrics>(r.reason) });
-      continue;
-    }
-    const history = await settle(pacedHistory(r.asset.mint));
-    const metrics = cryptoMetrics(r.asset, stats.value?.get(r.asset.mint), history);
-    if (!stats.value) {
-      for (const name of ["priceUsd", "marketCapUsd", "volume24hUsd", "liquidityUsd"]) {
-        metrics.missing[name] = `Jupiter's Tokens API failed: ${stats.error}`;
-      }
-    }
-    results.push({ ticker: r.ticker, ...ok(metrics) });
-  }
-  return ok(results);
-}
-
 // --- getSwapQuote -------------------------------------------------------------
 
 export const swapQuoteInput = z
@@ -466,10 +300,9 @@ export async function getSwapQuote(input: unknown): Promise<ToolResult<SwapQuote
   } catch (error) {
     return fail(`Asset registry unavailable: ${message(error)}`);
   }
-  const found = resolveAsset([...registry.stocks, ...registry.crypto], ticker);
+  const found = resolveAsset(registry.stocks, ticker);
   if ("reason" in found) return fail(found.reason);
   const { asset } = found;
-  if (asset.mint === USDC_MINT) return fail("USDC is what you'd pay with; pick another asset");
 
   let order;
   // RFQ (JupiterZ) quotes don't check the taker's balance, so read it ourselves.
@@ -557,8 +390,7 @@ export async function getWalletBalances(input: unknown): Promise<ToolResult<Wall
 /** The tools with descriptions and input schemas, e.g. for an assistant's tool list. */
 export const ASSET_TOOLS = {
   listAssets: {
-    description:
-      "List Orchestra's investable assets, optionally by kind, stock sector or crypto category.",
+    description: "List the tokenized US stocks Orchestra lists, optionally by sector.",
     input: listAssetsInput,
     run: listAssets,
   },
@@ -568,14 +400,8 @@ export const ASSET_TOOLS = {
     input: tickersInput,
     run: getStockMetrics,
   },
-  getCryptoMetrics: {
-    description:
-      "Price, market cap, 24h volume, liquidity, 7D/30D/1Y returns and 30D volatility for registry crypto.",
-    input: tickersInput,
-    run: getCryptoMetrics,
-  },
   getSwapQuote: {
-    description: "A live Jupiter quote for spending USDC on a registry asset. Never executes.",
+    description: "A live Jupiter quote for spending USDC on a registry stock. Never executes.",
     input: swapQuoteInput,
     run: getSwapQuote,
   },
@@ -583,32 +409,5 @@ export const ASSET_TOOLS = {
     description: "A wallet's USDC and SOL balances.",
     input: walletInput,
     run: getWalletBalances,
-  },
-  createSymphony: {
-    description:
-      "Check a proposed symphony (a ticker tree) against the symphony rules and the registry, and backtest it. Never saves.",
-    input: createSymphonyInput,
-    run: createSymphony,
-  },
-  getSymphony: {
-    description: "One of a wallet's symphonies (draft or investment) as a ticker tree.",
-    input: symphonyIdInput,
-    run: getSymphony,
-  },
-  listMySymphonies: {
-    description: "A wallet's symphonies: its live investments and its saved drafts.",
-    input: walletInput,
-    run: listMySymphonies,
-  },
-  runBacktest: {
-    description: "Backtest a symphony (by id, or a ticker tree) over 3M, 6M, 1Y or max.",
-    input: runBacktestInput,
-    run: runSymphonyBacktest,
-  },
-  explainRebalance: {
-    description:
-      "Which conditions and rankings changed since the last rebalance, how the target moved, and the wallet's drift.",
-    input: symphonyIdInput,
-    run: explainRebalance,
   },
 } as const;
