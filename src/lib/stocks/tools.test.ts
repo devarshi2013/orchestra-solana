@@ -88,7 +88,7 @@ describe("quoteBestIssuer", () => {
     expect((await quoteBestIssuer("NVDAx", 50, WALLET)).data?.entry.symbol).toBe("NVDAx");
     expect(await quoteBestIssuer("ZZZZ", 50, WALLET)).toMatchObject({
       data: null,
-      reason: expect.stringContaining("isn't in Orchestra's stock registry"),
+      reason: expect.stringContaining("isn't in Askfirst's stock registry"),
     });
   });
 });

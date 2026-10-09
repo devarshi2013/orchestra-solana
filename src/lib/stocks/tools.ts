@@ -25,7 +25,7 @@ import { TIER_LIMITS } from "./sync-core";
 import { ISSUER_NAMES, SECTORS, type StockEntry } from "./types";
 
 /**
- * Server-side tools over Orchestra's stock registry (src/lib/stocks), e.g. for an assistant.
+ * Server-side tools over Askfirst's stock registry (src/lib/stocks), e.g. for an assistant.
  * Every input is Zod-validated. Assets are named by ticker or token symbol
  * and resolved ONLY through the registry: no tool accepts a mint address, so
  * nothing outside the registry can be quoted or reported on.

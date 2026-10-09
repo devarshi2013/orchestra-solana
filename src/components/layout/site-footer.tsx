@@ -5,11 +5,11 @@ const LINKS = [{ href: "/assistant", label: "Assistant" }];
 export function SiteFooter() {
   return (
     <footer className="mt-16 border-t">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="space-y-1">
-          <p className="text-sm font-semibold">Orchestra</p>
+          <p className="text-sm font-semibold">Askfirst</p>
           <p className="max-w-md type-caption">
-            Non-custodial: your wallet approves every swap, and Orchestra never holds funds.
+            Non-custodial: your wallet approves every swap, and Askfirst never holds funds.
             Tokenized stocks are securities with eligibility rules. Research, not financial advice.
           </p>
         </div>

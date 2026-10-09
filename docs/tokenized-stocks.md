@@ -1,6 +1,6 @@
 # Tokenized stocks
 
-Orchestra lists **every tokenized company stock and ETF that can be bought
+Askfirst lists **every tokenized company stock and ETF that can be bought
 through Jupiter on Solana**, across all sectors. We never issue, custody, mint
 or redeem them. Three issuers are listed. **Backpack-issued tokens are
 excluded**, and Jupiter's `backpack` tag is rejected everywhere.
@@ -38,7 +38,7 @@ Spot checks against independent sources:
 ## The registry and how it's synced
 
 `src/lib/stocks/registry.generated.json` is the **only source of mint
-addresses** in Orchestra. The AI never supplies one: its tools take tickers or
+addresses** in Askfirst. The AI never supplies one: its tools take tickers or
 token symbols, resolve them against the registry, and never return mints.
 
 `scripts/sync-stocks.ts` builds it (pure logic in `src/lib/stocks/sync-core.ts`):
@@ -156,7 +156,7 @@ display amount = raw amount × multiplier, while transactions always use the
 
 ## Eligibility and restrictions
 
-Orchestra doesn't check users' eligibility. The assistant's disclosure and these docs
+Askfirst doesn't check users' eligibility. The assistant's disclosure and these docs
 state the rules; complying with them is the user's responsibility. Get legal
 advice before offering these tokens to anyone.
 
@@ -212,12 +212,12 @@ advice before offering these tokens to anyone.
 
 ## What can block swaps
 
-| Issue                                             | Effect                                        | How Orchestra handles it                                                                                                                                                                   |
-| ------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Issuer pause** (`pausableConfig`)               | Every transfer and swap fails                 | Test quote or `/order` fails; the buy fails with a clear message and can be retried later                                                                                                  |
-| **Account freeze** (freeze authority)             | Only the frozen holder can't trade            | The leg fails; nothing else is affected                                                                                                                                                    |
-| **RFQ outside market hours** (mainly Ondo)        | Quotes may vanish or widen                    | The plan card shows the item's quote as unavailable; it can't be bought until it quotes                                                                                                    |
-| **Trading halt** (corporate actions, risk limits) | No quotes                                     | As above                                                                                                                                                                                   |
-| **A transfer hook added later**                   | Routing could break                           | Not active today; the sync's verification and test quotes would surface it                                                                                                                 |
-| **Scaled UI multiplier**                          | **Not a swap blocker**, but valuation differs | Orchestra values holdings from raw amounts, so stock positions are valued about 0.2–0.3% below their display amount. Rebalance targets stay proportional; realized prices are per raw unit |
-| **Wallet support for Token-2022**                 | Some wallets show raw amounts                 | Not ours to fix; noted for users                                                                                                                                                           |
+| Issue                                             | Effect                                        | How Askfirst handles it                                                                                                                                                                   |
+| ------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Issuer pause** (`pausableConfig`)               | Every transfer and swap fails                 | Test quote or `/order` fails; the buy fails with a clear message and can be retried later                                                                                                 |
+| **Account freeze** (freeze authority)             | Only the frozen holder can't trade            | The leg fails; nothing else is affected                                                                                                                                                   |
+| **RFQ outside market hours** (mainly Ondo)        | Quotes may vanish or widen                    | The plan card shows the item's quote as unavailable; it can't be bought until it quotes                                                                                                   |
+| **Trading halt** (corporate actions, risk limits) | No quotes                                     | As above                                                                                                                                                                                  |
+| **A transfer hook added later**                   | Routing could break                           | Not active today; the sync's verification and test quotes would surface it                                                                                                                |
+| **Scaled UI multiplier**                          | **Not a swap blocker**, but valuation differs | Askfirst values holdings from raw amounts, so stock positions are valued about 0.2–0.3% below their display amount. Rebalance targets stay proportional; realized prices are per raw unit |
+| **Wallet support for Token-2022**                 | Some wallets show raw amounts                 | Not ours to fix; noted for users                                                                                                                                                          |

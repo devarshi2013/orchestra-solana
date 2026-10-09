@@ -59,9 +59,9 @@ export function ChatGlow({ className }: { className?: string }) {
         className,
       )}
     >
-      <div className="absolute top-0 left-1/4 size-96 animate-pulse rounded-full bg-emerald-500/10 blur-[128px]" />
-      <div className="absolute right-1/4 bottom-0 size-96 animate-pulse rounded-full bg-teal-500/10 blur-[128px] delay-700" />
-      <div className="absolute top-1/4 right-1/3 size-64 animate-pulse rounded-full bg-cyan-500/10 blur-[96px] delay-1000" />
+      <div className="absolute top-0 left-1/4 size-96 animate-pulse rounded-full bg-orange-500/10 blur-[128px]" />
+      <div className="absolute right-1/4 bottom-0 size-96 animate-pulse rounded-full bg-amber-500/[0.07] blur-[128px] delay-700" />
+      <div className="absolute top-1/4 right-1/3 size-64 animate-pulse rounded-full bg-red-500/[0.06] blur-[96px] delay-1000" />
     </div>
   );
 }
@@ -209,7 +209,7 @@ export function AnimatedChatInput({
   return (
     <div className="relative w-full space-y-4">
       <motion.div
-        className="relative rounded-2xl border border-border bg-card/95 shadow-2xl backdrop-blur-xl"
+        className="relative rounded-2xl border border-border bg-card/95 shadow-lift backdrop-blur-xl focus-within:border-primary/40"
         initial={reduceMotion ? false : { scale: 0.98 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.1 }}
@@ -220,7 +220,7 @@ export function AnimatedChatInput({
               ref={paletteRef}
               role="listbox"
               aria-label="Commands"
-              className="absolute right-4 bottom-full left-4 z-50 mb-2 overflow-hidden rounded-lg border border-border bg-popover/95 shadow-lg backdrop-blur-xl"
+              className="absolute right-4 bottom-full left-4 z-50 mb-2 overflow-hidden rounded-lg border border-border bg-popover/95 shadow-lift backdrop-blur-xl"
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
@@ -306,7 +306,7 @@ export function AnimatedChatInput({
             className={cn(
               "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
               value.trim() && !busy
-                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                ? "bg-primary text-primary-foreground hover:brightness-105"
                 : "bg-muted text-muted-foreground",
             )}
           >
@@ -342,7 +342,7 @@ export function AnimatedChatInput({
       {focused && !reduceMotion && (
         <motion.div
           aria-hidden
-          className="pointer-events-none fixed top-0 left-0 -z-10 size-[50rem] rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 opacity-[0.03] blur-[96px]"
+          className="pointer-events-none fixed top-0 left-0 -z-10 size-[50rem] rounded-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 opacity-[0.03] blur-[96px]"
           style={{ x: glowX, y: glowY }}
         />
       )}

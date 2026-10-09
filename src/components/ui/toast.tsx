@@ -42,7 +42,7 @@ const TONE = {
   success: "text-success",
   error: "text-destructive",
   warning: "text-warning",
-  info: "text-primary dark:text-accent-foreground",
+  info: "text-primary-text",
 };
 
 const subscribe = (listener: () => void) => {

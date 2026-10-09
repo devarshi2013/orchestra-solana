@@ -10,7 +10,7 @@ import {
 
 /**
  * The stock registry at runtime: the output of `pnpm sync:stocks`, read-only.
- * It's the only source of mint addresses in Orchestra; nothing (least of all
+ * It's the only source of mint addresses in Askfirst; nothing (least of all
  * a model) can add one.
  */
 export const REGISTRY = generated as RegistryFile;
@@ -158,6 +158,6 @@ export function resolveTicker(input: string, stocks: readonly StockEntry[] = STO
   }
   return {
     ok: false,
-    reason: `"${input}" isn't in Orchestra's stock registry; use listStocks to find one.`,
+    reason: `"${input}" isn't in Askfirst's stock registry; use listStocks to find one.`,
   };
 }

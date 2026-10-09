@@ -91,7 +91,7 @@ export function MobileNav() {
           aria-label="Main"
           className="absolute inset-x-0 top-full border-b bg-background px-4 py-3 shadow-lift"
         >
-          <ul className="mx-auto grid max-w-6xl grid-cols-3 gap-1">
+          <ul className="mx-auto grid max-w-7xl grid-cols-3 gap-1">
             {NAV.map(({ href, label }) => {
               const active = pathname === href || pathname.startsWith(`${href}/`);
               return (

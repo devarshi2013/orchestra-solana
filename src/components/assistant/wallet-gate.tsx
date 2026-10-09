@@ -23,8 +23,8 @@ export function WalletGate({ children }: { children: ReactNode }) {
         </CardTitle>
         <CardDescription>
           The assistant reads your USDC balance and quotes trades for your wallet. Connecting only
-          shares its public address: every buy still needs your approval in the wallet, and
-          Orchestra never holds funds.
+          shares its public address: every buy still needs your approval in the wallet, and Askfirst
+          never holds funds.
         </CardDescription>
       </CardHeader>
       <CardContent>

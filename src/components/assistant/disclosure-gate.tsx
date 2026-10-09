@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { ASSISTANT_DISCLOSURE_VERSION, DISCLOSURE_POINTS } from "@/lib/assistant/disclosure";
 
+// Kept from before the rename to Askfirst, so returning users aren't asked again.
 const KEY = `orchestra-disclosure-v${ASSISTANT_DISCLOSURE_VERSION}`;
 const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => {

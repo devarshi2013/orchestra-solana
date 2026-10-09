@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 
 import { SolanaWalletProvider } from "@/components/providers/wallet-provider";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -9,27 +9,49 @@ import { Toaster } from "@/components/ui/toast";
 
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-sans",
+/** Body text: highly legible at small sizes, with tabular figures. */
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+/**
+ * Headings and the wordmark: geometric with a slightly technical edge, which
+ * suits a crypto/fintech product without the editorial feel of a serif, and
+ * its figures stay crisp at heading sizes.
+ */
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
 });
+/** Prices and amounts: fixed-width figures and a slashed zero. */
+const jetbrainsMono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["latin"] });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
+const description =
+  "Ask an AI about tokenized US stocks on Solana, see live Jupiter quotes, and approve every buy in your own wallet.";
 
 export const metadata: Metadata = {
-  title: "Orchestra",
-  description:
-    "An AI research assistant for tokenized US stocks on Solana: live Jupiter quotes, wallet-approved swaps.",
+  metadataBase: new URL(siteUrl),
+  title: { default: "Askfirst: ask, then approve", template: "%s · Askfirst" },
+  description,
+  applicationName: "Askfirst",
+  openGraph: { title: "Askfirst", description, siteName: "Askfirst", type: "website" },
+  twitter: { card: "summary_large_image", title: "Askfirst", description },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#111214" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f7f8" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} dark h-full antialiased`}
       // The theme script sets class="dark" before hydration.
       suppressHydrationWarning
     >

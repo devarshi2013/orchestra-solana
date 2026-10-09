@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  /* Inter for text, Space Grotesk for headings and the wordmark, JetBrains Mono for figures. */
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-heading: var(--font-space-grotesk);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -46,13 +47,14 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-primary-to: var(--primary-to);
-  --shadow-soft:
-    0 1px 2px hsl(var(--shadow-color) / 0.06), 0 4px 16px -4px hsl(var(--shadow-color) / 0.1);
-  --shadow-lift:
-    0 2px 4px hsl(var(--shadow-color) / 0.08), 0 12px 32px -8px hsl(var(--shadow-color) / 0.22);
+  --color-primary-text: var(--primary-text);
+  --color-ink: var(--ink);
+  /* Barely-there depth: surfaces and borders do the layering. */
+  --shadow-soft: 0 1px 2px hsl(var(--shadow-color) / 0.05);
+  --shadow-lift: 0 4px 16px -6px hsl(var(--shadow-color) / 0.18);
   --animate-shimmer: shimmer 1.6s ease-in-out infinite;
   --animate-toast-in: toast-in 180ms ease-out;
-  /* Controls 10px, cards 14px, dialogs 16px. */
+  /* One radius scale: chips 6px, controls 8–10px, cards 14px, panels/dialogs 16px. */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.625rem;
@@ -81,93 +83,126 @@
   }
 }
 
+/*
+ * Askfirst design tokens.
+ * Brand: signal orange #FF5A1F, ink #111214, success #16A34A, and one neutral grey
+ * scale. Orange fills carry ink text (6.0:1); orange *text* uses --primary-text,
+ * which is darkened in light mode to stay at WCAG AA (white #FF5A1F text is
+ * only 3.1:1). Surfaces are layered by lightness, separated by 1px borders,
+ * not shadows. Spacing uses Tailwind's 4px scale.
+ */
 :root {
-  /* Orchestra design tokens. Spacing uses Tailwind's 4px scale (1/2/3/4/6/8 = 4/8/12/16/24/32px). */
-  --background: oklch(0.985 0.003 200);
-  --foreground: oklch(0.21 0.02 200);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.02 200);
-  --surface: oklch(1 0 0);
-  --surface-raised: oklch(0.97 0.005 200);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.02 200);
-  /* Brand accent: emerald → teal. White text on it is ≥ 4.5:1. */
-  --primary: oklch(0.52 0.12 163);
-  --primary-foreground: oklch(0.99 0 0);
-  --primary-to: oklch(0.52 0.1 192);
-  --secondary: oklch(0.955 0.008 200);
-  --secondary-foreground: oklch(0.25 0.03 200);
-  --muted: oklch(0.955 0.006 200);
-  --muted-foreground: oklch(0.49 0.02 200);
-  /* Soft accent tint for highlights and selected states. */
-  --accent: oklch(0.955 0.035 165);
-  --accent-foreground: oklch(0.38 0.09 165);
-  --destructive: oklch(0.55 0.21 25);
-  --success: oklch(0.52 0.13 155);
-  --warning: oklch(0.56 0.13 65);
-  --border: oklch(0.91 0.006 200);
-  --input: oklch(0.88 0.008 200);
-  --ring: oklch(0.6 0.13 165);
-  --shadow-color: 200 30% 20%;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  /* Data series: categorical slots 1–2, validated for CVD and contrast on this surface. */
+  --grey-0: #ffffff;
+  --grey-50: #f7f7f8;
+  --grey-100: #efeff1;
+  --grey-200: #e2e2e6;
+  --grey-300: #cacacf;
+  --grey-400: #9c9ca3;
+  --grey-500: #74747c;
+  --grey-600: #55555c;
+  --grey-700: #3a3a40;
+  --grey-800: #26272b;
+  --grey-850: #1c1d20;
+  --grey-900: #17181b;
+  --grey-950: #111214;
+  --orange: #ff5a1f;
+  --ink: #111214;
+
+  /* Light theme. */
+  --background: var(--grey-50);
+  --foreground: var(--ink);
+  --card: var(--grey-0);
+  --card-foreground: var(--ink);
+  --surface: var(--grey-0);
+  --surface-raised: var(--grey-100);
+  --popover: var(--grey-0);
+  --popover-foreground: var(--ink);
+  --primary: var(--orange);
+  --primary-foreground: var(--ink);
+  --primary-to: #ff7a3d;
+  /* Orange for text and links on light surfaces: 5.2:1 on white. */
+  --primary-text: #c2410c;
+  /* Gradient end, large headings only (4.0:1; AA large text needs 3:1). */
+  --primary-text-to: #d9480f;
+  --secondary: var(--grey-100);
+  --secondary-foreground: var(--ink);
+  --muted: var(--grey-100);
+  /* 7.4:1 on white. */
+  --muted-foreground: var(--grey-600);
+  --accent: #fff1ea;
+  --accent-foreground: #c2410c;
+  --destructive: #c81e1e;
+  /* #16A34A is 3.3:1 on white, so light mode uses the next step down for text (5.0:1). */
+  --success: #15803d;
+  --warning: #b45309;
+  --border: var(--grey-200);
+  --input: var(--grey-300);
+  --ring: var(--orange);
+  --shadow-color: 240 6% 10%;
+  --chart-1: var(--grey-300);
+  --chart-2: var(--grey-500);
+  --chart-3: var(--grey-600);
+  --chart-4: var(--grey-700);
+  --chart-5: var(--grey-800);
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: var(--grey-50);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--orange);
+  --sidebar-primary-foreground: var(--ink);
+  --sidebar-accent: var(--grey-100);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--grey-200);
+  --sidebar-ring: var(--orange);
 }
 
+/* Dark theme (the default). */
 .dark {
-  --background: oklch(0.155 0.012 200);
-  --foreground: oklch(0.97 0.004 200);
-  --card: oklch(0.195 0.014 200);
-  --card-foreground: oklch(0.97 0.004 200);
-  --surface: oklch(0.195 0.014 200);
-  --surface-raised: oklch(0.235 0.016 200);
-  --popover: oklch(0.215 0.016 200);
-  --popover-foreground: oklch(0.97 0.004 200);
-  --primary: oklch(0.54 0.125 163);
-  --primary-foreground: oklch(0.99 0 0);
-  --primary-to: oklch(0.54 0.095 192);
-  --secondary: oklch(0.255 0.016 200);
-  --secondary-foreground: oklch(0.95 0.004 200);
-  --muted: oklch(0.24 0.014 200);
-  --muted-foreground: oklch(0.72 0.015 200);
-  --accent: oklch(0.29 0.05 170);
-  --accent-foreground: oklch(0.86 0.1 165);
-  --destructive: oklch(0.7 0.18 22);
-  --success: oklch(0.76 0.14 155);
-  --warning: oklch(0.8 0.13 75);
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.7 0.14 165);
-  --shadow-color: 200 40% 2%;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --background: var(--grey-950);
+  --foreground: #f2f2f3;
+  --card: var(--grey-900);
+  --card-foreground: #f2f2f3;
+  --surface: var(--grey-900);
+  --surface-raised: var(--grey-850);
+  --popover: var(--grey-850);
+  --popover-foreground: #f2f2f3;
+  --primary: var(--orange);
+  --primary-foreground: var(--ink);
+  --primary-to: #ff7a3d;
+  /* 6.6:1 on ink. */
+  --primary-text: #ff6a33;
+  --primary-text-to: #ff8a5c;
+  --secondary: var(--grey-850);
+  --secondary-foreground: #f2f2f3;
+  --muted: var(--grey-850);
+  /* 6.7:1 on ink. */
+  --muted-foreground: var(--grey-400);
+  --accent: #2b1a12;
+  --accent-foreground: #ff8a5c;
+  --destructive: #f87171;
+  /* 5.7:1 on ink. */
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --border: rgb(255 255 255 / 8%);
+  --input: rgb(255 255 255 / 13%);
+  --ring: var(--orange);
+  --shadow-color: 240 10% 2%;
+  --chart-1: var(--grey-300);
+  --chart-2: var(--grey-400);
+  --chart-3: var(--grey-500);
+  --chart-4: var(--grey-600);
+  --chart-5: var(--grey-700);
   --series-1: #3987e5;
   --series-2: #d95926;
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: var(--grey-950);
+  --sidebar-foreground: #f2f2f3;
+  --sidebar-primary: var(--orange);
+  --sidebar-primary-foreground: var(--ink);
+  --sidebar-accent: var(--grey-850);
+  --sidebar-accent-foreground: #f2f2f3;
+  --sidebar-border: rgb(255 255 255 / 8%);
+  --sidebar-ring: var(--orange);
 }
 
 @layer base {
@@ -176,6 +211,7 @@
   }
   html {
     @apply font-sans;
+    font-variant-numeric: normal;
     color-scheme: light;
     -webkit-tap-highlight-color: transparent;
   }
@@ -184,7 +220,13 @@
   }
   body {
     @apply bg-background text-sm leading-6 text-foreground;
+    /* Inter: single-storey a off, open digits, tabular figures where it matters. */
     font-feature-settings: "cv11", "ss01";
+  }
+  /* Prices and amounts: monospaced tabular figures so columns line up. */
+  .tabular-nums,
+  .font-mono {
+    font-variant-numeric: tabular-nums slashed-zero;
   }
   h1,
   h2,
@@ -232,8 +274,9 @@
 @utility bg-brand {
   background-image: linear-gradient(135deg, var(--primary), var(--primary-to));
 }
+/* Gradient text uses the AA-safe text oranges (darker in light mode). */
 @utility text-brand {
-  background-image: linear-gradient(135deg, var(--primary), var(--primary-to));
+  background-image: linear-gradient(135deg, var(--primary-text), var(--primary-text-to));
   background-clip: text;
   color: transparent;
 }

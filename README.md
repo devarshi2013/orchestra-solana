@@ -1,4 +1,4 @@
-# Orchestra
+# Askfirst
 
 An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain English (for example "three large US tech stocks for 200 USDC"):
 
@@ -8,7 +8,7 @@ An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain Engli
 
 ## Ground rules
 
-- **Non-custodial.** Your wallet signs every swap (`signTransaction`; the app never sends from the wallet), and Orchestra never holds keys or funds. No Jupiter products that deposit into custodial vaults (Trigger v2 / DCA).
+- **Non-custodial.** Your wallet signs every swap (`signTransaction`; the app never sends from the wallet), and Askfirst never holds keys or funds. No Jupiter products that deposit into custodial vaults (Trigger v2 / DCA).
 - **No custom smart contracts or on-chain programs.** All execution goes through Jupiter's Swap v2 REST API (`/order` + `/execute`).
 - **Keys stay on the server.** The browser calls our `/api/*` routes, which call Jupiter (`src/server/jupiter/client.ts`) and Claude (`src/server/agent/client.ts`). Never use `lite-api.jup.ag`.
 - **Registry-only stocks.** The assistant can only suggest stocks from the stock registry (`src/lib/stocks/registry.generated.json`), built only from the issuers' official lists and verified on Jupiter. Token addresses come from the registry, never from the AI.
@@ -27,6 +27,13 @@ There's **no database**:
 - **Disclosure:** the one-time risk disclosure is remembered in the browser.
 
 See [docs/assistant.md](docs/assistant.md).
+
+## Brand
+
+- **Name and mark:** Askfirst, "ask, then approve". The logo is a chat bubble holding a check mark (`src/components/brand/logo.tsx`; favicon `src/app/icon.svg`, app icon and OG image generated in `src/app`).
+- **Colours** (CSS variables in `src/app/globals.css`, exposed as Tailwind colours): signal orange `#FF5A1F`, ink `#111214`, success `#16A34A`, one neutral grey scale. Dark is the default; the header toggles light. Orange fills carry ink text (6.0:1). Orange text uses `primary-text`, which is darker in light mode to meet WCAG AA.
+- **Type:** Space Grotesk for headings and the wordmark, Inter for text, JetBrains Mono with tabular figures for prices and amounts (all via `next/font`).
+- **Surfaces:** one radius scale (6/8/10/14/16px), 1px borders, and layered surface colours instead of heavy shadows.
 
 ## Stack
 

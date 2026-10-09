@@ -243,7 +243,7 @@ export function ChatWorkspace({ wallet }: { wallet: string }) {
         <p className="mt-4 flex items-start gap-1.5 text-xs text-muted-foreground">
           <ShieldAlert className="mt-px size-3.5 shrink-0" />
           The assistant researches and proposes; it never trades. Every figure comes from live data
-          tools (open &ldquo;Data used&rdquo;), suggestions are limited to Orchestra&apos;s verified
+          tools (open &ldquo;Data used&rdquo;), suggestions are limited to Askfirst&apos;s verified
           stock tokens, and you approve every buy in your wallet. Research, not financial advice.
         </p>
       </div>

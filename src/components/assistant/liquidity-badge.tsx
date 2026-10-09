@@ -18,7 +18,7 @@ export function LiquidityBadge({
       className={cn(
         "gap-1 font-normal",
         tier === "high" && "border-success/40 text-success",
-        tier === "medium" && "border-amber-500/40 text-amber-700 dark:text-amber-400",
+        tier === "medium" && "border-warning/40 text-warning",
         tier === "low" && "border-destructive/40 text-destructive",
         className,
       )}
@@ -28,7 +28,7 @@ export function LiquidityBadge({
         className={cn(
           "size-1.5 rounded-full",
           tier === "high" && "bg-success",
-          tier === "medium" && "bg-amber-500",
+          tier === "medium" && "bg-warning",
           tier === "low" && "bg-destructive",
         )}
       />

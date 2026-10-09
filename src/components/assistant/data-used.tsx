@@ -72,7 +72,7 @@ export function DataUsed({ tools }: { tools: readonly ToolCallView[] }) {
                     aria-label="Running"
                   />
                 ) : tool.ok ? (
-                  <CheckCircle2 className="size-3 text-emerald-600" aria-label="Succeeded" />
+                  <CheckCircle2 className="size-3 text-success" aria-label="Succeeded" />
                 ) : (
                   <XCircle className="size-3 text-destructive" aria-label="Error" />
                 )}

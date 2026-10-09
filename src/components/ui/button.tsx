@@ -9,9 +9,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        /** The primary action: the accent gradient, used once or twice per view. */
+        /** The primary action: solid signal orange with ink text, used once or twice per view. */
         default:
-          "bg-brand text-primary-foreground shadow-soft hover:shadow-lift hover:brightness-110 dark:shadow-none dark:hover:shadow-[0_0_0_1px_var(--primary),0_8px_24px_-8px_var(--primary)]",
+          "bg-primary font-semibold text-primary-foreground hover:bg-[color-mix(in_oklch,var(--primary),white_10%)]",
         outline:
           "border-border bg-surface text-foreground shadow-xs hover:border-foreground/20 hover:bg-surface-raised aria-expanded:bg-surface-raised",
         secondary:
@@ -20,7 +20,7 @@ const buttonVariants = cva(
           "text-muted-foreground hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:ring-destructive/60 dark:bg-destructive/20 dark:hover:bg-destructive/30",
-        link: "h-auto! px-0! text-primary underline-offset-4 hover:underline dark:text-accent-foreground",
+        link: "h-auto! px-0! text-primary-text underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 gap-2 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",

@@ -84,7 +84,7 @@ export default function Home() {
           className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px),linear-gradient(to_bottom,var(--border)_1px,transparent_1px)] mask-[radial-gradient(ellipse_at_top,black_20%,transparent_70%)] bg-size-[48px_48px] opacity-60"
         />
 
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-12 px-4 pt-16 pb-20 sm:px-6 sm:pt-24 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:pb-28">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 pt-16 pb-20 sm:px-6 sm:pt-24 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:pb-28">
           <div className="space-y-8">
             <span className="inline-flex items-center gap-2 rounded-full border bg-surface/80 py-1 pr-3 pl-1 text-xs font-medium shadow-xs backdrop-blur">
               <span className="inline-flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-primary-foreground">
@@ -99,7 +99,7 @@ export default function Home() {
                 <span className="text-brand">with an AI that shows its work.</span>
               </h1>
               <p className="max-w-xl text-base leading-7 text-pretty text-muted-foreground sm:text-lg sm:leading-8">
-                Orchestra&apos;s assistant researches tokenized stocks like NVIDIA and Apple with
+                Askfirst&apos;s assistant researches tokenized stocks like NVIDIA and Apple with
                 live data, shows real Jupiter quotes, and buys them with your USDC only after you
                 approve each swap in your wallet.
               </p>
@@ -132,9 +132,9 @@ export default function Home() {
 
       {/* Features */}
       <section aria-labelledby="features-heading" className="border-t bg-surface-raised/40">
-        <div className="mx-auto w-full max-w-6xl space-y-12 px-4 py-20 sm:px-6 sm:py-24">
+        <div className="mx-auto w-full max-w-7xl space-y-12 px-4 py-20 sm:px-6 sm:py-24">
           <div className="mx-auto max-w-2xl space-y-3 text-center">
-            <p className="text-xs font-semibold tracking-wider text-primary uppercase dark:text-accent-foreground">
+            <p className="text-xs font-semibold tracking-wider text-primary-text uppercase">
               Research you can verify
             </p>
             <h2 id="features-heading" className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -168,9 +168,9 @@ export default function Home() {
 
       {/* How it works */}
       <section aria-labelledby="steps-heading" className="border-t">
-        <div className="mx-auto w-full max-w-6xl space-y-12 px-4 py-20 sm:px-6 sm:py-24">
+        <div className="mx-auto w-full max-w-7xl space-y-12 px-4 py-20 sm:px-6 sm:py-24">
           <div className="max-w-2xl space-y-3">
-            <p className="text-xs font-semibold tracking-wider text-primary uppercase dark:text-accent-foreground">
+            <p className="text-xs font-semibold tracking-wider text-primary-text uppercase">
               How it works
             </p>
             <h2 id="steps-heading" className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -196,7 +196,7 @@ export default function Home() {
 
       {/* Final call to action */}
       <section className="px-4 pb-8 sm:px-6">
-        <div className="relative mx-auto w-full max-w-6xl overflow-hidden rounded-2xl bg-brand px-6 py-14 text-center text-primary-foreground shadow-lift sm:px-12 sm:py-16">
+        <div className="relative mx-auto w-full max-w-7xl overflow-hidden rounded-2xl bg-brand px-6 py-14 text-center text-primary-foreground shadow-lift sm:px-12 sm:py-16">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgb(255_255_255/0.22),transparent_45%),radial-gradient(circle_at_90%_100%,rgb(255_255_255/0.12),transparent_40%)]"

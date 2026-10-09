@@ -58,7 +58,7 @@ describe("validatePlan", () => {
     });
     expect(result).toEqual({
       ok: false,
-      errors: [`"ZZZZ" isn't in Orchestra's stock registry; use listStocks to find one.`],
+      errors: [`"ZZZZ" isn't in Askfirst's stock registry; use listStocks to find one.`],
     });
   });
 
@@ -77,7 +77,7 @@ describe("validatePlan", () => {
     expect(result).toEqual({
       ok: false,
       errors: [
-        `"DOGE" isn't in Orchestra's stock registry; use listStocks to find one.`,
+        `"DOGE" isn't in Askfirst's stock registry; use listStocks to find one.`,
         `"SPYx" is 5 USDC, below the 10 USDC minimum order size.`,
         "totalUsdc is 70 but the items add up to 45.",
         "totalUsdc 70 exceeds the wallet's 40 USDC.",

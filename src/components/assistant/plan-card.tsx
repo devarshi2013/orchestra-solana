@@ -189,7 +189,7 @@ export function PlanCard({
                         href={solscanTxUrl(item.signature, "mainnet-beta")}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-0.5 text-primary hover:underline"
+                        className="inline-flex items-center gap-0.5 text-primary-text hover:underline"
                       >
                         Solscan <ExternalLink className="size-3" />
                       </a>
@@ -393,7 +393,7 @@ function PlanRow({
               key={w.kind + w.message}
               className={cn(
                 "flex items-start gap-1 text-xs",
-                w.severity === "block" ? "text-destructive" : "text-amber-700 dark:text-amber-400",
+                w.severity === "block" ? "text-destructive" : "text-warning",
               )}
             >
               <TriangleAlert className="mt-0.5 size-3 shrink-0" /> {w.message}
