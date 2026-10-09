@@ -167,7 +167,7 @@ export default function Home() {
       </section>
 
       {/* How it works */}
-      <section aria-labelledby="steps-heading" className="border-t">
+      <section id="how-it-works" aria-labelledby="steps-heading" className="scroll-mt-20 border-t">
         <div className="mx-auto w-full max-w-7xl space-y-12 px-4 py-20 sm:px-6 sm:py-24">
           <div className="max-w-2xl space-y-3">
             <p className="text-xs font-semibold tracking-wider text-primary-text uppercase">
