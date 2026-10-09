@@ -2,7 +2,7 @@
  * The one-time risk disclosure every wallet accepts before using the
  * assistant. Changing the points? Bump the version so everyone accepts again.
  */
-export const ASSISTANT_DISCLOSURE_VERSION = 2;
+export const ASSISTANT_DISCLOSURE_VERSION = 3;
 
 export const DISCLOSURE_POINTS = [
   {
@@ -15,7 +15,7 @@ export const DISCLOSURE_POINTS = [
   },
   {
     title: "Tokenized stocks are securities",
-    text: "Ondo and xStocks tokens are securities with eligibility rules: they aren't available to US persons, xStocks excludes the UK, and other countries may restrict them. Only buy them if you're eligible where you live.",
+    text: "xStocks, Ondo and PreStocks tokens are securities with eligibility rules: they aren't available to US persons, xStocks excludes the UK, PreStocks excludes the EU and Singapore, and other countries may restrict them. PreStocks tokens give exposure to private companies through an issuer structure, not shares. Only buy them if you're eligible where you live.",
   },
   {
     title: "You can lose money",

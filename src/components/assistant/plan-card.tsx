@@ -220,7 +220,7 @@ export function PlanCard({
                     item={item}
                     quote={quote}
                     warnings={itemWarnings({ kind: item.kind, usdcAmount: amount }, quote, now)}
-                    loading={!quote && amount > 0}
+                    loading={!quote && amount > 0 && wallet !== null}
                     onAmount={(text) => setAmount(item.symbol, text)}
                     onRemove={() => remove(item.symbol)}
                     canRemove={draft.length > 1}
@@ -259,7 +259,7 @@ export function PlanCard({
               <Button onClick={() => void approve()} disabled={!ready || buy.running}>
                 <ShoppingCart /> Approve &amp; buy {formatUsd(total)}
               </Button>
-              <p className="flex-1 text-xs text-muted-foreground">
+              <p className="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
                 Each stock is a separate swap you approve in your wallet: {draft.length}{" "}
                 {draft.length === 1 ? "signature" : "signatures"}. Nothing is signed automatically.
               </p>
@@ -295,8 +295,8 @@ function PlanRow({
   const q = quote?.quote;
   return (
     <li className="space-y-2 px-3 py-2.5 text-sm transition-colors hover:bg-muted/30">
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
+        <div className="min-w-0 flex-1 basis-44">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-medium">{item.name}</span>
             <Badge variant="outline">{item.symbol}</Badge>

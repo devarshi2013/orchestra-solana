@@ -314,3 +314,84 @@ html .wallet-adapter-button-start-icon {
   width: 18px;
   height: 18px;
 }
+html .wallet-adapter-button:not([disabled]):active {
+  transform: scale(0.98);
+}
+
+/* The wallet picker modal, in our surfaces and type instead of the library's navy. */
+html .wallet-adapter-modal-fade-wrapper,
+html .wallet-adapter-modal {
+  font-family: var(--font-sans);
+}
+html .wallet-adapter-modal-overlay {
+  background: rgb(0 0 0 / 55%);
+  backdrop-filter: blur(4px);
+}
+html .wallet-adapter-modal-wrapper {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-lift);
+}
+html .wallet-adapter-modal-title {
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+html .wallet-adapter-modal-button-close {
+  background: var(--muted);
+}
+html .wallet-adapter-modal-button-close svg {
+  fill: var(--muted-foreground);
+}
+html .wallet-adapter-modal-button-close:hover svg {
+  fill: var(--foreground);
+}
+html .wallet-adapter-modal-list .wallet-adapter-button {
+  height: 3rem;
+  justify-content: flex-start;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--foreground);
+  font-weight: 500;
+}
+html .wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover {
+  background: var(--muted);
+}
+html .wallet-adapter-modal-list .wallet-adapter-button span {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+html .wallet-adapter-modal-list-more {
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+}
+html .wallet-adapter-modal-list-more svg {
+  fill: var(--muted-foreground);
+}
+html .wallet-adapter-modal-middle-button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  border-radius: var(--radius-lg);
+}
+html .wallet-adapter-dropdown-list {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  font-family: var(--font-sans);
+  box-shadow: var(--shadow-lift);
+}
+html .wallet-adapter-dropdown-list-item {
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-weight: 500;
+}
+html .wallet-adapter-dropdown-list-item:not([disabled]):hover {
+  background: var(--muted);
+}
