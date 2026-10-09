@@ -111,9 +111,6 @@ export default function Home() {
                   Ask the assistant <ArrowRight data-icon="inline-end" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/assets">Browse stocks</Link>
-              </Button>
             </div>
 
             <ul className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-6">
@@ -222,14 +219,6 @@ export default function Home() {
                 <Link href="/assistant">
                   Open the assistant <ArrowRight data-icon="inline-end" />
                 </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="ghost"
-                className="text-white ring-1 ring-white/40 hover:bg-white/10 hover:text-white"
-              >
-                <Link href="/assets">See the stock list</Link>
               </Button>
             </div>
           </div>

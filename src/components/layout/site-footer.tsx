@@ -1,10 +1,6 @@
 import Link from "next/link";
 
-const LINKS = [
-  { href: "/assistant", label: "Assistant" },
-  { href: "/assets", label: "Stocks" },
-  { href: "/swap", label: "Swap" },
-];
+const LINKS = [{ href: "/assistant", label: "Assistant" }];
 
 export function SiteFooter() {
   return (

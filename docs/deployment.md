@@ -4,13 +4,13 @@ Orchestra is a Next.js 16 app with **no database** and **no cron jobs**. Vercel 
 
 ## What runs where
 
-| Piece             | Where                                                                                                                                                                 |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pages and UI      | Browser. The only env it sees is `NEXT_PUBLIC_SOLANA_RPC_URL` (never a secret).                                                                                       |
-| `/api/*` routes   | Vercel serverless functions (Node). Every provider key is used only here, behind `server-only`.                                                                       |
-| Claude            | `/api/agent`, server-side only.                                                                                                                                       |
-| Jupiter swaps     | The browser gets an unsigned order from `/api/swap/order`, the **user's wallet signs it** (the app never holds keys), and `/api/swap/execute` forwards it to Jupiter. |
-| Chats, disclosure | In the browser (no database).                                                                                                                                         |
+| Piece             | Where                                                                                                                                                                              |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pages and UI      | Browser. The only env it sees is `NEXT_PUBLIC_SOLANA_RPC_URL` (never a secret).                                                                                                    |
+| `/api/*` routes   | Vercel serverless functions (Node). Every provider key is used only here, behind `server-only`.                                                                                    |
+| Claude            | `/api/agent`, server-side only.                                                                                                                                                    |
+| Jupiter swaps     | The assistant's buy flow gets an unsigned order from `/api/swap/order`, the **user's wallet signs it** (the app never holds keys), and `/api/swap/execute` forwards it to Jupiter. |
+| Chats, disclosure | In the browser (no database).                                                                                                                                                      |
 
 ## Environment variables
 

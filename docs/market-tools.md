@@ -61,7 +61,7 @@ returns the transaction.
   becomes `warning`.
 - **RFQ (JupiterZ) quotes don't check the wallet's balance** (seen live with
   NVDAx), so the tool also reads the wallet's USDC and warns when it's short.
-- **`thinLiquidity`:** price impact above the `/assets` threshold (1%).
+- **`thinLiquidity`:** price impact above the thin-liquidity threshold (1%).
 
 ## Tests
 

@@ -9,7 +9,6 @@ import {
 import type { Asset } from "@/lib/assets/registry";
 import type { ItemQuote } from "@/lib/assistant/review";
 import type { ExecuteBody, OrderQuery } from "@/lib/swap/requests";
-import { tokenInfoSchema, type TokenInfo } from "@/lib/tokens";
 
 /** Browser → our /api routes. Never calls Jupiter directly (the API key lives server-side). */
 
@@ -71,14 +70,6 @@ export function executeSwap(body: ExecuteBody): Promise<ExecuteResponse> {
   );
 }
 
-export function searchTokens(query: string, signal?: AbortSignal): Promise<TokenInfo[]> {
-  return request(
-    `/api/tokens/search?${new URLSearchParams({ query })}`,
-    { signal },
-    z.array(tokenInfoSchema),
-  );
-}
-
 const trusted = <T>() => z.custom<T>(() => true);
 const json = (method: string, body?: unknown): RequestInit => ({
   method,
@@ -87,24 +78,9 @@ const json = (method: string, body?: unknown): RequestInit => ({
 });
 
 export type RegistryView = { builtAt: string; stocks: Asset[]; crypto: Asset[] };
-export type LiquidityCheck =
-  | { status: "ok" | "thin"; impactPct: number; router: string; testUsd: number }
-  | { status: "no_route"; message: string; testUsd: number };
 
 export const assetsApi = {
   registry: (signal?: AbortSignal) => request("/api/assets", { signal }, trusted<RegistryView>()),
-  prices: (kind: "stock" | "crypto", signal?: AbortSignal) =>
-    request(
-      `/api/assets/prices?kind=${kind}`,
-      { signal },
-      trusted<Record<string, { usdPrice: number; priceChange24h: number | null }>>(),
-    ),
-  liquidity: (mint: string, signal?: AbortSignal) =>
-    request(
-      `/api/assets/liquidity?mint=${encodeURIComponent(mint)}`,
-      { signal },
-      trusted<LiquidityCheck>(),
-    ),
 };
 
 export const assistantApi = {

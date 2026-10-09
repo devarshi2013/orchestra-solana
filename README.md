@@ -19,8 +19,6 @@ An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain Engli
 | Route        | What it does                                                                                                                                                                                        |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/assistant` | The chatbot: streamed answers, "Data used" panels, plan cards with live quotes, warnings (price impact, liquidity, US market hours), pre-flight checks, and wallet-approved buys with Solscan links |
-| `/assets`    | The tokenized stocks the assistant can use, with live prices                                                                                                                                        |
-| `/swap`      | A plain Jupiter swap, using the same non-custodial flow                                                                                                                                             |
 
 There's **no database**:
 
@@ -75,9 +73,9 @@ Import `serverEnv` from `@/env/server` (guarded by `server-only`) and `clientEnv
 
 ```
 docs/                        Assistant, assets, tokenized stocks, Jupiter API notes, deployment
-src/app/                     Pages (/, /assistant, /assets, /swap) and /api route handlers
+src/app/                     Pages (/ and /assistant) and /api route handlers
 src/components/assistant/    Chat, plan card, data-used panels, disclosure and wallet gates
-src/hooks/                   Chat stream, plan quotes, plan buying, swap flow
+src/hooks/                   Chat stream, plan quotes, plan buying
 src/lib/agent/               System prompt, plan validation, address redaction
 src/lib/assets/              Stock registry, asset tools (listAssets, metrics, quotes, balances)
 src/server/agent/            Claude tool-use loop, tools, rate limit

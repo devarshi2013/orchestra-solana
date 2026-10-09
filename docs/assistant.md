@@ -75,7 +75,7 @@ The plan card (`src/components/assistant/plan-card.tsx`) shows each stock with:
 - There's enough USDC, and enough SOL for fees.
 - Every item has a buildable quote.
 
-**Approve & buy** (`src/hooks/use-plan-buy.ts`) uses the same flow as `/swap`, item by item:
+**Approve & buy** (`src/hooks/use-plan-buy.ts`) uses the non-custodial Jupiter swap flow, item by item:
 
 1. A fresh `/api/swap/order` for this wallet.
 2. The **wallet signs**; the app never sends from it.

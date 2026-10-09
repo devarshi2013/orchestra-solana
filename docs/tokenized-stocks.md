@@ -75,7 +75,7 @@ display amount = raw amount × multiplier, while transactions always use the
 
 ## Eligibility and restrictions
 
-Orchestra doesn't check users' eligibility. The `/assets` page and these docs
+Orchestra doesn't check users' eligibility. The assistant's disclosure and these docs
 state the rules; complying with them is the user's responsibility. Get legal
 advice before offering these tokens to anyone.
 
@@ -122,8 +122,9 @@ advice before offering these tokens to anyone.
 - **xStocks:** `tradingHoursMode` per asset: 977 are `TwentyFourFive`, 294 are
   "Market hours" or "Regular". Backed recommends pausing interactions for
   about 15 minutes around each multiplier update (00:30 UTC after an ex-date).
-- The registry stores each asset's hours (`24/5` or `Market hours`). `/assets`
-  shows them.
+- The registry stores each asset's hours (`24/5` or `Market hours`). The
+  assistant's `listAssets` tool returns them, and the plan card warns outside US
+  market hours.
 
 ## What can block swaps
 
@@ -131,7 +132,7 @@ advice before offering these tokens to anyone.
 | ------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Issuer pause** (`pausableConfig`)               | Every transfer and swap fails                 | Test quote or `/order` fails; the buy fails with a clear message and can be retried later                                                                                                  |
 | **Account freeze** (freeze authority)             | Only the frozen holder can't trade            | The leg fails; nothing else is affected                                                                                                                                                    |
-| **RFQ outside market hours** (mainly Ondo)        | Quotes may vanish or widen                    | The test quote on `/assets` warns; rebalances skip legs Jupiter can't quote                                                                                                                |
+| **RFQ outside market hours** (mainly Ondo)        | Quotes may vanish or widen                    | The plan card shows the item's quote as unavailable; it can't be bought until it quotes                                                                                                    |
 | **Trading halt** (corporate actions, risk limits) | No quotes                                     | As above                                                                                                                                                                                   |
 | **A transfer hook added later**                   | Routing could break                           | Not active today; the startup verification and test quotes would surface it                                                                                                                |
 | **Scaled UI multiplier**                          | **Not a swap blocker**, but valuation differs | Orchestra values holdings from raw amounts, so stock positions are valued about 0.2–0.3% below their display amount. Rebalance targets stay proportional; realized prices are per raw unit |

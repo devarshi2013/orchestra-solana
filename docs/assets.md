@@ -13,9 +13,6 @@ in, pasted in, or supplied by a model:
 - Mints the app's own code needs (SOL, USDC) come from
   `src/lib/assets/allowlist.ts`.
 
-The `/swap` page is a general-purpose swap tool, not an investing feature, so
-it keeps Jupiter's full token search.
-
 ## How it's built
 
 At server start (`src/instrumentation.ts`), `src/server/assets/registry.ts`
