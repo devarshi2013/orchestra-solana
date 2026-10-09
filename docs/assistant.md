@@ -112,7 +112,13 @@ Replies are GitHub-flavoured Markdown (`src/components/assistant/markdown.tsx`: 
 
 ## Browse stocks
 
-Next to the chat, the **Browse stocks** panel (`src/components/assistant/stock-browser.tsx`) lists every registry company from `GET /api/stocks` (no mints): sector chips, search, a stock/ETF toggle, and each company's liquidity badge. Clicking one sends "Tell me about TICKER" to the assistant.
+The **Browse stocks** panel (`src/components/assistant/stock-browser.tsx`, controls in `stock-filters.tsx`, logic in `src/lib/stocks/browse.ts`) lists every registry company from `GET /api/stocks` (no mints). Clicking one asks the assistant about it.
+
+- **Filters** (they combine): search by company or ticker (debounced 200 ms); **Sector** (multi-select with counts, the 11 standard sectors plus Diversified and Unclassified); **Industry** (multi-select, searchable, only within the chosen sectors and disabled until one is chosen); **Type** (All, Stocks, ETFs); **Liquidity** (Any, High, Medium+, from the 100 USDC test quote). Counts apply every other filter.
+- **Sort:** Liquidity (default), Market cap, 24h change, 1Y return, Name, with an ascending/descending toggle; missing figures sort last. `GET /api/stocks/metrics` (`src/server/stocks/metrics.ts`) supplies the figures: 24h change live from Jupiter for each company's most liquid token (all issuers' tokens are priced, and a company whose tokens disagree by over 5% gets none); market cap and 1Y return from Financial Modeling Prep's batch endpoints, only when `MARKET_DATA_API_KEY` is set and the plan includes them. A sort without data is shown disabled ("needs market data"), never estimated.
+- **Active filters** show as removable chips with "Clear all" (which also resets the sort), plus "Showing N of M stocks". An empty result offers "Clear filters".
+- **URL:** the filters live in the query string (`?sector=technology,energy&industry=…&type=etf&liquidity=medium&sort=change&dir=asc&find=…`), so a refresh or a shared link shows the same list; unknown values are ignored, and switching chats keeps them.
+- **Phones (<768px):** search plus a "Filters (n)" button opening a bottom sheet with the same dropdowns, applied together with "Apply".
 
 ## Disclosure
 
@@ -123,6 +129,7 @@ Before first use, the browser shows a one-time disclosure: AI can be wrong, it's
 - `src/server/agent/loop.test.ts`: the loop against a fake streaming client.
 - `src/lib/assistant/chat-history.test.ts`: create, rename, pin, delete, search, grouping, the 200-chat cap, per-wallet lists, moving guest chats, restoring a chat from its URL, and blocked storage.
 - `src/server/agent/guest.test.ts`, `title.test.ts`: guest tools and AI titles.
+- `src/lib/stocks/browse.test.ts`: Browse stocks filters combining, industries per sector, sorting, URL round-trip and Clear all.
 - `src/components/assistant/markdown.test.tsx`, `src/lib/markdown/*.test.ts`: tables, signs and colours, streamed tables in chunks, comparison blocks and their fallback.
 - `src/server/market/compare.test.ts`: registry-only tickers, issuer price cross-check, sparkline bad prints.
 - `src/server/agent/tools.test.ts`: stock-only tools and plan rejection.

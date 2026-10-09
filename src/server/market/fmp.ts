@@ -74,3 +74,13 @@ export async function fetchAnnualGrowth(symbol: string) {
     )[0] ?? null
   );
 }
+
+/** Market cap for many symbols in one call (comma-separated). Not on every FMP plan. */
+export const batchQuoteSchema = z.array(z.object({ symbol: z.string(), marketCap: num }));
+export async function fetchBatchQuotes(symbols: string[]) {
+  return batchQuoteSchema.parse(await fmpGet("batch-quote", { symbols: symbols.join(",") }));
+}
+/** 1Y returns for many symbols in one call. Not on every FMP plan. */
+export async function fetchBatchPriceChange(symbols: string[]) {
+  return priceChangeSchema.parse(await fmpGet("stock-price-change", { symbol: symbols.join(",") }));
+}

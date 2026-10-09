@@ -14,7 +14,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { Appear } from "@/components/motion";
 import {
@@ -81,11 +81,28 @@ function prefillFromUrl(): string {
   }
 }
 
-/** Changes the URL without a server round trip (Next.js keeps usePathname in sync). */
+/**
+ * Changes the URL without a server round trip (Next.js keeps usePathname in
+ * sync). The query string (the Browse stocks filters) carries over.
+ */
 function go(path: string, replace = false) {
   if (window.location.pathname === path) return;
-  if (replace) window.history.replaceState(null, "", path);
-  else window.history.pushState(null, "", path);
+  const url = path + window.location.search;
+  if (replace) window.history.replaceState(null, "", url);
+  else window.history.pushState(null, "", url);
+}
+
+/** Whether a media query matches (false until the browser says otherwise). */
+function useMediaQuery(query: string) {
+  return useSyncExternalStore(
+    (onChange) => {
+      const list = window.matchMedia(query);
+      list.addEventListener("change", onChange);
+      return () => list.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(query).matches,
+    () => false,
+  );
 }
 
 /** First reply finished and the title is still the automatic one: time to ask for a better one. */
@@ -134,6 +151,8 @@ export function ChatApp() {
   }, []);
 
   const [collapsed, setCollapsed] = usePersistentFlag(COLLAPSED_KEY);
+  // One Browse stocks panel at a time (it owns the filter query string): a column on wide screens.
+  const wide = useMediaQuery("(min-width: 1280px)");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [browseOpen, setBrowseOpen] = useState(false);
 
@@ -470,13 +489,15 @@ export function ChatApp() {
               </p>
             </div>
           </div>
-          <aside aria-label="Browse stocks" className="hidden w-80 shrink-0 border-l p-4 xl:block">
-            <StockBrowser onAsk={send} disabled={busy} />
-          </aside>
+          {wide && (
+            <aside aria-label="Browse stocks" className="w-96 shrink-0 border-l p-4">
+              <StockBrowser onAsk={send} disabled={busy} />
+            </aside>
+          )}
         </div>
       </div>
 
-      <Sheet open={browseOpen} onOpenChange={setBrowseOpen}>
+      <Sheet open={browseOpen && !wide} onOpenChange={setBrowseOpen}>
         <SheetContent side="right" className="w-88 max-w-[92vw] p-4">
           <SheetTitle className="sr-only">Browse stocks</SheetTitle>
           <SheetDescription className="sr-only">
