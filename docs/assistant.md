@@ -1,6 +1,6 @@
 # Stock assistant
 
-`/assistant` is a chat that helps users find **tokenized US stocks on Solana**, shows **live Jupiter quotes**, and buys only after the user **approves each swap in their wallet**. The assistant itself never trades.
+`/chat` is a chat that helps users find **tokenized US stocks on Solana**, shows **live Jupiter quotes**, and buys only after the user **approves each swap in their wallet**. The assistant itself never trades.
 
 ## Request flow
 
@@ -89,6 +89,17 @@ How it behaves:
 - **Failures:** a failed item doesn't stop the others, while declining in the wallet stops the run.
 - **Results:** each item shows its status and a Solscan link, and the summary offers **Retry** for anything not bought.
 
+## Chat history
+
+A ChatGPT-style sidebar (`src/components/assistant/chat-sidebar.tsx`; a drawer under 768px), with the app shell in `assistant-chat.tsx`. The chat app is in `src/app/chat/layout.tsx` and renders in the browser only, since everything it shows comes from there.
+
+- **URLs:** each chat is `/chat/[id]`; `/chat` is a new chat, and `/assistant` (with its `?q=` pre-fill) redirects to it. Switching chats uses `history.pushState`, so refresh, back/forward and bookmarks work. The URL decides what's on screen: a saved chat is shown from storage and becomes the live conversation when you send a message in it. A reply still streaming when you leave its chat keeps going and is saved.
+- **Storage** (`src/lib/assistant/chat-history.ts`): localStorage, one list per wallet (`askfirst.chats.v1.<wallet>`) and a `guest` list before a wallet connects. Every read and write is wrapped; if storage is blocked, chats live in memory for the visit. Each chat stores its id, title (and where it came from), pinned flag, timestamps, messages, the model-side history, and plans with each purchase's statuses and Solscan signatures. A chat is saved once its first message is sent. At most 200 chats; the oldest unpinned go first, and a full quota drops old chats' model history before whole chats.
+- **Guests:** without a wallet the assistant can research (`src/server/agent/guest.ts`): the balance, quote and plan tools answer "connect a wallet". When a wallet connects and guest chats exist, a banner offers to move them to it.
+- **Titles:** the first ~40 characters of the first message, then a 3-6 word title from `claude-haiku-4-5` after the first reply (`POST /api/agent/title`, 60 an hour per client). A failure keeps the first title; a name the user chose is never replaced.
+- **Sidebar:** "New chat" (Ctrl/Cmd+Shift+O), search over titles and message text, Pinned first then Today / Yesterday / Previous 7 days / Previous 30 days / Older, a "…" menu per chat (hover, or long-press / always shown on touch) to rename inline (Enter saves, Escape cancels), pin or delete (confirmed), a bag icon on chats with a purchase, Up/Down/Home/End to move through chats, a remembered collapse, and "Clear all history" (confirmed) under settings. Rename, pin and delete are announced to screen readers.
+- **Old plans:** plan cards in a reopened chat are read-only and offer "Get fresh quote" instead of "Approve" (their quotes have expired); bought items keep their Solscan links.
+
 ## How replies render
 
 Replies are GitHub-flavoured Markdown (`src/components/assistant/markdown.tsx`: react-markdown + remark-gfm). Raw HTML from the model is dropped and unsafe link protocols are stripped; links open in a new tab.
@@ -110,6 +121,8 @@ Before first use, the browser shows a one-time disclosure: AI can be wrong, it's
 ## Tests
 
 - `src/server/agent/loop.test.ts`: the loop against a fake streaming client.
+- `src/lib/assistant/chat-history.test.ts`: create, rename, pin, delete, search, grouping, the 200-chat cap, per-wallet lists, moving guest chats, restoring a chat from its URL, and blocked storage.
+- `src/server/agent/guest.test.ts`, `title.test.ts`: guest tools and AI titles.
 - `src/components/assistant/markdown.test.tsx`, `src/lib/markdown/*.test.ts`: tables, signs and colours, streamed tables in chunks, comparison blocks and their fallback.
 - `src/server/market/compare.test.ts`: registry-only tickers, issuer price cross-check, sparkline bad prints.
 - `src/server/agent/tools.test.ts`: stock-only tools and plan rejection.

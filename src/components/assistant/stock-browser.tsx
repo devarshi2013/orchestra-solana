@@ -64,7 +64,7 @@ export function StockBrowser({
   return (
     <section
       aria-label="Browse stocks"
-      className="flex max-h-[calc(100vh-8rem)] flex-col gap-3 rounded-xl border p-3 lg:sticky lg:top-20"
+      className="flex h-full max-h-full flex-col gap-3 rounded-xl border p-3"
     >
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold">Browse stocks</h2>

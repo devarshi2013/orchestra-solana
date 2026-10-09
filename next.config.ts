@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  // The assistant moved to /chat; old links (and ?q= pre-fills) still work.
+  redirects: () => [{ source: "/assistant", destination: "/chat", permanent: true }],
   turbopack: {
     rules: {
       "*.css": {

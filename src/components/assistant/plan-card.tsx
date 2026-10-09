@@ -43,23 +43,84 @@ const parseAmount = (text: string) => {
     : 0;
 };
 
-/**
- * The assistant's stock plan. Before buying: edit amounts or remove items,
- * with a fresh Jupiter quote, warnings per item and pre-flight checks.
- * "Approve & buy" then buys each item in turn; every purchase needs its own
- * signature in the wallet.
- */
-export function PlanCard({
-  plan,
-  saved,
-  onBuyChange,
-}: {
+type PlanCardProps = {
   plan: AcceptedPlan;
   /** The purchase as it last stood, when the chat is reopened. */
   saved?: SavedBuy;
   /** Called as the purchase progresses, so the chat keeps it (and its Solscan links). */
   onBuyChange?: (buy: SavedBuy) => void;
-}) {
+};
+
+/**
+ * The assistant's stock plan. In the reply it came with, it's live (see
+ * LivePlanCard). Reopened from history it's read-only: its quotes have long
+ * expired, so it shows what was planned (and bought, with Solscan links) and
+ * offers "Get fresh quote", which turns it live again with new quotes.
+ */
+export function PlanCard({ archived = false, ...props }: PlanCardProps & { archived?: boolean }) {
+  const [live, setLive] = useState(!archived);
+  if (live) return <LivePlanCard {...props} />;
+  const { plan, saved } = props;
+  const total = plan.items.reduce((sum, i) => sum + i.usdcAmount, 0);
+  const bought = saved?.items.filter((i) => i.step === "bought").length ?? 0;
+  const unfinished = saved ? saved.items.length - bought : plan.items.length;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          {!saved
+            ? "Proposed plan"
+            : unfinished === 0
+              ? "Plan bought"
+              : bought > 0
+                ? "Plan partly bought"
+                : "Plan not bought"}{" "}
+          · {formatUsd(total)}
+        </CardTitle>
+        <CardDescription>Ranking: {plan.rankingMethod}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {saved ? (
+          <PurchaseList items={saved.items} />
+        ) : (
+          <ul className="divide-y rounded-lg border">
+            {plan.items.map((item) => (
+              <li
+                key={item.symbol}
+                className="flex flex-wrap items-start gap-x-3 px-3 py-2 text-sm"
+              >
+                <div className="min-w-0 flex-1 basis-44">
+                  <span className="font-medium">{item.name}</span>{" "}
+                  <Badge variant="outline">{item.symbol}</Badge>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{item.reason}</p>
+                </div>
+                <span className="text-sm tabular-nums">{formatUsd(item.usdcAmount)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {unfinished > 0 && (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="outline" onClick={() => setLive(true)}>
+              <RefreshCw /> Get fresh quote
+            </Button>
+            <p className="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
+              From an earlier chat: its quotes have expired. Get fresh quotes to review and buy.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * A plan ready to buy. Before buying: edit amounts or remove items, with a
+ * fresh Jupiter quote, warnings per item and pre-flight checks. "Approve &
+ * buy" then buys each item in turn; every purchase needs its own signature in
+ * the wallet.
+ */
+function LivePlanCard({ plan, saved, onBuyChange }: PlanCardProps) {
   const { connected, publicKey, signTransaction } = useWallet();
   const wallet = publicKey?.toBase58() ?? null;
   const [draft, setDraft] = useState<DraftItem[]>(() =>
@@ -142,40 +203,7 @@ export function PlanCard({
       <CardContent className="space-y-4">
         {buy.items ? (
           <div className="space-y-3">
-            <ul className="divide-y rounded-lg border">
-              {buy.items.map((item) => (
-                <li
-                  key={item.symbol}
-                  className="flex flex-wrap items-start gap-x-3 gap-y-1 px-3 py-2 text-sm"
-                >
-                  <div className="min-w-0 flex-1">
-                    <span className="font-medium">{item.symbol}</span>{" "}
-                    <span className="text-xs text-muted-foreground">
-                      {item.name} · {formatUsd(item.usdcAmount)}
-                    </span>
-                    {item.error && <p className="mt-1 text-xs text-destructive">{item.error}</p>}
-                  </div>
-                  <div className="text-right text-xs">
-                    <SwapStatus step={item.step} />
-                    {item.step === "bought" && item.outAmount && (
-                      <div className="text-muted-foreground tabular-nums">
-                        +{formatBaseUnits(item.outAmount, item.decimals)} {item.symbol}
-                      </div>
-                    )}
-                    {item.signature && (
-                      <a
-                        href={solscanTxUrl(item.signature, "mainnet-beta")}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-0.5 text-primary-text hover:underline"
-                      >
-                        Solscan <ExternalLink className="size-3" />
-                      </a>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <PurchaseList items={buy.items} />
             {buy.stopped && (
               <p className="flex items-start gap-1.5 text-sm text-destructive">
                 <TriangleAlert className="mt-0.5 size-4 shrink-0" /> {buy.stopped}
@@ -272,6 +300,46 @@ export function PlanCard({
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+/** Each bought (or attempted) item with its status, amount received and Solscan link. */
+function PurchaseList({ items }: { items: BuyItem[] }) {
+  return (
+    <ul className="divide-y rounded-lg border">
+      {items.map((item) => (
+        <li
+          key={item.symbol}
+          className="flex flex-wrap items-start gap-x-3 gap-y-1 px-3 py-2 text-sm"
+        >
+          <div className="min-w-0 flex-1">
+            <span className="font-medium">{item.symbol}</span>{" "}
+            <span className="text-xs text-muted-foreground">
+              {item.name} · {formatUsd(item.usdcAmount)}
+            </span>
+            {item.error && <p className="mt-1 text-xs text-destructive">{item.error}</p>}
+          </div>
+          <div className="text-right text-xs">
+            <SwapStatus step={item.step} />
+            {item.step === "bought" && item.outAmount && (
+              <div className="text-muted-foreground tabular-nums">
+                +{formatBaseUnits(item.outAmount, item.decimals)} {item.symbol}
+              </div>
+            )}
+            {item.signature && (
+              <a
+                href={solscanTxUrl(item.signature, "mainnet-beta")}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-0.5 text-primary-text hover:underline"
+              >
+                Solscan <ExternalLink className="size-3" />
+              </a>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 

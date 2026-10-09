@@ -49,9 +49,7 @@ const timeFormatter = (window: WindowId) => {
 export function chatHref(mint: string) {
   const token = marketToken(mint);
   // The assistant researches tokenized stocks, so only those pre-fill a question.
-  return token?.ticker
-    ? `/assistant?q=${encodeURIComponent(`Tell me about ${token.ticker}`)}`
-    : "/assistant";
+  return token?.ticker ? `/chat?q=${encodeURIComponent(`Tell me about ${token.ticker}`)}` : "/chat";
 }
 
 /**

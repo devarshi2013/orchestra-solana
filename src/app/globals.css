@@ -395,3 +395,8 @@ html .wallet-adapter-dropdown-list-item {
 html .wallet-adapter-dropdown-list-item:not([disabled]):hover {
   background: var(--muted);
 }
+
+/* The chat (/chat) is a full-screen app with its own sidebar: no site header or footer. */
+body:has([data-chat-shell]) [data-site-chrome] {
+  display: none;
+}

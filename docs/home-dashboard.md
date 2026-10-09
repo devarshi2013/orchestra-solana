@@ -16,7 +16,7 @@ tokens and tokenized stocks, with **one** button into the chat.
   movers (largest absolute 24h change). Clicking a card shows it in the hero.
 - **The call to action**: "Ask Askfirst AI", the page's only link to the chat.
   When a tokenized stock is on screen it reads "Ask Askfirst AI about NVDA" and
-  opens `/assistant?q=Tell me about NVDA`. The chat puts that in the input box
+  opens `/chat?q=Tell me about NVDA`. The chat puts that in the input box
   (it's never sent automatically) and removes `?q=` from the URL. Crypto tokens
   open the chat without a question, since the assistant covers stocks only.
 

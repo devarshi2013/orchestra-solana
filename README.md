@@ -16,10 +16,10 @@ An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain Engli
 
 ## Pages
 
-| Route        | What it does                                                                                                                                                                                                   |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`          | Live market dashboard: a Liveline hero chart (line/candles, 1H–30D) and a market grid for Solana tokens and tokenized stocks, with one "Ask Askfirst AI" button into the chat ([docs](docs/home-dashboard.md)) |
-| `/assistant` | The chatbot, with chat history and a "Browse stocks" panel: streamed answers, "Data used" panels, plan cards with live quotes, warnings, pre-flight checks, and wallet-approved buys with Solscan links        |
+| Route                 | What it does                                                                                                                                                                                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                   | Live market dashboard: a Liveline hero chart (line/candles, 1H–30D) and a market grid for Solana tokens and tokenized stocks, with one "Ask Askfirst AI" button into the chat ([docs](docs/home-dashboard.md))                                                |
+| `/chat`, `/chat/[id]` | The chatbot (`/assistant` redirects here), with a ChatGPT-style chat history sidebar and a "Browse stocks" panel: streamed answers, "Data used" panels, plan cards with live quotes, warnings, pre-flight checks, and wallet-approved buys with Solscan links |
 
 There's **no database**:
 
@@ -81,7 +81,7 @@ Import `serverEnv` from `@/env/server` (guarded by `server-only`) and `clientEnv
 
 ```
 docs/                        Assistant, home dashboard, tokenized stocks (issuers, sync), Jupiter API notes, deployment
-src/app/                     Pages (/ and /assistant) and /api route handlers
+src/app/                     Pages (/ and /chat) and /api route handlers
 src/components/assistant/    Chat, plan card, data-used panels, disclosure and wallet gates
 src/components/market/       Home dashboard: hero chart, market grid (Liveline)
 src/hooks/                   Chat stream, plan quotes, plan buying

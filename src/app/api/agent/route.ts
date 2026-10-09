@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { base58AddressSchema } from "@/lib/jupiter/schemas";
 import { anthropic } from "@/server/agent/client";
+import { runGuestTool } from "@/server/agent/guest";
 import { runAgentTurn, type AgentEvent } from "@/server/agent/loop";
 import { agentRateLimiter } from "@/server/agent/rate-limit";
 import { runAgentTool } from "@/server/agent/tools";
@@ -25,8 +26,8 @@ const historySchema = z
   .max(400);
 
 const bodySchema = z.object({
-  /** The connected wallet (public address): balances and quotes are for it. */
-  wallet: base58AddressSchema,
+  /** The connected wallet (public address): balances and quotes are for it. Null for a guest. */
+  wallet: base58AddressSchema.nullish().transform((w) => w ?? null),
   message: z.string().trim().min(1).max(2000),
   /** The conversation so far, exactly as the previous `history` event returned it. */
   history: historySchema.default([]),
@@ -98,7 +99,11 @@ export async function POST(request: NextRequest) {
           client,
           history,
           userText: message,
-          runTool: (name, input) => runAgentTool(name, input, wallet),
+          // A guest (no wallet) can research; wallet tools answer that a wallet is needed.
+          runTool: (name, input) =>
+            wallet
+              ? runAgentTool(name, input, wallet)
+              : runGuestTool(name, input, (n, i) => runAgentTool(n, i, "guest")),
           emit: send,
           signal: abort.signal,
         });
@@ -106,7 +111,7 @@ export async function POST(request: NextRequest) {
         console.info(
           JSON.stringify({
             event: "agent.run",
-            wallet: `${wallet.slice(0, 4)}…${wallet.slice(-4)}`,
+            wallet: wallet ? `${wallet.slice(0, 4)}…${wallet.slice(-4)}` : "guest",
             plan: Boolean(result.plan),
             ...result.usage,
             ms: Date.now() - started,

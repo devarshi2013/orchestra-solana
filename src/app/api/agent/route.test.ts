@@ -139,6 +139,25 @@ describe("POST /api/agent", () => {
     expect(state.requests.at(-1)!.messages).toHaveLength(5);
   });
 
+  it("lets a guest (no wallet) research, answering wallet tools with 'connect a wallet'", async () => {
+    state.turns = [
+      message(
+        [
+          { type: "tool_use", id: "t1", name: "listStocks", input: {} },
+          { type: "tool_use", id: "t2", name: "getWalletBalances", input: {} },
+        ],
+        "tool_use",
+      ),
+      message([{ type: "text", text: "Connect a wallet to see balances." }], "end_turn"),
+    ];
+    const all = await events(await post({ message: "What can I buy?" }));
+    // Research tools ran (as "guest"); the wallet tool never reached a wallet.
+    expect(state.tools).toEqual([{ name: "listStocks", wallet: "guest" }]);
+    const balance = all.find((e) => e.type === "tool_result" && e.id === "t2")!;
+    expect(String(balance.content)).toMatch(/No wallet is connected/);
+    expect(all.at(-1)!.type).toBe("done");
+  });
+
   it("validates the body and needs the API key", async () => {
     expect((await post({ wallet: WALLET, message: "" })).status).toBe(400);
     expect((await post({ wallet: "not-a-wallet", message: "hi" })).status).toBe(400);
