@@ -113,7 +113,7 @@ export function ChatSidebar({
                         aria-current={active ? "page" : undefined}
                         title={chat.title}
                         className={cn(
-                          "flex w-full items-center gap-2 rounded-md px-2 py-1.5 pr-16 text-left text-sm transition-colors disabled:opacity-50",
+                          "flex w-full items-center gap-2 rounded-md px-2 py-1.5 pr-16 text-left text-sm transition-[background-color,color,transform] active:scale-[0.99] disabled:opacity-50",
                           active
                             ? "bg-muted font-medium text-foreground"
                             : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",

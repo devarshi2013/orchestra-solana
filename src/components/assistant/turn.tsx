@@ -4,6 +4,7 @@ import { TriangleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { TypingDots } from "@/components/ui/animated-ai-chat";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { AssistantTurn } from "@/hooks/use-agent-chat";
 
 import { DataUsed, describeTool } from "./data-used";
@@ -29,9 +30,16 @@ export function AssistantTurnView({ turn, cards }: { turn: AssistantTurn; cards?
   return (
     <div className="space-y-3 text-sm">
       {!turn.done && (
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground" role="status">
           {liveStatus(turn)} <TypingDots />
         </p>
+      )}
+      {!turn.done && !turn.text && (
+        <div className="space-y-2" aria-hidden>
+          <Skeleton className="h-3.5 w-11/12" />
+          <Skeleton className="h-3.5 w-4/5" />
+          <Skeleton className="h-3.5 w-2/3" />
+        </div>
       )}
       {turn.text && <Markdown text={turn.text} />}
       <DataUsed tools={turn.tools} />

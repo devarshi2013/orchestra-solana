@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 
+import { MotionProvider } from "@/components/motion";
 import { SolanaWalletProvider } from "@/components/providers/wallet-provider";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { themeScript } from "@/components/layout/theme-toggle";
@@ -59,14 +60,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="flex min-h-full flex-col">
-        <SolanaWalletProvider>
-          <SiteHeader />
-          <div id="main" className="flex flex-1 flex-col">
-            {children}
-          </div>
-          <SiteFooter />
-          <Toaster />
-        </SolanaWalletProvider>
+        <MotionProvider>
+          <SolanaWalletProvider>
+            <SiteHeader />
+            <div id="main" className="flex flex-1 flex-col">
+              {children}
+            </div>
+            <SiteFooter />
+            <Toaster />
+          </SolanaWalletProvider>
+        </MotionProvider>
       </body>
     </html>
   );

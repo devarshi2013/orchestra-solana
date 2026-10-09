@@ -11,6 +11,7 @@ import {
   ChatHero,
   type ChatCommand,
 } from "@/components/ui/animated-ai-chat";
+import { Appear } from "@/components/motion";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -219,21 +220,26 @@ export function ChatWorkspace({ wallet }: { wallet: string }) {
             <div className="space-y-6" aria-live="polite">
               {turns.map((turn, i) =>
                 turn.role === "user" ? (
-                  <UserBubble key={`${session}-${i}`} text={turn.text} />
+                  <Appear key={`${session}-${i}`}>
+                    <UserBubble text={turn.text} />
+                  </Appear>
                 ) : (
-                  <AssistantTurnView
-                    key={`${session}-${i}`}
-                    turn={turn}
-                    cards={
-                      turn.plan && (
-                        <PlanCard
-                          plan={turn.plan}
-                          saved={turn.buy}
-                          onBuyChange={(buy) => recordBuy(i, buy)}
-                        />
-                      )
-                    }
-                  />
+                  <Appear key={`${session}-${i}`}>
+                    <AssistantTurnView
+                      turn={turn}
+                      cards={
+                        turn.plan && (
+                          <Appear y={14} delay={0.05}>
+                            <PlanCard
+                              plan={turn.plan}
+                              saved={turn.buy}
+                              onBuyChange={(buy) => recordBuy(i, buy)}
+                            />
+                          </Appear>
+                        )
+                      }
+                    />
+                  </Appear>
                 ),
               )}
             </div>

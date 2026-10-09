@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Circle,
   ExternalLink,
-  Loader2,
   RefreshCw,
   RotateCcw,
   ShoppingCart,
@@ -19,10 +18,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LiquidityBadge } from "@/components/assistant/liquidity-badge";
+import { SwapStatus } from "@/components/motion";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { useNow } from "@/hooks/use-now";
 import type { SavedBuy } from "@/hooks/use-agent-chat";
-import { usePlanBuy, type BuyItem, type BuyStep } from "@/hooks/use-plan-buy";
+import { usePlanBuy, type BuyItem } from "@/hooks/use-plan-buy";
 import { usePlanQuotes, useWalletFunds } from "@/hooks/use-plan-quotes";
 import type { AcceptedPlan } from "@/lib/agent/plan";
 import { formatBaseUnits } from "@/lib/amount";
@@ -40,15 +41,6 @@ const parseAmount = (text: string) => {
   return text.trim() !== "" && Number.isFinite(value) && value > 0
     ? Math.round(value * 100) / 100
     : 0;
-};
-
-const STEP_LABEL: Record<BuyStep, string> = {
-  waiting: "Waiting",
-  quoting: "Getting a fresh quote…",
-  signing: "Approve in your wallet…",
-  sending: "Sending…",
-  bought: "Bought",
-  failed: "Failed",
 };
 
 /**
@@ -164,21 +156,7 @@ export function PlanCard({
                     {item.error && <p className="mt-1 text-xs text-destructive">{item.error}</p>}
                   </div>
                   <div className="text-right text-xs">
-                    <span
-                      className={cn(
-                        "flex items-center justify-end gap-1 font-medium",
-                        item.step === "bought" && "text-success",
-                        item.step === "failed" && "text-destructive",
-                        ["quoting", "signing", "sending"].includes(item.step) && "text-warning",
-                      )}
-                    >
-                      {["quoting", "signing", "sending"].includes(item.step) && (
-                        <Loader2 className="size-3 animate-spin" />
-                      )}
-                      {item.step === "bought" && <CheckCircle2 className="size-3" />}
-                      {item.step === "failed" && <XCircle className="size-3" />}
-                      {STEP_LABEL[item.step]}
-                    </span>
+                    <SwapStatus step={item.step} />
                     {item.step === "bought" && item.outAmount && (
                       <div className="text-muted-foreground tabular-nums">
                         +{formatBaseUnits(item.outAmount, item.decimals)} {item.symbol}
@@ -316,7 +294,7 @@ function PlanRow({
 }) {
   const q = quote?.quote;
   return (
-    <li className="space-y-2 px-3 py-2.5 text-sm">
+    <li className="space-y-2 px-3 py-2.5 text-sm transition-colors hover:bg-muted/30">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -357,8 +335,14 @@ function PlanRow({
 
       <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground tabular-nums">
         {loading ? (
-          <span className="flex items-center gap-1">
-            <Loader2 className="size-3 animate-spin" /> Getting a Jupiter quote…
+          <span
+            className="flex w-full items-center gap-3"
+            role="status"
+            aria-label="Getting a Jupiter quote"
+          >
+            <Skeleton className="h-3 w-36" />
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-3 w-28" />
           </span>
         ) : q ? (
           <>

@@ -1,9 +1,10 @@
 "use client";
 
-import { Loader2, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { assistantApi, type StockCompany } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +14,7 @@ type TypeFilter = "all" | "stock" | "etf";
 
 const chip = (active: boolean) =>
   cn(
-    "shrink-0 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+    "shrink-0 rounded-full border px-2.5 py-0.5 text-xs transition-[background-color,color,transform] active:scale-95",
     active ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
   );
 
@@ -124,9 +125,17 @@ export function StockBrowser({
         {error ? (
           <p className="px-1 text-xs text-destructive">Couldn&apos;t load stocks: {error}</p>
         ) : !data ? (
-          <p className="flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
-            <Loader2 className="size-3 animate-spin" /> Loading stocks…
-          </p>
+          <ul className="space-y-1 px-1.5" role="status" aria-label="Loading stocks">
+            {Array.from({ length: 7 }, (_, i) => (
+              <li key={i} className="flex items-start gap-2 py-1.5">
+                <div className="flex-1 space-y-1.5">
+                  <Skeleton className="h-3.5 w-14" />
+                  <Skeleton className="h-3 w-40" />
+                </div>
+                <Skeleton className="h-5 w-12 rounded-full" />
+              </li>
+            ))}
+          </ul>
         ) : shown.length === 0 ? (
           <p className="px-1 text-xs text-muted-foreground">No stocks match these filters.</p>
         ) : (
@@ -137,7 +146,7 @@ export function StockBrowser({
                   disabled={disabled}
                   onClick={() => onAsk(`Tell me about ${c.ticker}`)}
                   title={`Ask the assistant about ${c.ticker}`}
-                  className="flex w-full items-start gap-2 rounded-md px-1.5 py-1.5 text-left hover:bg-muted disabled:opacity-60"
+                  className="flex w-full items-start gap-2 rounded-md px-1.5 py-1.5 text-left transition-[background-color,transform] hover:bg-muted active:scale-[0.99] active:bg-muted disabled:opacity-60"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
