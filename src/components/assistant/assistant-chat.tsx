@@ -58,6 +58,16 @@ const COMMANDS: ChatCommand[] = [
   },
 ];
 
+/** The ?q= question from the home page (trimmed, at most 200 characters). Read only. */
+function prefillFromUrl(): string {
+  try {
+    const q = new URL(window.location.href).searchParams.get("q") ?? "";
+    return q.replace(/\s+/g, " ").trim().slice(0, 200);
+  } catch {
+    return "";
+  }
+}
+
 /**
  * The stock assistant: a sidebar of past chats (kept in this browser, per
  * wallet), the conversation with streamed replies, "data used" panels and
@@ -72,7 +82,15 @@ export function AssistantChat() {
 }
 
 export function ChatWorkspace({ wallet }: { wallet: string }) {
-  const [input, setInput] = useState("");
+  // "Ask Askfirst AI about NVDA" on the home page arrives as ?q=…: pre-fill it, never auto-send.
+  const [input, setInput] = useState(prefillFromUrl);
+  useEffect(() => {
+    // Drop ?q= once read, so a reload or "New chat" doesn't bring it back.
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("q")) return;
+    url.searchParams.delete("q");
+    window.history.replaceState(window.history.state, "", url);
+  }, []);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   // Bumped when another chat is opened or a new one started: remounts the turns

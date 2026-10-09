@@ -90,6 +90,17 @@ export const mintInformationSchema = z.object({
   /** USD liquidity across the token's pools. */
   liquidity: z.number().nullish(),
   audit: z.object({ isSus: z.boolean().nullish() }).nullish(),
+  /** Market fields, used by the home page dashboard. */
+  usdPrice: z.number().nullish(),
+  mcap: z.number().nullish(),
+  holderCount: z.number().nullish(),
+  stats24h: z
+    .object({
+      priceChange: z.number().nullish(),
+      buyVolume: z.number().nullish(),
+      sellVolume: z.number().nullish(),
+    })
+    .nullish(),
 });
 
 export type MintInformation = z.infer<typeof mintInformationSchema>;
