@@ -2,6 +2,7 @@ import { ArrowUpRight, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 
 import { Wordmark } from "@/components/brand/logo";
+import { Reveal } from "@/components/motion";
 import { GitHubIcon, XIcon } from "@/components/brand/social-icons";
 import { TAGLINE } from "@/lib/brand";
 
@@ -38,14 +39,14 @@ const COLUMNS: { title: string; links: FooterLink[] }[] = [
 ];
 
 const linkClass =
-  "inline-flex items-center gap-1 rounded text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
+  "link-grow inline-flex items-center gap-1 rounded-sm text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
 
 /** Brand and tagline, link columns, then the credits and the not-advice line. */
 export function SiteFooter() {
   return (
     <footer data-site-chrome className="mt-16 border-t bg-surface-raised/30">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
-        <div className="grid gap-10 py-12 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
+        <Reveal className="grid gap-10 py-12 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
           <div className="space-y-4">
             <Link
               href="/"
@@ -111,7 +112,7 @@ export function SiteFooter() {
               </div>
             ))}
           </nav>
-        </div>
+        </Reveal>
 
         <div className="flex flex-col gap-3 border-t py-6 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
           <p>

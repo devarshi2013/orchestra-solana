@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 
 import { LogoMark } from "@/components/brand/logo";
+import { ProgressBar } from "@/components/motion";
 
 /**
  * The chat app runs in the browser only: its history, wallet and preferences
@@ -16,8 +17,9 @@ export const ChatAppLoader = dynamic(() => import("./assistant-chat").then((m) =
       role="status"
       aria-label="Loading Quill"
     >
-      <LogoMark className="size-12 animate-pulse motion-reduce:animate-none" />
-      <span className="font-serif text-lg text-muted-foreground">quill</span>
+      <LogoMark className="size-12" />
+      <span className="font-serif text-lg text-primary-text">quill</span>
+      <ProgressBar label="Loading" className="mt-2 w-40 rounded-full" />
     </div>
   ),
 });

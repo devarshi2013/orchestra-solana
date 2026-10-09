@@ -1,6 +1,12 @@
 "use client";
 
-import { AnimatePresence, MotionConfig, motion, type HTMLMotionProps } from "framer-motion";
+import {
+  AnimatePresence,
+  MotionConfig,
+  motion,
+  useReducedMotion,
+  type HTMLMotionProps,
+} from "framer-motion";
 import { Loader2, PenLine, XCircle } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -118,5 +124,52 @@ export function SwapStatus({ step }: { step: BuyStep }) {
         </motion.span>
       </AnimatePresence>
     </span>
+  );
+}
+
+/**
+ * Fades and slides a section up gently as it scrolls into view (once).
+ * Motionless for anyone who asks their OS for reduced motion.
+ */
+export function Reveal({
+  children,
+  delay = 0,
+  className,
+  as = "div",
+}: {
+  children: ReactNode;
+  delay?: number;
+  className?: string;
+  as?: "div" | "li" | "section";
+}) {
+  const reduce = useReducedMotion();
+  const Tag = motion[as];
+  if (reduce) {
+    const Plain = as;
+    return <Plain className={className}>{children}</Plain>;
+  }
+  return (
+    <Tag
+      className={className}
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.5, ease: EASE, delay }}
+    >
+      {children}
+    </Tag>
+  );
+}
+
+/** A thin burgundy bar that moves while something loads. */
+export function ProgressBar({ label, className }: { label: string; className?: string }) {
+  return (
+    <div
+      role="progressbar"
+      aria-label={label}
+      className={cn("h-0.5 w-full overflow-hidden bg-primary-tint", className)}
+    >
+      <div className="h-full progress-indeterminate w-1/3 rounded-full bg-primary" />
+    </div>
   );
 }

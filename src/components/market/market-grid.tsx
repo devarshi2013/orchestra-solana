@@ -121,7 +121,7 @@ function MarketCard({
       aria-pressed={active}
       aria-label={`Show ${token.name} in the chart`}
       className={cn(
-        "group w-full rounded-xl border bg-card p-4 text-left transition-[border-color,background-color,transform] hover:border-foreground/20 hover:bg-surface-raised active:scale-[0.99]",
+        "group w-full card-lift rounded-xl border bg-card p-4 text-left",
         active && "border-primary/60 ring-1 ring-primary/30",
       )}
     >

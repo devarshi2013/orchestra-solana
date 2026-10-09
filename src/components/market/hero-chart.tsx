@@ -109,10 +109,10 @@ export function HeroChart({ mint, onSelect }: { mint: string; onSelect: (mint: s
               aria-selected={active}
               onClick={() => onSelect(t.mint)}
               className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-[background-color,color,transform] active:scale-95",
+                "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-[background-color,border-color,color] duration-300 ease-in-out",
                 active
                   ? "border-primary bg-primary text-primary-foreground"
-                  : "border-primary/30 text-primary-text hover:border-primary/60 hover:bg-primary/8",
+                  : "border-primary/50 bg-surface text-primary-text hover:bg-primary hover:text-primary-foreground",
               )}
             >
               <TokenLogo src={market.stats?.[t.mint]?.icon} symbol={t.symbol} className="size-4" />

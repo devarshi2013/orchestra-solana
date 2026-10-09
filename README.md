@@ -33,11 +33,13 @@ See [docs/assistant.md](docs/assistant.md).
 
 - **Name and line:** Quill. "Write what you want. Own what you choose." (`src/lib/brand.ts`).
 - **Mark:** an upward-pointing fountain-pen nib (it doubles as an "up" arrow): burgundy, with a cream slit and a gold breather hole; flat, no gradients. The shapes live in `src/components/brand/logo.tsx` and are shared by the favicon (`src/app/icon.svg`, which switches to the dark version with the OS theme), the apple-touch icon and OG image (generated in `src/app`), and the files in `public/brand/`: icon and horizontal wordmark (nib + "quill" in Fraunces, font embedded) for light and dark backgrounds, plus 512px and 192px PNG app icons.
-- **Colours** (CSS variables in `src/app/globals.css`, exposed as Tailwind colours):
-  - Light (the default): cream `#F6EFE4` background, `#FBF7F0` surfaces, white raised, `#E2D6C3` borders, ink `#2A1A1E` text, `#736350` muted text, burgundy `#6B1E2E` primary (hover `#551624`) with cream text, gold `#D9A441` for highlights (gold _text_ is `#8A6416`).
-  - Dark: `#1A1012` background, `#241719` / `#2E1E21` surfaces, `#3D2A2E` borders, cream text, `#B8A894` muted, a lighter burgundy `#C25A6E` primary, gold `#E0B457`.
-  - Data colours stay apart from the brand, so burgundy never reads as "down": positive green, negative a brighter red, neutral `#7A6A55`, always with a +/− sign or arrow. Charts use `#15803D` / `#DC2626` (light) and `#4ADE80` / `#F87171` (dark); price _text_ in light mode uses `#117235` / `#C81E1E` to stay at AA on cream.
-  - Every text/background pair is checked for WCAG AA (contrast notes at the top of `globals.css`). Focus rings are a solid gold (`#A87A22` on light for 3:1, `#E0B457` on dark).
+- **Colours** (all CSS variables in `src/app/globals.css`, exposed as Tailwind colours, so the theme is adjusted in one place):
+  - Light (the default): cream `#F5EFE6` background, lighter cream `#FBF8F3` for cards and sections, burgundy `#7A1F2B` accent (hover `#5C1620`, soft tint `#E8D5D7` for highlights), warm brown-charcoal `#2B2422` text, burgundy headings, beige `#E3D8C8` borders. Gold `#D9A441` only in the logo's dot.
+  - Dark: `#1A1012` background, `#241719` / `#2E1E21` surfaces, cream text, a lighter burgundy `#C25A6E` (links `#D46F82`).
+  - Data colours stay apart from the brand: positive green, negative red, always with a +/− sign or ▲/▼, so burgundy never reads as "down".
+  - WCAG AA checked for every text/background pair (notes at the top of `globals.css`). Links inside text keep an underline, since burgundy and body text are too close to tell apart by colour alone.
+- **Buttons:** burgundy with cream text, 8–12px corners; hover darkens to `#5C1620`, lifts 2px and adds a soft shadow. Secondary buttons are cream with a burgundy border and text, filling burgundy on hover. 0.3s ease transitions.
+- **Motion** (200–600ms, burgundy accents): sections fade and slide up as they scroll into view (`Reveal` in `src/components/motion.tsx`), link underlines grow from the left (`link-grow` / `link-inline`), cards lift with a burgundy-tinted shadow (`card-lift`), and a burgundy progress bar shows while a reply is written. All movement is off under `prefers-reduced-motion`.
 - **Type:** Fraunces (a literary serif) for headings and the wordmark, Inter for text, JetBrains Mono with tabular figures for prices and amounts (all via `next/font`).
 - **Surfaces:** 1px borders, 8px controls and 14px cards, very soft warm shadows, and a faint paper grain on cream (off in dark mode). Your messages are burgundy bubbles; the AI's are surface cards.
 

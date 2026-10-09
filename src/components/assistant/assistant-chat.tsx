@@ -16,7 +16,7 @@ import {
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
-import { Appear } from "@/components/motion";
+import { Appear, ProgressBar } from "@/components/motion";
 import {
   AnimatedChatInput,
   ChatGlow,
@@ -341,7 +341,10 @@ export function ChatApp() {
         </SheetContent>
       </Sheet>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        {busy && live && (
+          <ProgressBar label="Writing a reply" className="absolute inset-x-0 top-12 z-20" />
+        )}
         <header className="flex h-12 shrink-0 items-center gap-1 border-b px-2 sm:px-3">
           <Button
             variant="ghost"

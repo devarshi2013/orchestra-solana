@@ -34,10 +34,10 @@ import { cn } from "@/lib/utils";
 /** A filter button: compact, shows its value, highlighted while it filters something. */
 const triggerClass = (active: boolean, block?: boolean) =>
   cn(
-    "h-8 gap-1 rounded-lg border px-2.5 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+    "h-8 gap-1 rounded-lg border px-2.5 text-xs font-medium whitespace-nowrap transition-[background-color,color,box-shadow] duration-300 ease-in-out outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
     active
-      ? "border-primary bg-primary text-primary-foreground"
-      : "border-primary/35 bg-surface text-primary-text hover:border-primary/70 hover:bg-primary/8",
+      ? "border-primary bg-primary text-primary-foreground hover:bg-primary-hover"
+      : "border-primary/60 bg-surface text-primary-text hover:bg-primary hover:text-primary-foreground",
     block && "w-full justify-between",
   );
 

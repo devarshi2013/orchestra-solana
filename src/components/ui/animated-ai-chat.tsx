@@ -76,7 +76,7 @@ export function ChatHero({ title, subtitle }: { title: string; subtitle?: string
         transition={{ delay: 0.2, duration: 0.5 }}
         className="inline-block"
       >
-        <h2 className="pb-1 font-serif text-3xl font-medium tracking-tight text-foreground">
+        <h2 className="pb-1 font-serif text-3xl font-medium tracking-tight text-heading">
           {title}
         </h2>
         <motion.div
@@ -304,9 +304,9 @@ export function AnimatedChatInput({
             whileTap={{ scale: 0.98 }}
             disabled={busy || !value.trim()}
             className={cn(
-              "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
+              "flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-medium transition-[background-color,box-shadow,translate] duration-300 ease-in-out",
               value.trim() && !busy
-                ? "bg-primary text-primary-foreground shadow-soft hover:bg-primary-hover"
+                ? "bg-primary text-primary-foreground shadow-soft hover:bg-primary-hover hover:shadow-hover motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0"
                 : "bg-primary/45 text-primary-foreground",
             )}
           >
@@ -327,7 +327,7 @@ export function AnimatedChatInput({
               key={command.prefix}
               type="button"
               onClick={() => pick(index)}
-              className="flex items-center gap-2 rounded-lg border border-primary/35 bg-card px-3 py-2 text-sm text-primary-text transition-all hover:border-primary/70 hover:bg-primary/8 active:scale-[0.97]"
+              className="flex items-center gap-2 rounded-lg border border-primary bg-card px-3.5 py-2 text-sm font-medium text-primary-text transition-[background-color,color,box-shadow,translate] duration-300 ease-in-out hover:bg-primary hover:text-primary-foreground hover:shadow-hover motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0"
               initial={reduceMotion ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
@@ -357,7 +357,7 @@ export function TypingDots({ className }: { className?: string }) {
       {[1, 2, 3].map((dot) => (
         <motion.span
           key={dot}
-          className="mx-0.5 size-1.5 rounded-full bg-current"
+          className="mx-0.5 size-1.5 rounded-full bg-primary"
           initial={{ opacity: 0.3 }}
           animate={{ opacity: [0.3, 0.9, 0.3], scale: [0.85, 1.1, 0.85] }}
           transition={{ duration: 1.2, repeat: Infinity, delay: dot * 0.15, ease: "easeInOut" }}

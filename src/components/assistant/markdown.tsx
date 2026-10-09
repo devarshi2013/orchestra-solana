@@ -83,12 +83,7 @@ const components: Components = {
   strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
   del: ({ children }) => <del className="text-muted-foreground">{children}</del>,
   a: ({ href, children }) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="font-medium text-primary-text underline underline-offset-2 hover:no-underline"
-    >
+    <a href={href} target="_blank" rel="noopener noreferrer" className="link-inline font-medium">
       {children}
     </a>
   ),

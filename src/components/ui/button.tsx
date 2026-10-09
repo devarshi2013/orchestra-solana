@@ -5,30 +5,31 @@ import { Loader2 } from "lucide-react";
 import { Slot } from "radix-ui";
 
 const buttonVariants = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[background-color,border-color,color,box-shadow,transform,filter] duration-150 ease-out outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:not-aria-[haspopup]:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/30 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[background-color,border-color,color,box-shadow,translate] duration-300 ease-in-out outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/30 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        /** The primary action: solid burgundy with cream text. */
+        /** Burgundy with cream text; darkens, lifts 2px and gains a soft shadow on hover. */
         default:
-          "bg-primary font-semibold text-primary-foreground shadow-soft hover:bg-primary-hover",
-        /** Burgundy outline and text on the surface. */
+          "bg-primary text-primary-foreground shadow-soft hover:bg-primary-hover hover:shadow-hover motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0",
+        /** Secondary: cream with a burgundy border and text; fills burgundy on hover. */
         outline:
-          "border-primary/40 bg-surface text-primary-text shadow-xs hover:border-primary/70 hover:bg-primary/8 aria-expanded:bg-primary/8",
-        /** A soft burgundy tint. */
+          "border-primary bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground hover:shadow-hover motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 aria-expanded:bg-primary aria-expanded:text-primary-foreground",
         secondary:
-          "bg-primary/10 text-primary-text hover:bg-primary/16 aria-expanded:bg-primary/16",
-        /** Burgundy text, tinted on hover. */
-        ghost: "text-primary-text hover:bg-primary/8 aria-expanded:bg-primary/10",
+          "border-primary bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground hover:shadow-hover motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 aria-expanded:bg-primary aria-expanded:text-primary-foreground",
+        /** Icon and toolbar buttons: burgundy, filling burgundy on hover (no lift). */
+        ghost:
+          "text-primary-text hover:bg-primary hover:text-primary-foreground aria-expanded:bg-primary aria-expanded:text-primary-foreground",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:ring-destructive/60 dark:bg-destructive/20 dark:hover:bg-destructive/30",
         link: "h-auto! px-0! text-primary-text underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 gap-2 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+        default:
+          "h-10 gap-2 px-5 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
         xs: "h-7 gap-1 rounded-md px-2 text-xs [&_svg:not([class*='size-'])]:size-3.5",
         sm: "h-8 gap-1.5 rounded-md px-3 text-[0.8125rem] [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-11 gap-2 px-6 text-[0.9375rem]",
+        lg: "h-12 gap-2 rounded-xl px-7 text-[0.9375rem]",
         icon: "size-9",
         "icon-xs": "size-7 rounded-md [&_svg:not([class*='size-'])]:size-3.5",
         "icon-sm": "size-8 rounded-md",
