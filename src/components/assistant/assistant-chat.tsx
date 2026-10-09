@@ -67,6 +67,7 @@ const COMMANDS: ChatCommand[] = [
   },
 ];
 
+// Named before the rebrand to Quill; kept so the saved preference carries over.
 const COLLAPSED_KEY = "askfirst.sidebar.collapsed";
 /** How long a reload waits for the wallet to reconnect before saying a chat isn't here. */
 const RECONNECT_GRACE_MS = 2_500;
@@ -141,7 +142,7 @@ export function ChatApp() {
   const chat = useAgentChat(wallet);
   const { turns, busy } = chat;
 
-  // "Ask Askfirst AI about NVDA" on the home page arrives as ?q=…: pre-fill it, never auto-send.
+  // "Ask Quill about NVDA" on the home page arrives as ?q=…: pre-fill it, never auto-send.
   const [input, setInput] = useState(prefillFromUrl);
   useEffect(() => {
     const url = new URL(window.location.href);

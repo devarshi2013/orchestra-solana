@@ -139,7 +139,7 @@ async function loadXStocks(ondoTypes: Map<string, "stock" | "etf">): Promise<Sou
 async function loadPreStocks() {
   const html = await (
     await fetchOk(SOURCES.prestocks, {
-      headers: { "user-agent": "Mozilla/5.0 (Askfirst stock sync)" },
+      headers: { "user-agent": "Mozilla/5.0 (Quill stock sync)" },
     })
   ).text();
   return prestocksSources(html);
@@ -150,7 +150,7 @@ async function nasdaqSectors(): Promise<Map<string, { sector: string; industry: 
   const response = await fetchOk(
     "https://api.nasdaq.com/api/screener/stocks?tableonly=true&download=true",
     {
-      headers: { "user-agent": "Mozilla/5.0 (Askfirst stock sync)", accept: "application/json" },
+      headers: { "user-agent": "Mozilla/5.0 (Quill stock sync)", accept: "application/json" },
     },
   );
   const body = (await response.json()) as {

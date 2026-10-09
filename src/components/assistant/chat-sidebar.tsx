@@ -160,7 +160,7 @@ export function ChatSidebar({
       <div className="flex items-center gap-2 px-3 pt-3">
         <Link
           href="/"
-          aria-label="Askfirst home"
+          aria-label="Quill home"
           className="flex-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <Wordmark />
@@ -196,7 +196,7 @@ export function ChatSidebar({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && setQuery("")}
             placeholder="Search chats"
-            className="h-8 w-full rounded-md border border-input bg-transparent pr-7 pl-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 [&::-webkit-search-cancel-button]:hidden"
+            className="h-8 w-full rounded-md border border-input bg-transparent pr-7 pl-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-search-cancel-button]:hidden"
           />
           {query && (
             <button
@@ -271,7 +271,7 @@ export function ChatSidebar({
                                   if (skipBlurSave.current) skipBlurSave.current = false;
                                   else finishRename();
                                 }}
-                                className="h-8 w-full rounded-md border border-ring bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+                                className="h-8 w-full rounded-md border border-ring bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                               />
                             ) : (
                               <>

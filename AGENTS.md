@@ -8,7 +8,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-## Askfirst project rules
+## Quill project rules
 
 - No custom smart contracts or on-chain programs. On-chain execution goes only through Jupiter REST APIs (Swap v2 `/order` + `/execute`).
 - Non-custodial: the user's wallet signs every transaction (`signTransaction`, never send it from the wallet). Do not use Jupiter Trigger v2 or DCA: they deposit into custodial vaults.

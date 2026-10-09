@@ -7,10 +7,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* Inter for text, Space Grotesk for headings and the wordmark, JetBrains Mono for figures. */
+  /* Inter for text, Fraunces (a literary serif) for headings and the wordmark, JetBrains Mono for figures. */
   --font-sans: var(--font-inter);
   --font-mono: var(--font-jetbrains-mono);
-  --font-heading: var(--font-space-grotesk);
+  --font-heading: var(--font-fraunces);
+  --font-serif: var(--font-fraunces);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,16 +49,20 @@
   --color-warning: var(--warning);
   --color-primary-to: var(--primary-to);
   --color-primary-text: var(--primary-text);
+  --color-primary-hover: var(--primary-hover);
+  --color-gold: var(--gold-fill);
+  --color-gold-text: var(--gold-text);
+  --color-neutral: var(--neutral);
   --color-ink: var(--ink);
-  /* Barely-there depth: surfaces and borders do the layering. */
-  --shadow-soft: 0 1px 2px hsl(var(--shadow-color) / 0.05);
-  --shadow-lift: 0 4px 16px -6px hsl(var(--shadow-color) / 0.18);
+  /* Very soft, warm depth: borders do most of the layering. */
+  --shadow-soft: 0 1px 2px hsl(var(--shadow-color) / 0.06);
+  --shadow-lift: 0 6px 20px -8px hsl(var(--shadow-color) / 0.16);
   --animate-shimmer: shimmer 1.6s ease-in-out infinite;
   --animate-toast-in: toast-in 180ms ease-out;
-  /* One radius scale: chips 6px, controls 8–10px, cards 14px, panels/dialogs 16px. */
+  /* One radius scale: chips 6px, controls 8px, cards 14px, panels/dialogs 16px. */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
-  --radius-lg: 0.625rem;
+  --radius-lg: 0.5rem;
   --radius-xl: 0.875rem;
   --radius-2xl: 1rem;
   --radius-3xl: 1.5rem;
@@ -84,130 +89,136 @@
 }
 
 /*
- * Askfirst design tokens.
- * Brand: signal orange #FF5A1F, ink #111214, success #16A34A, and one neutral grey
- * scale. Orange fills carry ink text (6.0:1); orange *text* uses --primary-text,
- * which is darkened in light mode to stay at WCAG AA (white #FF5A1F text is
- * only 3.1:1). Surfaces are layered by lightness, separated by 1px borders,
- * not shadows. Spacing uses Tailwind's 4px scale.
+ * Quill design tokens: burgundy and cream, ink on paper.
+ * Brand: burgundy #6B1E2E (buttons, links, logo), cream #F6EFE4, gold #D9A441
+ * (highlights, badges, the logo dot). Data colours are separate from the brand,
+ * so burgundy is never read as "price down": positive is green, negative a
+ * brighter red, always with a +/− sign or arrow too.
+ *
+ * Contrast (WCAG AA, checked): body text 14.5:1 on cream; muted text 5.1:1
+ * (#736350, a touch darker than #7A6A55 so it also passes on muted fills);
+ * cream on burgundy 10.6:1. Gold is never body text on cream (2.0:1): gold
+ * *text* is #8A6416 (4.7:1), and focus rings use a deeper gold #A87A22 (3.4:1,
+ * the non-text minimum is 3:1). Price text in light mode uses #117235 / #C81E1E
+ * (5.3:1 / 5.0:1 on cream); charts keep #15803D / #DC2626, as lines need 3:1.
+ * Dark mode: links use #D46F82 (5.7:1) since #C25A6E is 4.4:1, and buttons
+ * put #120A0C on #C25A6E (4.6:1).
  */
 :root {
-  --grey-0: #ffffff;
-  --grey-50: #f7f7f8;
-  --grey-100: #efeff1;
-  --grey-200: #e2e2e6;
-  --grey-300: #cacacf;
-  --grey-400: #9c9ca3;
-  --grey-500: #74747c;
-  --grey-600: #55555c;
-  --grey-700: #3a3a40;
-  --grey-800: #26272b;
-  --grey-850: #1c1d20;
-  --grey-900: #17181b;
-  --grey-950: #111214;
-  --orange: #ff5a1f;
-  --ink: #111214;
+  --cream: #f6efe4;
+  --paper: #fbf7f0;
+  --ink: #2a1a1e;
+  --burgundy: #6b1e2e;
+  --gold: #d9a441;
 
-  /* Light theme. */
-  --background: var(--grey-50);
+  /* Light theme (the default). */
+  --background: var(--cream);
   --foreground: var(--ink);
-  --card: var(--grey-0);
+  --card: var(--paper);
   --card-foreground: var(--ink);
-  --surface: var(--grey-0);
-  --surface-raised: var(--grey-100);
-  --popover: var(--grey-0);
+  --surface: var(--paper);
+  --surface-raised: #ffffff;
+  --popover: #ffffff;
   --popover-foreground: var(--ink);
-  --primary: var(--orange);
-  --primary-foreground: var(--ink);
-  --primary-to: #ff7a3d;
-  /* Orange for text and links on light surfaces: 5.2:1 on white. */
-  --primary-text: #c2410c;
-  /* Gradient end, large headings only (4.0:1; AA large text needs 3:1). */
-  --primary-text-to: #d9480f;
-  --secondary: var(--grey-100);
+  --primary: var(--burgundy);
+  --primary-hover: #551624;
+  --primary-foreground: var(--paper);
+  --primary-to: #551624;
+  /* Burgundy as text and links (9.9:1 on cream). */
+  --primary-text: var(--burgundy);
+  --primary-text-to: #551624;
+  --gold-fill: var(--gold);
+  --gold-text: #8a6416;
+  --secondary: #efe5d6;
   --secondary-foreground: var(--ink);
-  --muted: var(--grey-100);
-  /* 7.4:1 on white. */
-  --muted-foreground: var(--grey-600);
-  --accent: #fff1ea;
-  --accent-foreground: #c2410c;
+  --muted: #efe5d6;
+  --muted-foreground: #736350;
+  /* Hover and selected rows in menus: a warm tint, not the brand. */
+  --accent: #f1e8da;
+  --accent-foreground: var(--ink);
   --destructive: #c81e1e;
-  /* #16A34A is 3.3:1 on white, so light mode uses the next step down for text (5.0:1). */
-  --success: #15803d;
-  --warning: #b45309;
-  --border: var(--grey-200);
-  --input: var(--grey-300);
-  --ring: var(--orange);
-  --shadow-color: 240 6% 10%;
-  --chart-1: var(--grey-300);
-  --chart-2: var(--grey-500);
-  --chart-3: var(--grey-600);
-  --chart-4: var(--grey-700);
-  --chart-5: var(--grey-800);
+  --success: #117235;
+  --warning: #8a6416;
+  --neutral: #736350;
+  --border: #e2d6c3;
+  --input: #d6c7b0;
+  --ring: #a87a22;
+  --shadow-color: 25 35% 25%;
+  --chart-1: #e2d6c3;
+  --chart-2: #b8a894;
+  --chart-3: #7a6a55;
+  --chart-4: #4f4136;
+  --chart-5: var(--ink);
   --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --radius: 0.625rem;
-  --sidebar: var(--grey-50);
+  --series-2: #8a6416;
+  --radius: 0.5rem;
+  --sidebar: var(--cream);
   --sidebar-foreground: var(--ink);
-  --sidebar-primary: var(--orange);
-  --sidebar-primary-foreground: var(--ink);
-  --sidebar-accent: var(--grey-100);
+  --sidebar-primary: var(--burgundy);
+  --sidebar-primary-foreground: var(--paper);
+  --sidebar-accent: #f1e8da;
   --sidebar-accent-foreground: var(--ink);
-  --sidebar-border: var(--grey-200);
-  --sidebar-ring: var(--orange);
+  --sidebar-border: #e2d6c3;
+  --sidebar-ring: #a87a22;
+  /* The logo's nib: burgundy on light backgrounds. */
+  --logo-nib: var(--burgundy);
+  --logo-slit: var(--paper);
 }
 
-/* Dark theme (the default). */
 .dark {
-  --background: var(--grey-950);
-  --foreground: #f2f2f3;
-  --card: var(--grey-900);
-  --card-foreground: #f2f2f3;
-  --surface: var(--grey-900);
-  --surface-raised: var(--grey-850);
-  --popover: var(--grey-850);
-  --popover-foreground: #f2f2f3;
-  --primary: var(--orange);
-  --primary-foreground: var(--ink);
-  --primary-to: #ff7a3d;
-  /* 6.6:1 on ink. */
-  --primary-text: #ff6a33;
-  --primary-text-to: #ff8a5c;
-  --secondary: var(--grey-850);
-  --secondary-foreground: #f2f2f3;
-  --muted: var(--grey-850);
-  /* 6.7:1 on ink. */
-  --muted-foreground: var(--grey-400);
-  --accent: #2b1a12;
-  --accent-foreground: #ff8a5c;
+  --background: #1a1012;
+  --foreground: var(--cream);
+  --card: #241719;
+  --card-foreground: var(--cream);
+  --surface: #241719;
+  --surface-raised: #2e1e21;
+  --popover: #2e1e21;
+  --popover-foreground: var(--cream);
+  --primary: #c25a6e;
+  --primary-hover: #d46f82;
+  --primary-foreground: #120a0c;
+  --primary-to: #d46f82;
+  --primary-text: #d46f82;
+  --primary-text-to: #e08a9a;
+  --gold-fill: #e0b457;
+  --gold-text: #e0b457;
+  --secondary: #2e1e21;
+  --secondary-foreground: var(--cream);
+  --muted: #2e1e21;
+  --muted-foreground: #b8a894;
+  --accent: #33222a;
+  --accent-foreground: var(--cream);
   --destructive: #f87171;
-  /* 5.7:1 on ink. */
-  --success: #16a34a;
-  --warning: #f59e0b;
-  --border: rgb(255 255 255 / 8%);
-  --input: rgb(255 255 255 / 13%);
-  --ring: var(--orange);
-  --shadow-color: 240 10% 2%;
-  --chart-1: var(--grey-300);
-  --chart-2: var(--grey-400);
-  --chart-3: var(--grey-500);
-  --chart-4: var(--grey-600);
-  --chart-5: var(--grey-700);
-  --series-1: #3987e5;
-  --series-2: #d95926;
-  --sidebar: var(--grey-950);
-  --sidebar-foreground: #f2f2f3;
-  --sidebar-primary: var(--orange);
-  --sidebar-primary-foreground: var(--ink);
-  --sidebar-accent: var(--grey-850);
-  --sidebar-accent-foreground: #f2f2f3;
-  --sidebar-border: rgb(255 255 255 / 8%);
-  --sidebar-ring: var(--orange);
+  --success: #4ade80;
+  --warning: #e0b457;
+  --neutral: #b8a894;
+  --border: #3d2a2e;
+  --input: #4a3539;
+  --ring: #e0b457;
+  --shadow-color: 345 40% 3%;
+  --chart-1: #4a3539;
+  --chart-2: #6b5559;
+  --chart-3: #8f7b74;
+  --chart-4: #b8a894;
+  --chart-5: var(--cream);
+  --series-1: #5aa0ec;
+  --series-2: #e0b457;
+  --sidebar: #1a1012;
+  --sidebar-foreground: var(--cream);
+  --sidebar-primary: #c25a6e;
+  --sidebar-primary-foreground: #120a0c;
+  --sidebar-accent: #2e1e21;
+  --sidebar-accent-foreground: var(--cream);
+  --sidebar-border: #3d2a2e;
+  --sidebar-ring: #e0b457;
+  /* Lighter nib on dark backgrounds. */
+  --logo-nib: #c25a6e;
+  --logo-slit: var(--cream);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   html {
     @apply font-sans;
@@ -223,6 +234,16 @@
     /* Inter: single-storey a off, open digits, tabular figures where it matters. */
     font-feature-settings: "cv11", "ss01";
   }
+  /* A faint paper grain on cream (about 2.5% opacity); none in dark mode. */
+  html:not(.dark) body {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.1 0 0 0 0 0.12 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.025'/%3E%3C/svg%3E");
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-optical-sizing: auto;
+  }
   /* Prices and amounts: monospaced tabular figures so columns line up. */
   .tabular-nums,
   .font-mono {
@@ -231,7 +252,7 @@
   h1,
   h2,
   h3 {
-    @apply font-heading tracking-tight text-balance;
+    @apply font-heading font-semibold tracking-[-0.01em] text-balance;
   }
   ::selection {
     background: color-mix(in oklch, var(--primary) 28%, transparent);
@@ -399,4 +420,22 @@ html .wallet-adapter-dropdown-list-item:not([disabled]):hover {
 /* The chat (/chat) is a full-screen app with its own sidebar: no site header or footer. */
 body:has([data-chat-shell]) [data-site-chrome] {
   display: none;
+}
+
+/*
+ * Liveline's window and mode buttons are styled inline at 22-25% opacity, which
+ * is below AA on cream; give them the theme's muted text (5.1:1), ink for the
+ * active one, our UI font, and the gold focus ring.
+ */
+.liveline-controls button {
+  font-family: var(--font-sans) !important;
+  color: var(--muted-foreground) !important;
+}
+.liveline-controls button[style*="font-weight:600"],
+.liveline-controls button[style*="font-weight: 600"] {
+  color: var(--foreground) !important;
+}
+.liveline-controls button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
 }

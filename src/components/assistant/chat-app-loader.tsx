@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { LogoMark } from "@/components/brand/logo";
 
 /**
  * The chat app runs in the browser only: its history, wallet and preferences
@@ -11,13 +11,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 export const ChatAppLoader = dynamic(() => import("./assistant-chat").then((m) => m.ChatApp), {
   ssr: false,
   loading: () => (
-    <div className="flex h-dvh" role="status" aria-label="Loading the assistant">
-      <div className="hidden w-65 shrink-0 space-y-3 border-r bg-surface p-3 md:block">
-        <Skeleton className="h-7 w-28" />
-        <Skeleton className="h-9 w-full" />
-        <Skeleton className="h-8 w-full" />
-      </div>
-      <div className="flex-1" />
+    <div
+      className="flex h-dvh flex-col items-center justify-center gap-3"
+      role="status"
+      aria-label="Loading Quill"
+    >
+      <LogoMark className="size-12 animate-pulse motion-reduce:animate-none" />
+      <span className="font-serif text-lg text-muted-foreground">quill</span>
     </div>
   ),
 });

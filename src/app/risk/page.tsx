@@ -5,14 +5,14 @@ import { DISCLOSURE_POINTS } from "@/lib/assistant/disclosure";
 
 export const metadata: Metadata = {
   title: "Risk disclosure",
-  description: "The risks of using Askfirst and buying tokenized stocks on Solana.",
+  description: "The risks of using Quill and buying tokenized stocks on Solana.",
 };
 
 export default function RiskPage() {
   return (
     <ProsePage eyebrow="Before you buy" title="Risk disclosure" updated="October 2026">
       <p>
-        Askfirst is research software. It suggests tokenized stocks and shows live quotes, but every
+        Quill is research software. It suggests tokenized stocks and shows live quotes, but every
         purchase is a swap you review and sign in your own wallet. These are the same points you
         accept before using the assistant.
       </p>

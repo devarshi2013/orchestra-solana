@@ -28,6 +28,7 @@ export type StoredChat = {
 export type Owner = string;
 export const GUEST: Owner = "guest";
 
+// Named before the rebrand to Quill; kept so saved chats carry over.
 export const STORAGE_PREFIX = "askfirst.chats.v1.";
 export const MAX_CHATS = 200;
 const TITLE_LENGTH = 40;

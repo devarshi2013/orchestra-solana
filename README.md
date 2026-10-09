@@ -1,4 +1,4 @@
-# Askfirst
+# Quill
 
 An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain English (for example "three large US tech stocks for 200 USDC"):
 
@@ -8,7 +8,7 @@ An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain Engli
 
 ## Ground rules
 
-- **Non-custodial.** Your wallet signs every swap (`signTransaction`; the app never sends from the wallet), and Askfirst never holds keys or funds. No Jupiter products that deposit into custodial vaults (Trigger v2 / DCA).
+- **Non-custodial.** Your wallet signs every swap (`signTransaction`; the app never sends from the wallet), and Quill never holds keys or funds. No Jupiter products that deposit into custodial vaults (Trigger v2 / DCA).
 - **No custom smart contracts or on-chain programs.** All execution goes through Jupiter's Swap v2 REST API (`/order` + `/execute`).
 - **Keys stay on the server.** The browser calls our `/api/*` routes, which call Jupiter (`src/server/jupiter/client.ts`) and Claude (`src/server/agent/client.ts`). Never use `lite-api.jup.ag`.
 - **Registry-only stocks.** The assistant can only suggest stocks from the stock registry (`src/lib/stocks/registry.generated.json`), built only from the issuers' official lists and verified on Jupiter. Token addresses come from the registry, never from the AI.
@@ -18,7 +18,7 @@ An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain Engli
 
 | Route                 | What it does                                                                                                                                                                                                                                                  |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                   | Live market dashboard: a Liveline hero chart (line/candles, 1H–30D) and a market grid for Solana tokens and tokenized stocks, with one "Ask Askfirst AI" button into the chat ([docs](docs/home-dashboard.md))                                                |
+| `/`                   | Live market dashboard: a Liveline hero chart (line/candles, 1H–30D) and a market grid for Solana tokens and tokenized stocks, with one "Ask Quill" button into the chat ([docs](docs/home-dashboard.md))                                                      |
 | `/chat`, `/chat/[id]` | The chatbot (`/assistant` redirects here), with a ChatGPT-style chat history sidebar and a "Browse stocks" panel: streamed answers, "Data used" panels, plan cards with live quotes, warnings, pre-flight checks, and wallet-approved buys with Solscan links |
 
 There's **no database**:
@@ -31,10 +31,15 @@ See [docs/assistant.md](docs/assistant.md).
 
 ## Brand
 
-- **Name and mark:** Askfirst, "ask, then approve". The logo is a chat bubble holding a check mark (`src/components/brand/logo.tsx`; favicon `src/app/icon.svg`, app icon and OG image generated in `src/app`).
-- **Colours** (CSS variables in `src/app/globals.css`, exposed as Tailwind colours): signal orange `#FF5A1F`, ink `#111214`, success `#16A34A`, one neutral grey scale. Dark is the default; the header toggles light. Orange fills carry ink text (6.0:1). Orange text uses `primary-text`, which is darker in light mode to meet WCAG AA.
-- **Type:** Space Grotesk for headings and the wordmark, Inter for text, JetBrains Mono with tabular figures for prices and amounts (all via `next/font`).
-- **Surfaces:** one radius scale (6/8/10/14/16px), 1px borders, and layered surface colours instead of heavy shadows.
+- **Name and line:** Quill. "Write what you want. Own what you choose." (`src/lib/brand.ts`).
+- **Mark:** an upward-pointing fountain-pen nib (it doubles as an "up" arrow): burgundy, with a cream slit and a gold breather hole; flat, no gradients. The shapes live in `src/components/brand/logo.tsx` and are shared by the favicon (`src/app/icon.svg`, which switches to the dark version with the OS theme), the apple-touch icon and OG image (generated in `src/app`), and the files in `public/brand/`: icon and horizontal wordmark (nib + "quill" in Fraunces, font embedded) for light and dark backgrounds, plus 512px and 192px PNG app icons.
+- **Colours** (CSS variables in `src/app/globals.css`, exposed as Tailwind colours):
+  - Light (the default): cream `#F6EFE4` background, `#FBF7F0` surfaces, white raised, `#E2D6C3` borders, ink `#2A1A1E` text, `#736350` muted text, burgundy `#6B1E2E` primary (hover `#551624`) with cream text, gold `#D9A441` for highlights (gold _text_ is `#8A6416`).
+  - Dark: `#1A1012` background, `#241719` / `#2E1E21` surfaces, `#3D2A2E` borders, cream text, `#B8A894` muted, a lighter burgundy `#C25A6E` primary, gold `#E0B457`.
+  - Data colours stay apart from the brand, so burgundy never reads as "down": positive green, negative a brighter red, neutral `#7A6A55`, always with a +/− sign or arrow. Charts use `#15803D` / `#DC2626` (light) and `#4ADE80` / `#F87171` (dark); price _text_ in light mode uses `#117235` / `#C81E1E` to stay at AA on cream.
+  - Every text/background pair is checked for WCAG AA (contrast notes at the top of `globals.css`). Focus rings are a solid gold (`#A87A22` on light for 3:1, `#E0B457` on dark).
+- **Type:** Fraunces (a literary serif) for headings and the wordmark, Inter for text, JetBrains Mono with tabular figures for prices and amounts (all via `next/font`).
+- **Surfaces:** 1px borders, 8px controls and 14px cards, very soft warm shadows, and a faint paper grain on cream (off in dark mode). Your messages are burgundy bubbles; the AI's are surface cards.
 
 ## Stack
 

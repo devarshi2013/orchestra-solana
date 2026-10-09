@@ -2,6 +2,7 @@ import { KeyRound, ShieldCheck, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { MarketDashboard } from "@/components/market/market-dashboard";
+import { TAGLINE } from "@/lib/brand";
 
 const STEPS = [
   { title: "Ask", text: "Tell the assistant your budget and what you're looking for." },
@@ -30,9 +31,9 @@ export default function Home() {
     <main className="flex-1">
       <section className="mx-auto w-full max-w-7xl space-y-6 px-4 pt-8 pb-16 sm:px-6 sm:pt-10">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Live markets</h1>
+          <h1 className="text-3xl font-semibold sm:text-4xl">{TAGLINE}</h1>
           <p className="text-sm text-muted-foreground">
-            Tokenized US stocks and Solana tokens, priced live by Jupiter.
+            Live markets: tokenized US stocks and Solana tokens, priced by Jupiter.
           </p>
         </div>
         <MarketDashboard />

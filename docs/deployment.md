@@ -1,6 +1,6 @@
 # Deploying to production (Vercel)
 
-Askfirst is a Next.js 16 app with **no database** and **no cron jobs**. Vercel hosts it; `pnpm build` is the build command. It first runs `pnpm sync:stocks --refresh` (a few minutes: it re-verifies the issuers' stock lists and re-quotes the listed stocks on Jupiter, using `JUPITER_API_KEY`), then `next build`. The sync never fails the build; set `SYNC_STOCKS=skip` to skip it. Node 22.6 or later is required (`engines` in `package.json`).
+Quill is a Next.js 16 app with **no database** and **no cron jobs**. Vercel hosts it; `pnpm build` is the build command. It first runs `pnpm sync:stocks --refresh` (a few minutes: it re-verifies the issuers' stock lists and re-quotes the listed stocks on Jupiter, using `JUPITER_API_KEY`), then `next build`. The sync never fails the build; set `SYNC_STOCKS=skip` to skip it. Node 22.6 or later is required (`engines` in `package.json`).
 
 ## What runs where
 

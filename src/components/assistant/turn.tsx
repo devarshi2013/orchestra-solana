@@ -50,7 +50,11 @@ export function AssistantTurnView({ turn, cards }: { turn: AssistantTurn; cards?
           <Skeleton className="h-3.5 w-2/3" />
         </div>
       )}
-      {turn.text && <Markdown text={turn.text} streaming={!turn.done} />}
+      {turn.text && (
+        <div className="max-w-full rounded-2xl rounded-bl-md border bg-card px-4 py-3 text-card-foreground shadow-soft">
+          <Markdown text={turn.text} streaming={!turn.done} />
+        </div>
+      )}
       <DataUsed tools={turn.tools} />
       {cards}
       {turn.error && (

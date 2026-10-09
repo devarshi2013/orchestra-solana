@@ -59,9 +59,9 @@ export function ChatGlow({ className }: { className?: string }) {
         className,
       )}
     >
-      <div className="absolute top-0 left-1/4 size-96 animate-pulse rounded-full bg-orange-500/10 blur-[128px]" />
-      <div className="absolute right-1/4 bottom-0 size-96 animate-pulse rounded-full bg-amber-500/[0.07] blur-[128px] delay-700" />
-      <div className="absolute top-1/4 right-1/3 size-64 animate-pulse rounded-full bg-red-500/[0.06] blur-[96px] delay-1000" />
+      <div className="absolute top-0 left-1/4 size-96 animate-pulse rounded-full bg-primary/8 blur-[128px]" />
+      <div className="absolute right-1/4 bottom-0 size-96 animate-pulse rounded-full bg-gold/10 blur-[128px] delay-700" />
+      <div className="absolute top-1/4 right-1/3 size-64 animate-pulse rounded-full bg-primary/5 blur-[96px] delay-1000" />
     </div>
   );
 }
@@ -76,11 +76,11 @@ export function ChatHero({ title, subtitle }: { title: string; subtitle?: string
         transition={{ delay: 0.2, duration: 0.5 }}
         className="inline-block"
       >
-        <h2 className="bg-gradient-to-r from-foreground/90 to-foreground/40 bg-clip-text pb-1 text-3xl font-medium tracking-tight text-transparent">
+        <h2 className="pb-1 font-serif text-3xl font-medium tracking-tight text-foreground">
           {title}
         </h2>
         <motion.div
-          className="h-px bg-gradient-to-r from-transparent via-foreground/20 to-transparent"
+          className="h-px bg-linear-to-r from-transparent via-gold/50 to-transparent"
           initial={{ width: 0, opacity: 0 }}
           animate={{ width: "100%", opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.8 }}
@@ -342,7 +342,7 @@ export function AnimatedChatInput({
       {focused && !reduceMotion && (
         <motion.div
           aria-hidden
-          className="pointer-events-none fixed top-0 left-0 -z-10 size-[50rem] rounded-full bg-gradient-to-r from-orange-500 via-amber-500 to-red-500 opacity-[0.03] blur-[96px]"
+          className="pointer-events-none fixed top-0 left-0 -z-10 size-[50rem] rounded-full bg-linear-to-r from-primary via-gold to-primary opacity-[0.04] blur-[96px]"
           style={{ x: glowX, y: glowY }}
         />
       )}

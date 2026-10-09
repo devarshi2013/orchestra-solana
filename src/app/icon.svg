@@ -1,4 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <path d="M9 3H23A7 7 0 0 1 30 10V17.5A7 7 0 0 1 23 24.5H14.5L8.5 29.2V24.3A7 7 0 0 1 2 17.5V10A7 7 0 0 1 9 3Z" fill="#FF5A1F"/>
-  <path d="M10.5 14L14.4 17.7L21.8 10.4" fill="none" stroke="#111214" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <style>
+    .nib { fill: #6B1E2E } .slit { stroke: #FBF7F0 } .hole { fill: #D9A441 }
+    @media (prefers-color-scheme: dark) { .nib { fill: #C25A6E } .slit { stroke: #F6EFE4 } .hole { fill: #E0B457 } }
+  </style>
+  <path class="nib" d="M16 2.5C19.6 7.6 25.5 13.2 25.5 19L21.6 29.5H10.4L6.5 19C6.5 13.2 12.4 7.6 16 2.5Z"/>
+  <line class="slit" x1="16" y1="6" x2="16" y2="16.5" stroke-width="1.6" stroke-linecap="round"/>
+  <circle class="hole" cx="16" cy="19" r="2.6"/>
 </svg>

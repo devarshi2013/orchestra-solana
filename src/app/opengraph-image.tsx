@@ -3,17 +3,19 @@ import { join } from "node:path";
 
 import { ImageResponse } from "next/og";
 
-import { BUBBLE_PATH, CHECK_PATH } from "@/components/brand/logo";
+import { HOLE, LOGO_COLORS, NIB_PATH, SLIT } from "@/components/brand/logo";
+import { TAGLINE } from "@/lib/brand";
 
-export const alt =
-  "Askfirst: an AI that researches tokenized US stocks on Solana, and buys only after you approve";
+export const alt = `Quill: ${TAGLINE} An AI that researches tokenized US stocks on Solana; you approve every buy.`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-/** The link preview: wordmark, the promise, and the three facts that matter. */
+/** The link preview: the wordmark on cream, the tagline, and the three facts that matter. */
 export default async function OpengraphImage() {
-  // Space Grotesk Bold (SIL Open Font License), the heading font, bundled as TTF for ImageResponse.
-  const spaceGrotesk = await readFile(join(process.cwd(), "src/app/_fonts/SpaceGrotesk-Bold.ttf"));
+  // Fraunces SemiBold (SIL Open Font License), the display serif, bundled for ImageResponse.
+  const fraunces = await readFile(join(process.cwd(), "src/app/_fonts/Fraunces-SemiBold.woff"));
+  const c = LOGO_COLORS.light;
+  const [first, second] = TAGLINE.split(". ");
   return new ImageResponse(
     <div
       style={{
@@ -23,52 +25,53 @@ export default async function OpengraphImage() {
         flexDirection: "column",
         justifyContent: "space-between",
         padding: "72px 80px",
-        background: "#111214",
-        color: "#F2F2F3",
-        fontFamily: "Space Grotesk",
+        background: "#F6EFE4",
+        color: "#2A1A1E",
+        fontFamily: "Fraunces",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-        <svg width="72" height="72" viewBox="0 0 32 32">
-          <path d={BUBBLE_PATH} fill="#FF5A1F" />
-          <path
-            d={CHECK_PATH}
-            fill="none"
-            stroke="#111214"
-            strokeWidth="3"
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <svg width="84" height="84" viewBox="0 0 32 32">
+          <path d={NIB_PATH} fill={c.nib} />
+          <line
+            x1={SLIT.x1}
+            y1={SLIT.y1}
+            x2={SLIT.x2}
+            y2={SLIT.y2}
+            stroke={c.slit}
+            strokeWidth={SLIT.width}
             strokeLinecap="round"
-            strokeLinejoin="round"
           />
+          <circle cx={HOLE.cx} cy={HOLE.cy} r={HOLE.r} fill={c.hole} />
         </svg>
-        <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: -1.5 }}>Askfirst</div>
+        <div style={{ fontSize: 64, letterSpacing: -1.5 }}>quill</div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        <div style={{ fontSize: 68, fontWeight: 700, lineHeight: 1.05, letterSpacing: -2 }}>
-          Ask about US stocks on Solana.
-        </div>
-        <div
-          style={{
-            fontSize: 68,
-            fontWeight: 700,
-            lineHeight: 1.05,
-            letterSpacing: -2,
-            color: "#FF5A1F",
-          }}
-        >
-          Approve every buy yourself.
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ fontSize: 76, lineHeight: 1.05, letterSpacing: -2 }}>{`${first}.`}</div>
+        <div style={{ fontSize: 76, lineHeight: 1.05, letterSpacing: -2, color: "#6B1E2E" }}>
+          {second}
         </div>
       </div>
-      <div style={{ display: "flex", gap: 28, fontSize: 26, color: "#9C9CA3" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 24,
+          fontSize: 26,
+          color: "#736350",
+          borderTop: "2px solid #E2D6C3",
+          paddingTop: 28,
+        }}
+      >
+        <span>Tokenized US stocks on Solana</span>
+        <span style={{ color: "#D9A441" }}>•</span>
         <span>Live Jupiter quotes</span>
-        <span>·</span>
-        <span>Non-custodial</span>
-        <span>·</span>
-        <span>Research, not financial advice</span>
+        <span style={{ color: "#D9A441" }}>•</span>
+        <span>You approve every buy</span>
       </div>
     </div>,
     {
       ...size,
-      fonts: [{ name: "Space Grotesk", data: spaceGrotesk, weight: 700, style: "normal" }],
+      fonts: [{ name: "Fraunces", data: fraunces, weight: 600, style: "normal" }],
     },
   );
 }

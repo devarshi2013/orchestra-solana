@@ -11,6 +11,6 @@ export function useResolvedTheme(): "dark" | "light" {
       return () => observer.disconnect();
     },
     () => (document.documentElement.classList.contains("dark") ? "dark" : "light"),
-    () => "dark",
+    () => "light",
   );
 }

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 
 import { MotionProvider } from "@/components/motion";
 import { SolanaWalletProvider } from "@/components/providers/wallet-provider";
@@ -8,19 +8,21 @@ import { themeScript } from "@/components/layout/theme-toggle";
 import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "@/components/ui/toast";
 
+import { TAGLINE } from "@/lib/brand";
+
 import "./globals.css";
 
 /** Body text: highly legible at small sizes, with tabular figures. */
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 /**
- * Headings and the wordmark: geometric with a slightly technical edge, which
- * suits a crypto/fintech product without the editorial feel of a serif, and
- * its figures stay crisp at heading sizes.
+ * Headings and the wordmark: Fraunces, a literary "old style" serif, for the
+ * ink-and-paper feel of Quill. Variable, with an optical-size axis so large
+ * headings get finer contrast and small ones stay sturdy.
  */
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  axes: ["opsz"],
 });
 /** Prices and amounts: fixed-width figures and a slashed zero. */
 const jetbrainsMono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["latin"] });
@@ -30,21 +32,21 @@ const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
   : "http://localhost:3000";
 
 const description =
-  "Ask an AI about tokenized US stocks on Solana, see live Jupiter quotes, and approve every buy in your own wallet.";
+  "Quill: tell an AI what you want in tokenized US stocks on Solana, see live Jupiter quotes, and approve every buy in your own wallet.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: { default: "Askfirst: ask, then approve", template: "%s · Askfirst" },
+  title: { default: `Quill: ${TAGLINE}`, template: "%s · Quill" },
   description,
-  applicationName: "Askfirst",
-  openGraph: { title: "Askfirst", description, siteName: "Askfirst", type: "website" },
-  twitter: { card: "summary_large_image", title: "Askfirst", description },
+  applicationName: "Quill",
+  openGraph: { title: "Quill", description, siteName: "Quill", type: "website" },
+  twitter: { card: "summary_large_image", title: "Quill", description },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#111214" },
-    { media: "(prefers-color-scheme: light)", color: "#f7f7f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#1a1012" },
+    { media: "(prefers-color-scheme: light)", color: "#f6efe4" },
   ],
 };
 
@@ -52,8 +54,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} dark h-full antialiased`}
-      // The theme script sets class="dark" before hydration.
+      className={`${inter.variable} ${fraunces.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      // The theme script adds class="dark" before hydration when the visitor chose it.
       suppressHydrationWarning
     >
       <head>

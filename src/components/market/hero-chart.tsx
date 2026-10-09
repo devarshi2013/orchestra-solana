@@ -29,7 +29,7 @@ import {
 } from "@/lib/market/series";
 import { cn } from "@/lib/utils";
 
-import { CHART_COLORS } from "./chart-colors";
+import { changeColor } from "./chart-colors";
 import { TokenLogo } from "./token-logo";
 
 const WINDOW_OPTIONS = WINDOW_IDS.map((id) => ({
@@ -151,7 +151,7 @@ export function HeroChart({ mint, onSelect }: { mint: string; onSelect: (mint: s
         <Button asChild size="lg" className="w-full sm:w-auto">
           <Link href={chatHref(mint)}>
             <Sparkles />
-            {token.ticker ? `Ask Askfirst AI about ${token.ticker}` : "Ask Askfirst AI"}
+            {token.ticker ? `Ask Quill about ${token.ticker}` : "Ask Quill"}
             <ArrowRight data-icon="inline-end" />
           </Link>
         </Button>
@@ -159,14 +159,15 @@ export function HeroChart({ mint, onSelect }: { mint: string; onSelect: (mint: s
 
       {/* The chart: a fixed-height box Liveline fills */}
       <div
-        className="mt-5 flex h-80 flex-col sm:h-[26rem]"
+        className="liveline-controls mt-5 flex h-80 flex-col sm:h-[26rem]"
         aria-label={`${token.symbol} price chart, ${window.label}`}
       >
         <Liveline
           data={points}
           value={price ?? 0}
           theme={theme}
-          color={CHART_COLORS.brand}
+          // The line follows the 24h move (green/red), never the burgundy brand colour.
+          color={changeColor(change, theme)}
           window={window.secs}
           windows={WINDOW_OPTIONS}
           onWindowChange={(secs) =>
@@ -260,11 +261,16 @@ export function ChangePill({ change, className }: { change: number | null; class
     <span
       className={cn(
         "inline-flex items-center rounded-md px-1.5 py-0.5 font-mono text-sm font-medium tabular-nums",
-        up ? "bg-success/12 text-success" : "bg-destructive/12 text-destructive",
+        up
+          ? "bg-success/6 text-success dark:bg-success/12"
+          : "bg-destructive/6 text-destructive dark:bg-destructive/12",
         className,
       )}
       title="Change over the last 24 hours"
     >
+      <span aria-hidden className="mr-0.5 text-[0.85em]">
+        {up ? "▲" : "▼"}
+      </span>
       {formatPct(change)}
       <span className="ml-1 text-[0.7em] font-normal opacity-80">24h</span>
     </span>

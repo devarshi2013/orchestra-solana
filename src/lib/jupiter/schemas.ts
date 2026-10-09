@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Shapes of Jupiter responses as Askfirst uses them (see docs/jupiter-api.md).
+ * Shapes of Jupiter responses as Quill uses them (see docs/jupiter-api.md).
  * Unknown keys are stripped, so these double as the trimmed payloads our /api
  * routes return to the browser. Client-safe: no server imports.
  */

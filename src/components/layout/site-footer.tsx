@@ -3,11 +3,12 @@ import Link from "next/link";
 
 import { Wordmark } from "@/components/brand/logo";
 import { GitHubIcon, XIcon } from "@/components/brand/social-icons";
+import { TAGLINE } from "@/lib/brand";
 
 const REPO = "https://github.com/devarshi2013/orchestra-solana";
-/** No X account yet: the X icon shares Askfirst instead of linking a profile. */
+/** No X account yet: the X icon shares Quill instead of linking a profile. */
 const SHARE_ON_X = `https://x.com/intent/post?text=${encodeURIComponent(
-  "Askfirst: an AI that researches tokenized US stocks on Solana, and only buys after you approve.",
+  "Quill: an AI that researches tokenized US stocks on Solana, and only buys after you approve.",
 )}`;
 
 type FooterLink = { label: string; href: string; external?: boolean };
@@ -48,11 +49,12 @@ export function SiteFooter() {
           <div className="space-y-4">
             <Link
               href="/"
-              aria-label="Askfirst home"
+              aria-label="Quill home"
               className="inline-flex rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Wordmark />
             </Link>
+            <p className="max-w-xs font-serif text-base text-foreground">{TAGLINE}</p>
             <p className="max-w-xs text-sm text-muted-foreground">
               Ask an AI about tokenized US stocks, then approve every buy in your own wallet.
             </p>
@@ -61,7 +63,7 @@ export function SiteFooter() {
                 href={SHARE_ON_X}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Share Askfirst on X"
+                aria-label="Share Quill on X"
                 title="Share on X"
                 className="inline-flex size-9 items-center justify-center rounded-lg border text-muted-foreground transition-[color,background-color,transform] hover:bg-muted hover:text-foreground active:scale-95"
               >
@@ -71,7 +73,7 @@ export function SiteFooter() {
                 href={REPO}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Askfirst on GitHub"
+                aria-label="Quill on GitHub"
                 title="GitHub"
                 className="inline-flex size-9 items-center justify-center rounded-lg border text-muted-foreground transition-[color,background-color,transform] hover:bg-muted hover:text-foreground active:scale-95"
               >
@@ -145,7 +147,7 @@ export function SiteFooter() {
             <ShieldAlert className="mt-px size-3.5 shrink-0" aria-hidden />
             Not financial advice. Tokenized stocks are securities with eligibility rules.
           </p>
-          <p>© 2026 Askfirst</p>
+          <p>© 2026 Quill</p>
         </div>
       </div>
     </footer>

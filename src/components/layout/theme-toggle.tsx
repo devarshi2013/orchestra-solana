@@ -4,19 +4,21 @@ import { Moon, Sun } from "lucide-react";
 import { useSyncExternalStore } from "react";
 
 type Theme = "light" | "dark";
+/** Storage keys keep their pre-rebrand names, so saved preferences and chats carry over. */
 export const THEME_KEY = "askfirst-theme";
 
 /**
- * Runs in <head> before paint. The page is server-rendered dark (the default);
- * this only switches to light when the visitor chose it, so there's no flash.
+ * Runs in <head> before paint. The page is server-rendered light (the
+ * default); this switches to dark only when the visitor chose it, so there's
+ * no flash.
  */
-export const themeScript = `try{if(localStorage.getItem("${THEME_KEY}")==="light")document.documentElement.classList.remove("dark")}catch(e){}`;
+export const themeScript = `try{if(localStorage.getItem("${THEME_KEY}")==="dark")document.documentElement.classList.add("dark")}catch(e){}`;
 
 const read = (): Theme => {
   try {
-    return localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark";
+    return localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
   } catch {
-    return "dark";
+    return "light";
   }
 };
 
@@ -26,10 +28,10 @@ const subscribe = (listener: () => void) => {
   return () => listeners.delete(listener);
 };
 
-/** Switches between dark (the default) and light, remembered in this browser. */
+/** Switches between light (the default) and dark, remembered in this browser. */
 export function ThemeToggle() {
-  // Dark while server rendering; the stored choice once hydrated.
-  const theme = useSyncExternalStore(subscribe, read, () => "dark" as Theme);
+  // Light while server rendering; the stored choice once hydrated.
+  const theme = useSyncExternalStore(subscribe, read, () => "light" as Theme);
   const next: Theme = theme === "dark" ? "light" : "dark";
   const Icon = theme === "dark" ? Moon : Sun;
   return (
