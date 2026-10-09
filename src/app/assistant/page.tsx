@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Stock assistant · Orchestra" };
 
 export default function AssistantPage() {
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-10">
+    <main className="mx-auto w-full max-w-[96rem] flex-1 space-y-6 px-4 py-10">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Stock assistant</h1>
         <p className="text-sm text-muted-foreground">

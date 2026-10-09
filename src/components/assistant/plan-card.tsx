@@ -13,7 +13,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LiquidityBadge } from "@/components/assistant/liquidity-badge";
 import { Input } from "@/components/ui/input";
 import { useNow } from "@/hooks/use-now";
+import type { SavedBuy } from "@/hooks/use-agent-chat";
 import { usePlanBuy, type BuyItem, type BuyStep } from "@/hooks/use-plan-buy";
 import { usePlanQuotes, useWalletFunds } from "@/hooks/use-plan-quotes";
 import type { AcceptedPlan } from "@/lib/agent/plan";
@@ -56,14 +57,29 @@ const STEP_LABEL: Record<BuyStep, string> = {
  * "Approve & buy" then buys each item in turn; every purchase needs its own
  * signature in the wallet.
  */
-export function PlanCard({ plan }: { plan: AcceptedPlan }) {
+export function PlanCard({
+  plan,
+  saved,
+  onBuyChange,
+}: {
+  plan: AcceptedPlan;
+  /** The purchase as it last stood, when the chat is reopened. */
+  saved?: SavedBuy;
+  /** Called as the purchase progresses, so the chat keeps it (and its Solscan links). */
+  onBuyChange?: (buy: SavedBuy) => void;
+}) {
   const { connected, publicKey, signTransaction } = useWallet();
   const wallet = publicKey?.toBase58() ?? null;
   const [draft, setDraft] = useState<DraftItem[]>(() =>
     plan.items.map((item) => ({ ...item, amountText: String(item.usdcAmount) })),
   );
-  const buy = usePlanBuy();
+  const buy = usePlanBuy(saved);
   const reviewing = buy.items === null;
+  useEffect(() => {
+    if (buy.items) onBuyChange?.({ items: buy.items, stopped: buy.stopped });
+    // onBuyChange is a fresh closure each render; only report real changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [buy.items, buy.stopped]);
 
   const items = useMemo(
     () =>
@@ -196,7 +212,7 @@ export function PlanCard({ plan }: { plan: AcceptedPlan }) {
                     : "border-success/40 bg-success/5",
                 )}
               >
-                <p className="flex-1">
+                <p className="min-w-0 flex-1 basis-56">
                   {failed.length === 0
                     ? `All ${bought.length} bought.`
                     : `Bought ${bought.length} of ${buy.items.length}. ${failed

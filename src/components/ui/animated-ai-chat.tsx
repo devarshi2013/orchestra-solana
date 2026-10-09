@@ -209,7 +209,7 @@ export function AnimatedChatInput({
   return (
     <div className="relative w-full space-y-4">
       <motion.div
-        className="relative rounded-2xl border border-border bg-card/60 shadow-2xl backdrop-blur-2xl"
+        className="relative rounded-2xl border border-border bg-card/95 shadow-2xl backdrop-blur-xl"
         initial={reduceMotion ? false : { scale: 0.98 }}
         animate={{ scale: 1 }}
         transition={{ delay: 0.1 }}

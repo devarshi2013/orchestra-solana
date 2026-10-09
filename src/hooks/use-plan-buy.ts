@@ -52,12 +52,13 @@ const message = (error: unknown) =>
  * it. Every buy is its own wallet prompt; nothing is signed automatically. A
  * failed item doesn't stop the others; declining in the wallet stops the run.
  */
-export function usePlanBuy() {
+export function usePlanBuy(saved?: { items: BuyItem[]; stopped: string | null }) {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
-  const [items, setItems] = useState<BuyItem[] | null>(null);
+  // A reopened chat starts from its saved purchase (statuses and Solscan links).
+  const [items, setItems] = useState<BuyItem[] | null>(saved?.items ?? null);
   const [running, setRunning] = useState(false);
-  const [stopped, setStopped] = useState<string | null>(null);
+  const [stopped, setStopped] = useState<string | null>(saved?.stopped ?? null);
   const busy = useRef(false);
 
   const run = useCallback(
