@@ -630,3 +630,13 @@ body:has([data-home-page]) [data-site-header] {
     }
   }
 }
+
+/* The home ticker tape: two copies of the list slide left by one copy's width, forever. */
+@keyframes tape {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@utility animate-tape {
+  animation: tape 70s linear infinite;
+}

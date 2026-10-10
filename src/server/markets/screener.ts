@@ -3,14 +3,17 @@ import "server-only";
 import { z } from "zod";
 
 import { mintInformationSchema } from "@/lib/jupiter/schemas";
-import { WINDOWS, type WindowId } from "@/lib/market/config";
+import { MARKET_TOKENS, WINDOWS, type WindowId } from "@/lib/market/config";
 import type { Candle, Point } from "@/lib/market/series";
-import type { MarketCategory, MarketRow } from "@/lib/markets/types";
-import { STOCKS } from "@/lib/stocks/registry";
+import type { ExampleQuote, MarketCategory, MarketOverview, MarketRow } from "@/lib/markets/types";
+import { REGISTRY, STOCKS } from "@/lib/stocks/registry";
+import { USDC_MINT } from "@/lib/tokens";
+import { toBaseUnits, toUnits, USDC_DECIMALS } from "@/lib/units";
 import { ISSUER_NAMES, type StockEntry } from "@/lib/stocks/types";
 import { cached } from "@/server/cache";
 import { jupiterFetch } from "@/server/jupiter/client";
 import { paced } from "@/server/jupiter/pace";
+import { getOrder } from "@/server/jupiter/swap";
 import { bestToken, sparklinePoints } from "@/server/market/compare";
 import { getHistory, loadCandles, primePools } from "@/server/market/history";
 
@@ -93,18 +96,35 @@ export function companyTokens(ticker: string) {
 const tokensSchema = z.array(mintInformationSchema);
 
 /** Every company in the registry with Jupiter's stats for its token (nulls where Jupiter has none). */
+type TokenInfo = z.infer<typeof mintInformationSchema>;
+
+/** Jupiter's Tokens v2 data for some mints, 100 a call, paced. */
+async function tokenInfo(mints: readonly string[]): Promise<Map<string, TokenInfo>> {
+  const info = new Map<string, TokenInfo>();
+  for (let i = 0; i < mints.length; i += TOKENS_PER_CALL) {
+    const batch = mints.slice(i, i + TOKENS_PER_CALL);
+    const response = await paced(() =>
+      jupiterFetch("tokens/v2/search", { query: { query: batch.join(",") } }),
+    );
+    for (const token of tokensSchema.parse(await response.json())) info.set(token.id, token);
+  }
+  return info;
+}
+
+/** Every registry token's Jupiter data (cached 60 s; shared by the list and the totals). */
+const registryInfo = () =>
+  cached("markets:registry-info", LIST_TTL_MS, () => tokenInfo(STOCKS.map((s) => s.mint)));
+
+const volumeOf = (t: TokenInfo | undefined): number | null => {
+  const buy = t?.stats24h?.buyVolume;
+  const sell = t?.stats24h?.sellVolume;
+  return buy == null && sell == null ? null : (buy ?? 0) + (sell ?? 0);
+};
+
 export function listMarkets(): Promise<MarketRow[]> {
   return cached("markets:list", LIST_TTL_MS, async () => {
     const rows = companies();
-    const mints = STOCKS.map((s) => s.mint);
-    const info = new Map<string, z.infer<typeof mintInformationSchema>>();
-    for (let i = 0; i < mints.length; i += TOKENS_PER_CALL) {
-      const batch = mints.slice(i, i + TOKENS_PER_CALL);
-      const response = await paced(() =>
-        jupiterFetch("tokens/v2/search", { query: { query: batch.join(",") } }),
-      );
-      for (const token of tokensSchema.parse(await response.json())) info.set(token.id, token);
-    }
+    const info = await registryInfo();
     const list = rows.map(({ best, chart, all }) => {
       const t = info.get(best.mint);
       const tokenPrices = Object.fromEntries(
@@ -116,8 +136,6 @@ export function listMarkets(): Promise<MarketRow[]> {
         }),
       );
       const shown = companyPrice(all, best.mint, tokenPrices);
-      const buy = t?.stats24h?.buyVolume;
-      const sell = t?.stats24h?.sellVolume;
       return {
         ticker: best.ticker,
         name: best.companyName,
@@ -130,11 +148,13 @@ export function listMarkets(): Promise<MarketRow[]> {
         mint: best.mint,
         decimals: best.decimals,
         chartMint: chart.mint,
+        chartSymbol: chart.symbol,
+        chartDecimals: chart.decimals,
         icon: t?.icon ?? null,
         price: shown?.price ?? null,
         change24h: shown?.change24h ?? null,
         marketCap: t?.mcap ?? null,
-        volume24h: buy == null && sell == null ? null : (buy ?? 0) + (sell ?? 0),
+        volume24h: volumeOf(t),
         liquidity: t?.liquidity ?? null,
         holders: t?.holderCount ?? null,
       };
@@ -185,18 +205,24 @@ async function livePrices(mints: readonly string[]): Promise<Record<string, Live
   return result;
 }
 
-/** 24h sparklines for some companies (by ticker), answering within ~3 s; the rest are `pending`. */
+const CRYPTO = MARKET_TOKENS.filter((t) => t.kind === "crypto");
+const cryptoBySymbol = (symbol: string) => CRYPTO.find((t) => t.symbol === symbol.toUpperCase());
+
+/** Sparklines for some stocks (by ticker) or crypto tokens (by symbol), answering within ~3 s; the rest are `pending`. */
 export async function sparklines(
   tickers: readonly string[],
+  window: "24h" | "7d" = "24h",
 ): Promise<{ series: Record<string, Point[] | null>; pending: string[] }> {
   const wanted = tickers.flatMap((t) => {
     const c = companyTokens(t);
-    return c ? [{ ticker: c.best.ticker, mint: c.chart.mint }] : [];
+    if (c) return [{ ticker: c.best.ticker, mint: c.chart.mint }];
+    const token = cryptoBySymbol(t);
+    return token ? [{ ticker: token.symbol, mint: token.mint }] : [];
   });
   const mints = wanted.map((w) => w.mint);
   // One batched pool lookup for all of them, then one candle request each (in the background).
   await Promise.race([primePools(mints), new Promise((resolve) => setTimeout(resolve, 2_500))]);
-  const history = await getHistory(mints, WINDOWS["24h"], 3_000);
+  const history = await getHistory(mints, WINDOWS[window], 3_000);
   const series: Record<string, Point[] | null> = {};
   const pending: string[] = [];
   for (const { ticker, mint } of wanted) {
@@ -213,16 +239,116 @@ export function chartCandles(ticker: string, window: WindowId): Promise<Candle[]
   return loadCandles(c.chart.mint, WINDOWS[window], "now");
 }
 
-/** Live prices for some companies (the rows on screen), by ticker, checked across issuers. */
+/** Live prices for some stocks (by ticker, checked across issuers) or crypto tokens (by symbol). */
 export async function livePricesForTickers(
   tickers: readonly string[],
 ): Promise<Record<string, LivePrice>> {
   const wanted = tickers.flatMap((t) => companyTokens(t) ?? []);
-  const prices = await livePrices([...new Set(wanted.flatMap((c) => c.all.map((e) => e.mint)))]);
+  const coins = tickers.flatMap((t) => cryptoBySymbol(t) ?? []);
+  const prices = await livePrices([
+    ...new Set([...wanted.flatMap((c) => c.all.map((e) => e.mint)), ...coins.map((c) => c.mint)]),
+  ]);
   const result: Record<string, LivePrice> = {};
   for (const c of wanted) {
     const price = companyPrice(c.all, c.best.mint, prices);
     if (price) result[c.best.ticker] = price;
   }
+  for (const c of coins) if (prices[c.mint]) result[c.symbol] = prices[c.mint]!;
   return result;
+}
+
+/** True for a registry stock ticker or one of the listed crypto symbols. */
+export const isListed = (ticker: string) =>
+  Boolean(companyTokens(ticker) ?? cryptoBySymbol(ticker));
+
+/** SOL, JUP and the other listed crypto tokens, in the same shape as the stock rows. */
+function listCrypto(): Promise<MarketRow[]> {
+  return cached("markets:crypto", LIST_TTL_MS, async () => {
+    const info = await tokenInfo(CRYPTO.map((t) => t.mint));
+    return CRYPTO.map((token) => {
+      const t = info.get(token.mint);
+      return {
+        ticker: token.symbol,
+        name: token.name,
+        category: "crypto" as const,
+        sector: "Crypto",
+        preIpo: false,
+        hours: "24/7",
+        symbol: token.symbol,
+        issuer: "",
+        mint: token.mint,
+        decimals: t?.decimals ?? 9,
+        chartMint: token.mint,
+        chartSymbol: token.symbol,
+        chartDecimals: t?.decimals ?? 9,
+        icon: t?.icon ?? null,
+        price: t?.usdPrice ?? null,
+        change24h: t?.stats24h?.priceChange ?? null,
+        marketCap: t?.mcap ?? null,
+        volume24h: volumeOf(t),
+        liquidity: t?.liquidity ?? null,
+        holders: t?.holderCount ?? null,
+      };
+    });
+  });
+}
+
+/**
+ * What the home page's live sections start from: the stock and crypto rows,
+ * and totals computed from the registry (counts) and Jupiter (24h volume,
+ * summed over the listed stock tokens that report one). Nothing is estimated.
+ */
+export function marketOverview(): Promise<MarketOverview> {
+  return cached("markets:overview", LIST_TTL_MS, async () => {
+    const [rows, crypto, info] = await Promise.all([listMarkets(), listCrypto(), registryInfo()]);
+    const volumes = STOCKS.flatMap((s) => volumeOf(info.get(s.mint)) ?? []);
+    return {
+      rows,
+      crypto,
+      totals: {
+        stocks: rows.length,
+        tokens: STOCKS.length,
+        sectors: new Set(STOCKS.map((s) => s.sector)).size,
+        issuers: new Set(STOCKS.map((s) => s.issuer)).size,
+        volume24h: volumes.length > 0 ? volumes.reduce((sum, v) => sum + v, 0) : null,
+        volumeTokens: volumes.length,
+      },
+      verifiedAt: REGISTRY.syncedAt,
+      asOf: new Date().toISOString(),
+    };
+  });
+}
+
+const EXAMPLE_TICKER = "NVDA";
+const EXAMPLE_USDC = 10;
+const EXAMPLE_TTL_MS = 30_000;
+
+/**
+ * A real Jupiter /order quote for spending 10 USDC on NVDA's xStocks token,
+ * with no taker (so Jupiter returns pricing only, never a transaction).
+ * Cached 30 s, so every visitor shares one Jupiter call per half minute.
+ */
+export function exampleQuote(): Promise<ExampleQuote> {
+  return cached("markets:example-quote", EXAMPLE_TTL_MS, async () => {
+    const token = companyTokens(EXAMPLE_TICKER)!.chart;
+    const order = await paced(() =>
+      getOrder({
+        inputMint: USDC_MINT,
+        outputMint: token.mint,
+        amount: toBaseUnits(EXAMPLE_USDC, USDC_DECIMALS).toString(),
+      }),
+    );
+    return {
+      ticker: token.ticker,
+      symbol: token.symbol,
+      usdcIn: EXAMPLE_USDC,
+      tokensOut: toUnits(order.outAmount, token.decimals),
+      priceImpactPct:
+        order.priceImpact === null || order.priceImpact === undefined
+          ? null
+          : Math.abs(order.priceImpact),
+      feeBps: order.feeBps ?? null,
+      asOf: new Date().toISOString(),
+    };
+  });
 }

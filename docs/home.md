@@ -30,9 +30,41 @@ grain, SVG gradients) are in `effects.tsx`. Then a gray "Research only. Not
 financial advice." line and the site-wide `DitheredFooter`, here in dark with
 blue (`#3B5BDB`) dots.
 
-**Rules:** no tokens, tickers, prices, charts, chat examples or market data,
-and no market data API calls (checked in the browser). No made-up logos,
-testimonials or stats. All graphics are CSS/SVG; no images.
+## Live sections
+
+Slotted between the existing sections (nothing existing moved): the ticker
+tape, live quote and stats bar follow the hero; the markets table, sector
+heatmap and trust section follow the bento grid. They live in
+`src/components/home/live/` and share one provider (`home-market.tsx`).
+
+| Section                    | Component            | What it shows                                                                                                                                                                                                                                                                                                  |
+| -------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ticker tape                | `ticker-tape.tsx`    | The 12 largest priced stocks plus SOL and JUP: live price and 24h % with ▲/▼ and +/−. Pauses on hover or focus; a still, scrollable row under reduced motion.                                                                                                                                                  |
+| Live quote                 | `live-quote.tsx`     | An example question answered with a real Jupiter `/order` quote (10 USDC → NVDAx, no taker, so nothing can be signed), refreshed every 30 s. Labelled "Live quote, not a trade".                                                                                                                               |
+| Stats bar                  | `stats-bar.tsx`      | Verified stocks, sectors, issuers, combined 24h volume.                                                                                                                                                                                                                                                        |
+| Markets table (`#markets`) | `home-markets.tsx`   | Tabs Stocks / ETFs / Crypto / Top gainers / Top losers; Asset, Price, 24h %, 24h volume, Market cap, 7-day sparkline; sortable; 10 rows; "View all" → `/markets`; a row opens a drawer with its details and a link to its stock page. The US market hours badge (`market-hours-badge.tsx`) sits in its header. |
+| Sector heatmap             | `sector-heatmap.tsx` | A tile per sector coloured by the average 24h change; clicking one filters the table.                                                                                                                                                                                                                          |
+| Trust                      | `trust.tsx`          | The verified-stock count, a link to `/registry` (every mint with a Solscan link, issuer and last-verified date), and notes on custody and sourcing.                                                                                                                                                            |
+
+**Every number and its source**
+
+| Number                                                | Source                                                                                                                                                 |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tape, table and drawer prices and 24h %               | Jupiter Price v3 (`/api/markets/prices`, one batched request every 12 s for the whole page), starting from Jupiter Tokens v2 (`/api/markets/overview`) |
+| 24h volume, market cap (on-chain), holders, liquidity | Jupiter Tokens v2 (`/api/markets/overview`, cached 60 s)                                                                                               |
+| 7-day sparklines                                      | GeckoTerminal hourly candles (`/api/markets/sparklines?window=7d`, cached 5 min)                                                                       |
+| Example quote: tokens out, price impact, fee          | Jupiter Swap v2 `/order` without a taker (`/api/markets/example-quote`, cached 30 s)                                                                   |
+| Verified stocks, sectors, issuers                     | Counted from the registry (`src/lib/stocks/registry.generated.json`)                                                                                   |
+| Combined 24h volume                                   | Sum of Jupiter's 24h buy + sell volume over the listed stock tokens that report one (the bar says how many); dropped when none do                      |
+| Sector averages                                       | Mean of the 24h changes of the sector's stocks that have one (each tile says how many of how many)                                                     |
+| Last verified date                                    | The registry's `syncedAt`                                                                                                                              |
+| US market status                                      | The browser's clock in US Eastern time against regular hours and the holiday list (`src/lib/assistant/market-hours.ts`)                                |
+
+**Data rules:** every live block shows "● Live · as of HH:MM"; loading shows
+skeletons; a failed read shows "Data unavailable", never a made-up value. The
+overview is re-read every 60 s and prices every 12 s, both paused while the tab
+is hidden. No user counts, testimonials or invented stats. The page's existing
+buttons are unchanged and the live sections add no chat buttons.
 
 **Motion:** orbs drift, the hero rings turn (90 s a turn), the step word
 slides every 2.2 s, sections fade in on scroll, cards lift and glow on hover.

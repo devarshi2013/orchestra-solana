@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  AnimatePresence,
-  MotionConfig,
-  motion,
-  useReducedMotion,
-  type HTMLMotionProps,
-} from "framer-motion";
+import { AnimatePresence, MotionConfig, motion, type HTMLMotionProps } from "framer-motion";
 import { Loader2, PenLine, XCircle } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -133,8 +127,9 @@ export function SwapStatus({ step }: { step: BuyStep }) {
 }
 
 /**
- * Fades and slides a section up gently as it scrolls into view (once).
- * Motionless for anyone who asks their OS for reduced motion.
+ * Fades and slides a section up gently as it scrolls into view (once). Under
+ * reduced motion MotionConfig drops the slide and keeps a plain fade; the
+ * markup is the same either way, so server and browser renders match.
  */
 export function Reveal({
   children,
@@ -147,12 +142,7 @@ export function Reveal({
   className?: string;
   as?: "div" | "li" | "section";
 }) {
-  const reduce = useReducedMotion();
   const Tag = motion[as];
-  if (reduce) {
-    const Plain = as;
-    return <Plain className={className}>{children}</Plain>;
-  }
   return (
     <Tag
       className={className}

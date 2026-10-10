@@ -18,9 +18,10 @@ An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain Engli
 
 | Route                 | What it does                                                                                                                                                                                                                                                  |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                   | Home page: hero, Quill Research™ / Search™ / Approve™, feature grid, FAQ and email signup; no market data ([docs](docs/home.md))                                                                                                                              |
+| `/`                   | Home page: hero, Quill Research™ / Search™ / Approve™, feature grid, FAQ, email signup and live sections: ticker tape, a real Jupiter quote, stats, markets table, sector heatmap ([docs](docs/home.md))                                                      |
 | `/markets`            | Stocks screener: search, Equities / ETFs / Commodities tabs, top performers and a sortable table with live prices and 24h sparklines ([docs](docs/markets.md))                                                                                                |
 | `/markets/[symbol]`   | One stock: live price, chart (1H–1Y), stats and a Buy / Sell panel; every trade is signed in your wallet                                                                                                                                                      |
+| `/registry`           | Every listed token: company, issuer, mint with a Solscan link, and when it was last verified                                                                                                                                                                  |
 | `/chat`, `/chat/[id]` | The chatbot (`/assistant` redirects here), with a ChatGPT-style chat history sidebar and a "Browse stocks" panel: streamed answers, "Data used" panels, plan cards with live quotes, warnings, pre-flight checks, and wallet-approved buys with Solscan links |
 
 There's **no database**:

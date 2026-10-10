@@ -1,6 +1,6 @@
 /** Shared shapes for the stocks screener (/markets) and stock pages. */
 
-export type MarketCategory = "equity" | "etf" | "commodity";
+export type MarketCategory = "equity" | "etf" | "commodity" | "crypto";
 
 export type MarketRow = {
   /** Company ticker, e.g. NVDA (the stock page is /markets/NVDA). */
@@ -17,8 +17,10 @@ export type MarketRow = {
   /** From the registry; the only mint a trade can use. */
   mint: string;
   decimals: number;
-  /** The token whose history the charts use. */
+  /** The token whose history the charts use (xStocks when there is one: it trades around the clock). */
   chartMint: string;
+  chartSymbol: string;
+  chartDecimals: number;
   icon: string | null;
   price: number | null;
   change24h: number | null;
@@ -27,4 +29,40 @@ export type MarketRow = {
   volume24h: number | null;
   liquidity: number | null;
   holders: number | null;
+};
+
+/** Counts computed from the registry and Jupiter for the home page's stats bar. */
+export type MarketTotals = {
+  /** Companies in the verified registry. */
+  stocks: number;
+  /** Tokens (a company can have several issuers' tokens). */
+  tokens: number;
+  sectors: number;
+  issuers: number;
+  /** Sum of Jupiter's 24h volume over the listed stock tokens that report one; null when none do. */
+  volume24h: number | null;
+  /** How many tokens that sum covers. */
+  volumeTokens: number;
+};
+
+/** Everything the home page's live sections start from (GET /api/markets/overview). */
+export type MarketOverview = {
+  rows: MarketRow[];
+  crypto: MarketRow[];
+  totals: MarketTotals;
+  /** When the registry was last verified against the issuers' lists (ISO date). */
+  verifiedAt: string;
+  /** When this data was read from Jupiter (ISO date). */
+  asOf: string;
+};
+
+/** A real Jupiter /order quote (no taker, so nothing can be signed), for the home page's example. */
+export type ExampleQuote = {
+  ticker: string;
+  symbol: string;
+  usdcIn: number;
+  tokensOut: number;
+  priceImpactPct: number | null;
+  feeBps: number | null;
+  asOf: string;
 };

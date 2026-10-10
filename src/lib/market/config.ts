@@ -127,7 +127,7 @@ export const WINDOWS: Record<WindowId, WindowSpec> = {
     timeframe: "minute",
     aggregate: 15,
     limit: 96,
-    ttlMs: 10 * 60_000,
+    ttlMs: 5 * 60_000,
   },
   "7d": {
     id: "7d",
@@ -136,7 +136,7 @@ export const WINDOWS: Record<WindowId, WindowSpec> = {
     timeframe: "hour",
     aggregate: 1,
     limit: 168,
-    ttlMs: 30 * 60_000,
+    ttlMs: 5 * 60_000,
   },
   "30d": {
     id: "30d",

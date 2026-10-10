@@ -13,6 +13,7 @@ const FOOTER_COLUMNS: FooterColumn[] = [
     title: "Resources",
     links: [
       { label: "Docs", href: `${REPO}/tree/main/docs` },
+      { label: "Stock registry", href: "/registry" },
       { label: "Risk disclosure", href: "/risk" },
     ],
   },

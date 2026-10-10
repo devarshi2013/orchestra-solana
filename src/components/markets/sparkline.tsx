@@ -36,9 +36,18 @@ export function Sparkline({
     <svg
       viewBox={`0 0 ${w} ${h}`}
       className={cn("h-8 w-24", up ? "text-gain" : "text-loss", className)}
+      // Stretches to whatever size it's given; the line keeps its thickness.
+      preserveAspectRatio="none"
       aria-hidden
     >
-      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path
+        d={d}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   );
 }
