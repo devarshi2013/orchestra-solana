@@ -159,6 +159,8 @@
   --input: var(--gray-light);
   /* The footer's dot field. */
   --footer-dots: var(--navy);
+  /* The footer's big "Quill": solid near-black so it reads on white. */
+  --footer-mark: var(--ink);
   --ring: var(--navy);
   /* Shadows are navy-tinted and soft. */
   --shadow-color: 216 50% 12%;
@@ -223,6 +225,8 @@
   --border: #2a2a2a;
   --input: #3a3a3a;
   --footer-dots: #d1d5db;
+  /* Dark mode keeps the cut-out: black letters in the light gray dots. */
+  --footer-mark: var(--background);
   --ring: #f9fafb;
   --shadow-color: 0 0% 0%;
   --chart-1: #2a2a2a;

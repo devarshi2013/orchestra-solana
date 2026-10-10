@@ -106,6 +106,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 status={null}
                 // Dark navy dots (#0F1B2D); light gray on the dark theme, where navy can't be seen.
                 accent="var(--footer-dots)"
+                markColor="var(--footer-mark)"
               />
             </div>
             <Toaster />

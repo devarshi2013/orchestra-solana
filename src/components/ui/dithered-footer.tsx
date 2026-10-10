@@ -11,7 +11,8 @@ import {
 
 // Dithered Footer by Ato Augustine (MIT), from 21st.dev/@otatechie/components/dithered-footer.
 // Changed for Quill: the signup form only renders when `onSubscribe` is passed,
-// external links open in a new tab, and the status dot uses the accent.
+// external links open in a new tab, the status dot uses the accent, and the
+// brand name's colour can be set (`markColor`).
 
 export type FooterLink = { label: string; href: string };
 export type FooterColumn = { title: string; links: FooterLink[] };
@@ -30,6 +31,8 @@ export type DitheredFooterProps = {
   status?: FooterLink | null;
   /** Colour of the dot field. It is the footer's only colour, so it carries the brand. */
   accent?: string;
+  /** Colour of the big brand name in the dot band. Defaults to the page background (a cut-out). */
+  markColor?: string;
   /** Called with the email address. Without it there is no signup form. */
   onSubscribe?: (email: string) => void | Promise<void>;
 };
@@ -46,6 +49,8 @@ const GRID = "radial-gradient(circle, #000 0.9px, transparent 1.3px)";
 // classes, so the component renders the same on Tailwind v3 and v4.
 const STYLES = `
 .df-field { position: absolute; inset: 0; }
+/* A thin page-coloured outline keeps the name clear of the dots behind it. */
+.df-mark { color: var(--df-mark); -webkit-text-stroke: 0.06em var(--background); paint-order: stroke fill; }
 .df-field.df-lit {
   -webkit-mask-image: radial-gradient(circle 190px at var(--df-x, 50%) var(--df-y, 50%), #000 35%, rgb(0 0 0 / .22) 100%);
   mask-image: radial-gradient(circle 190px at var(--df-x, 50%) var(--df-y, 50%), #000 35%, rgb(0 0 0 / .22) 100%);
@@ -134,6 +139,7 @@ export default function DitheredFooter({
   copyright = `© ${new Date().getFullYear()} Acme, Inc.`,
   status = null,
   accent = "#ff6a00",
+  markColor = "var(--background)",
   onSubscribe,
 }: DitheredFooterProps) {
   const [email, setEmail] = useState("");
@@ -183,7 +189,7 @@ export default function DitheredFooter({
   return (
     <footer
       className="overflow-hidden border-t border-border bg-background text-foreground"
-      style={{ "--df-accent": accent } as CSSProperties}
+      style={{ "--df-accent": accent, "--df-mark": markColor } as CSSProperties}
     >
       <style>{STYLES}</style>
 
@@ -263,7 +269,7 @@ export default function DitheredFooter({
           {/* One tile wider than the band, slid left by exactly one tile, so the loop is seamless. */}
           <div className="df-dots" />
         </div>
-        <p className="df-mark pointer-events-none absolute -bottom-[0.05em] left-3 text-[clamp(5rem,21vw,13rem)] leading-[0.8] font-bold tracking-[-0.06em] text-background select-none sm:left-5">
+        <p className="df-mark pointer-events-none absolute -bottom-[0.05em] left-3 text-[clamp(5rem,21vw,13rem)] leading-[0.8] font-bold tracking-[-0.06em] select-none sm:left-5">
           {brand}
         </p>
       </div>
