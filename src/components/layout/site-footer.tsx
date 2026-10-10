@@ -25,8 +25,6 @@ const FOOTER_COLUMNS: FooterColumn[] = [
 export function SiteFooter() {
   return (
     <DitheredFooter
-      brand="Quill"
-      brandHref="/"
       tagline="Ask an AI about tokenized US stocks. Approve every trade in your own wallet."
       columns={FOOTER_COLUMNS}
       legal={[{ label: "Terms", href: "/terms" }]}
@@ -40,7 +38,6 @@ export function SiteFooter() {
       status={null}
       // Dark navy dots (#0F1B2D); light gray on the dark theme, where navy can't be seen.
       accent="var(--footer-dots)"
-      markColor="var(--footer-mark)"
     />
   );
 }

@@ -14,18 +14,16 @@ import { DITHER, GRID } from "./dither-mask";
 // Dithered Footer by Ato Augustine (MIT), from 21st.dev/@otatechie/components/dithered-footer.
 // Changed for Quill: the signup form only renders when `onSubscribe` is passed
 // (it shows the error `onSubscribe` throws, and has a hidden honeypot field),
-// external links open in a new tab, the status dot uses the accent, and the
-// brand name's colour can be set (`markColor`), and a "Built by" credit can follow
-// the copyright (`credit`).
+// external links open in a new tab, the status dot uses the accent, a "Built by"
+// credit can follow the copyright (`credit`), and there is no brand name: neither
+// the small link at the top nor the large one in the dot band, which is now a
+// short decorative strip.
 
 export type FooterLink = { label: string; href: string };
 export type FooterColumn = { title: string; links: FooterLink[] };
 export type FooterSocial = { label: string; href: string; icon: ReactNode };
 
 export type DitheredFooterProps = {
-  brand?: string;
-  /** Where the wordmark links to. */
-  brandHref?: string;
   tagline?: string;
   columns?: FooterColumn[];
   socials?: FooterSocial[];
@@ -37,8 +35,6 @@ export type DitheredFooterProps = {
   status?: FooterLink | null;
   /** Colour of the dot field. It is the footer's only colour, so it carries the brand. */
   accent?: string;
-  /** Colour of the big brand name in the dot band. Defaults to the page background (a cut-out). */
-  markColor?: string;
   /**
    * Called with the email address and the honeypot field's value (only bots
    * fill it). Resolve to show the thank-you; throw an Error to show its
@@ -51,8 +47,6 @@ export type DitheredFooterProps = {
 // classes, so the component renders the same on Tailwind v3 and v4.
 const STYLES = `
 .df-field { position: absolute; inset: 0; }
-/* A thin page-coloured outline keeps the name clear of the dots behind it. */
-.df-mark { color: var(--df-mark); -webkit-text-stroke: 0.06em var(--background); paint-order: stroke fill; }
 .df-field.df-lit {
   -webkit-mask-image: radial-gradient(circle 190px at var(--df-x, 50%) var(--df-y, 50%), #000 35%, rgb(0 0 0 / .22) 100%);
   mask-image: radial-gradient(circle 190px at var(--df-x, 50%) var(--df-y, 50%), #000 35%, rgb(0 0 0 / .22) 100%);
@@ -74,13 +68,8 @@ const STYLES = `
 }
 @media (prefers-reduced-motion: no-preference) {
   .df-dots { animation: df-drift 40s linear infinite; }
-  @supports (animation-timeline: view()) {
-    .df-band { view-timeline: --df-band; }
-    .df-mark { animation: df-rise linear both; animation-timeline: --df-band; animation-range: entry 20% entry 100%; }
-  }
 }
 @keyframes df-drift { to { translate: -360px 0; } }
-@keyframes df-rise { from { translate: 0 30%; } }
 `;
 
 const toLinks = (labels: string[]): FooterLink[] =>
@@ -132,8 +121,6 @@ const coarse =
   "[@media(pointer:coarse)]:inline-flex [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:items-center";
 
 export default function DitheredFooter({
-  brand = "Acme",
-  brandHref = "/",
   tagline = "Tools for teams who ship. Built in the open, one release at a time.",
   columns = DEFAULT_COLUMNS,
   socials = DEFAULT_SOCIALS,
@@ -142,7 +129,6 @@ export default function DitheredFooter({
   status = null,
   credit = null,
   accent = "#ff6a00",
-  markColor = "var(--background)",
   onSubscribe,
 }: DitheredFooterProps) {
   const [email, setEmail] = useState("");
@@ -197,19 +183,13 @@ export default function DitheredFooter({
   return (
     <footer
       className="overflow-hidden border-t border-border bg-background text-foreground"
-      style={{ "--df-accent": accent, "--df-mark": markColor } as CSSProperties}
+      style={{ "--df-accent": accent } as CSSProperties}
     >
       <style>{STYLES}</style>
 
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-6 gap-y-12 px-6 pt-16 pb-16 sm:gap-x-10 sm:px-8 md:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]">
         <div className="col-span-2 md:col-span-1">
-          <a
-            href={brandHref}
-            className={`rounded-sm text-base font-semibold tracking-tight ${focus}`}
-          >
-            {brand}
-          </a>
-          <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">{tagline}</p>
+          <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">{tagline}</p>
 
           {onSubscribe && (
             <form className="relative mt-8 max-w-sm" onSubmit={submit}>
@@ -279,11 +259,10 @@ export default function DitheredFooter({
         ))}
       </div>
 
-      {/* The name is not drawn: it is the gap in the dots. It is solid where the
-                field is dense and dissolves as the dots thin out towards the top. */}
+      {/* A short decorative strip of drifting dots that brighten under the mouse. */}
       <div
         aria-hidden="true"
-        className="df-band relative h-60 overflow-hidden"
+        className="df-band relative h-32 overflow-hidden"
         onPointerMove={onMove}
         onPointerLeave={onLeave}
       >
@@ -291,9 +270,6 @@ export default function DitheredFooter({
           {/* One tile wider than the band, slid left by exactly one tile, so the loop is seamless. */}
           <div className="df-dots" />
         </div>
-        <p className="df-mark pointer-events-none absolute -bottom-[0.05em] left-3 text-[clamp(5rem,21vw,13rem)] leading-[0.8] font-bold tracking-[-0.06em] select-none sm:left-5">
-          {brand}
-        </p>
       </div>
 
       <div className="border-t border-border">
