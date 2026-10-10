@@ -13,7 +13,8 @@ import {
 // Changed for Quill: the signup form only renders when `onSubscribe` is passed
 // (it shows the error `onSubscribe` throws, and has a hidden honeypot field),
 // external links open in a new tab, the status dot uses the accent, and the
-// brand name's colour can be set (`markColor`).
+// brand name's colour can be set (`markColor`), and a "Built by" credit can follow
+// the copyright (`credit`).
 
 export type FooterLink = { label: string; href: string };
 export type FooterColumn = { title: string; links: FooterLink[] };
@@ -28,6 +29,8 @@ export type DitheredFooterProps = {
   socials?: FooterSocial[];
   legal?: FooterLink[];
   copyright?: string;
+  /** "Built by …" after the copyright; `href` makes the name a link (opens in a new tab). */
+  credit?: { name: string; href?: string } | null;
   /** Link to your real status page, shown with a dot. Off unless you pass one. */
   status?: FooterLink | null;
   /** Colour of the dot field. It is the footer's only colour, so it carries the brand. */
@@ -143,6 +146,7 @@ export default function DitheredFooter({
   legal = toLinks(["Privacy", "Terms"]),
   copyright = `© ${new Date().getFullYear()} Acme, Inc.`,
   status = null,
+  credit = null,
   accent = "#ff6a00",
   markColor = "var(--background)",
   onSubscribe,
@@ -301,7 +305,30 @@ export default function DitheredFooter({
       <div className="border-t border-border">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-5 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <p>{copyright}</p>
+            <p className="flex flex-wrap gap-x-1.5">
+              <span>{copyright}</span>
+              {credit && (
+                // On phones the credit wraps to its own line, without the separator.
+                <span className="basis-full sm:basis-auto">
+                  <span aria-hidden="true" className="hidden sm:inline">
+                    ·{" "}
+                  </span>
+                  Built by{" "}
+                  {credit.href ? (
+                    <a
+                      href={credit.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`rounded-sm font-medium text-foreground/80 transition-colors hover:text-foreground ${focus}`}
+                    >
+                      {credit.name}
+                    </a>
+                  ) : (
+                    <span className="font-medium text-foreground">{credit.name}</span>
+                  )}
+                </span>
+              )}
+            </p>
             {legal.map((l) => (
               <a
                 key={l.label}

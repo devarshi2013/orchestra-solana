@@ -39,6 +39,8 @@ export function SiteFooter() {
         { label: "Quill on GitHub", href: REPO, icon: <GitHubIcon className="size-4" /> },
       ]}
       copyright="© 2026 Quill"
+      // No link yet: pass `href` (portfolio, GitHub or X) to make the name clickable.
+      credit={{ name: "Devarshi" }}
       status={null}
       // Dark navy dots (#0F1B2D); light gray on the dark theme, where navy can't be seen.
       accent="var(--footer-dots)"
