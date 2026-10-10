@@ -21,7 +21,7 @@ export function FinalCta() {
           id="cta-heading"
           className="relative mx-auto max-w-2xl text-3xl leading-tight font-semibold tracking-tight sm:text-5xl"
         >
-          Your next move starts with a better question.
+          Search it. Approve it. Own it.
         </h2>
         <div className="relative mt-10">
           <Button asChild size="lg">

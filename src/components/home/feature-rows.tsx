@@ -20,17 +20,17 @@ const ROWS: { label: string; title: string; text: string; visual: ReactNode }[] 
     visual: <SearchVisual />,
   },
   {
-    label: "Quill Approve",
-    title: "Nothing moves without you.",
-    text: "Quill never trades on its own. Every buy waits for your signature in your own wallet.",
+    label: "Quill Trade",
+    title: "You approve. Quill executes.",
+    text: "Once you sign in your wallet, Quill places the trade for you. No approval, no trade, ever.",
     visual: <ApproveVisual />,
   },
 ];
 
-/** "How it works": a blue label, headline and text beside a gradient graphic, swapping sides. */
+/** Research, Search and Trade: a blue label, headline and text beside a gradient graphic, swapping sides. */
 export function FeatureRows() {
   return (
-    <section id="how-it-works" aria-label="How it works" className="scroll-mt-20">
+    <section id="features" aria-label="Quill features" className="scroll-mt-20">
       <div className="mx-auto max-w-6xl space-y-24 px-4 pb-24 sm:space-y-32 sm:px-6 sm:pb-32">
         {ROWS.map((row, i) => (
           <div

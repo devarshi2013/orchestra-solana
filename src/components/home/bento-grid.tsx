@@ -1,4 +1,4 @@
-import { Activity, CircleDollarSign, TriangleAlert, Wallet, type LucideIcon } from "lucide-react";
+import { Activity, TriangleAlert, Wallet, Zap, type LucideIcon } from "lucide-react";
 
 import { Reveal } from "@/components/motion";
 import { cn } from "@/lib/utils";
@@ -20,9 +20,9 @@ const CARDS: { title: string; text: string; icon: LucideIcon; wide?: boolean; sp
     icon: TriangleAlert,
   },
   {
-    title: "Simple trades",
-    text: "Buy with USDC. Tiny SOL network fees.",
-    icon: CircleDollarSign,
+    title: "Trades on your approval",
+    text: "Quill executes only after you sign.",
+    icon: Zap,
     span: "sm:col-span-2 lg:col-span-1",
   },
 ];

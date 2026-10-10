@@ -9,14 +9,14 @@ import { Button } from "@/components/ui/button";
 
 import { GridOverlay, HomeGradients, Orbs } from "./effects";
 
-const STEPS = ["Research", "Compare", "Decide", "Approve"];
+const STEPS = ["Search", "Research", "Approve", "Trade"];
 const STEP_MS = 2200;
 const EASE = [0.22, 1, 0.36, 1] as const;
 
 /**
  * Pill label, two-line headline ("Quill" in a silver-to-blue gradient italic),
- * subtext, a word that slides vertically through Research → Compare → Decide →
- * Approve, two buttons, and a large glowing ring-and-feather graphic below.
+ * subtext, a word that slides vertically through Search → Research → Approve →
+ * Trade, two buttons, and a large glowing ring-and-feather graphic below.
  * Orbs drift behind; under reduced motion nothing moves or cycles.
  */
 export function Hero() {
@@ -65,8 +65,8 @@ export function Hero() {
           transition={{ duration: 0.6, ease: EASE, delay: 0.12 }}
           className="mx-auto mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg"
         >
-          Ask clear questions about tokenized US stocks, get answers built on live data, and approve
-          every trade yourself in your own wallet.
+          Search any tokenized US stock, get clear research built on live data, and let Quill place
+          the trade once you approve it in your wallet.
         </motion.p>
 
         {/* Rotating step: the word (and its number) slide up to the next one. */}
@@ -76,7 +76,7 @@ export function Hero() {
           transition={{ duration: 0.6, delay: 0.18 }}
           className="mt-8 flex items-center justify-center gap-3 font-mono text-sm"
         >
-          <span className="sr-only">Research, then compare, then decide, then approve.</span>
+          <span className="sr-only">Search, then research, then approve, then trade.</span>
           <span aria-hidden className="text-muted-foreground tabular-nums">
             {String(step + 1).padStart(2, "0")} / 0{STEPS.length}
           </span>
