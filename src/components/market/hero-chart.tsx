@@ -1,23 +1,17 @@
 "use client";
 
+import { useAnimate } from "framer-motion";
 import { Liveline } from "liveline";
 import { ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNow } from "@/hooks/use-now";
 import { useMarket, type PriceStatus } from "@/hooks/use-market";
 import { useResolvedTheme } from "@/hooks/use-theme";
-import {
-  MARKET_TOKENS,
-  WINDOWS,
-  WINDOW_IDS,
-  candleSecs,
-  marketToken,
-  type WindowId,
-} from "@/lib/market/config";
+import { WINDOWS, WINDOW_IDS, candleSecs, marketToken, type WindowId } from "@/lib/market/config";
 import {
   chartPoints,
   closedCandles,
@@ -53,11 +47,11 @@ export function chatHref(mint: string) {
 }
 
 /**
- * The big live chart: token switcher, live price with 24h change, a Liveline
- * chart (line or candles, 1H to 30D), the token's stats, and the page's only
- * button into the chat.
+ * The big live chart for the market picked in the market grid above it: name,
+ * live price with 24h change, a Liveline chart (line or candles, 1H to 30D),
+ * the token's stats, and the page's only button into the chat.
  */
-export function HeroChart({ mint, onSelect }: { mint: string; onSelect: (mint: string) => void }) {
+export function HeroChart({ mint }: { mint: string }) {
   const market = useMarket();
   const theme = useResolvedTheme();
   const nowSec = Math.floor(useNow() / 1000);
@@ -67,8 +61,18 @@ export function HeroChart({ mint, onSelect }: { mint: string; onSelect: (mint: s
   const token = marketToken(mint)!;
   const window = WINDOWS[windowId];
   const { requestHistory } = market;
+  const [scope, animate] = useAnimate<HTMLElement>();
 
   useEffect(() => requestHistory(windowId, [mint]), [requestHistory, windowId, mint]);
+
+  // A short fade when another market is picked (the chart itself stays mounted,
+  // so its timeframe is kept). MotionConfig turns it into a plain swap under reduced motion.
+  const firstMint = useRef(mint);
+  useEffect(() => {
+    if (mint === firstMint.current || !scope.current) return;
+    firstMint.current = "";
+    animate(scope.current, { opacity: [0.35, 1] }, { duration: 0.35, ease: "easeOut" });
+  }, [mint, animate, scope]);
 
   const entry = market.history(windowId, mint);
   const candles = useMemo(() => (entry.state === "ready" ? entry.candles : []), [entry]);
@@ -93,46 +97,27 @@ export function HeroChart({ mint, onSelect }: { mint: string; onSelect: (mint: s
         : "No price data yet";
 
   return (
-    <section aria-labelledby="hero-heading" className="rounded-2xl border bg-card p-4 sm:p-6">
-      {/* Token switcher */}
-      <div
-        role="tablist"
-        aria-label="Token"
-        className="-mx-1 flex [scrollbar-width:none] gap-1.5 overflow-x-auto px-1 pb-1"
-      >
-        {MARKET_TOKENS.map((t) => {
-          const active = t.mint === mint;
-          return (
-            <button
-              key={t.mint}
-              role="tab"
-              aria-selected={active}
-              onClick={() => onSelect(t.mint)}
-              className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-[background-color,border-color,color] duration-300 ease-in-out",
-                active
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-primary/50 bg-surface text-primary-text hover:bg-primary hover:text-primary-foreground",
-              )}
-            >
-              <TokenLogo src={market.stats?.[t.mint]?.icon} symbol={t.symbol} className="size-4" />
-              {t.symbol}
-            </button>
-          );
-        })}
-      </div>
-
+    <section
+      ref={scope}
+      id="market-chart"
+      aria-labelledby="hero-heading"
+      className="rounded-2xl border bg-card p-4 sm:p-6"
+    >
+      <p className="sr-only" aria-live="polite">
+        Chart showing {token.name}
+      </p>
       {/* Name, live price, 24h change, the call to action */}
-      <div className="mt-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="min-w-0 space-y-2">
           <div className="flex items-center gap-2.5">
             <TokenLogo src={stats?.icon} symbol={token.symbol} className="size-9" />
             <div className="min-w-0">
+              {/* Which market the chart shows, e.g. "NVDAx · NVIDIA". */}
               <h2 id="hero-heading" className="truncate text-lg leading-tight font-semibold">
-                {token.name}
+                {token.symbol} · {token.name}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {token.symbol} · {token.kind === "stock" ? "Tokenized stock" : "Solana token"}
+                {token.kind === "stock" ? "Tokenized stock" : "Solana token"}
               </p>
             </div>
           </div>

@@ -21,7 +21,11 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "movers", label: "Top movers" },
 ];
 
-/** Cards for every dashboard token, with tabs; picking one shows it in the hero chart. */
+/**
+ * Cards for every dashboard token, with tabs, above the chart: picking one
+ * shows it in the chart. On phones the cards are one swipeable row, so the
+ * chart stays near the top.
+ */
 export function MarketGrid({
   selected,
   onSelect,
@@ -76,9 +80,9 @@ export function MarketGrid({
           ))}
         </div>
       </div>
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="-mx-4 flex snap-x snap-mandatory scroll-px-4 [scrollbar-width:none] gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
         {tokens.map((token) => (
-          <li key={token.mint}>
+          <li key={token.mint} className="w-64 shrink-0 snap-start sm:w-auto">
             <MarketCard
               token={token}
               active={token.mint === selected}
@@ -119,10 +123,12 @@ function MarketCard({
       type="button"
       onClick={onSelect}
       aria-pressed={active}
+      aria-controls="market-chart"
       aria-label={`Show ${token.name} in the chart`}
       className={cn(
-        "group w-full card-lift rounded-xl border bg-card p-4 text-left",
-        active && "border-primary/60 ring-1 ring-primary/30",
+        "group w-full card-lift rounded-xl border bg-card p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        // The market the chart is showing: a navy border.
+        active && "border-primary ring-1 ring-primary",
       )}
     >
       <div className="flex items-center gap-2.5">

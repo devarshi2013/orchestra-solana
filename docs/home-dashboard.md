@@ -5,19 +5,23 @@ tokens and tokenized stocks, with **one** button into the chat.
 
 ## What's on it
 
-- **Hero chart** (`src/components/market/hero-chart.tsx`): token switcher, big
-  live price with the 24h change, a live/paused indicator, a
-  [Liveline](https://github.com/benjitaylor/liveline) chart (line or candles;
-  1H / 24H / 7D / 30D), and stats: market cap, 24h volume, liquidity, holders.
-  For tokenized stocks the market cap is labelled "on-chain" (tokens on Solana
-  × price), because it is not the company's market cap.
-  The site is monochrome: the line is navy when the 24h move is up and gray
+- **Market list** (`src/components/market/market-grid.tsx`), at the top: a card
+  per token with logo, price, 24h change and a 24h sparkline; tabs Crypto /
+  Stocks / Top movers (largest absolute 24h change). It's the only way to pick
+  a market: clicking a card (or Enter on it) shows it in the chart below, and the
+  card gets a navy border. The first token is picked by default. On phones the
+  cards are one swipeable row, and picking one scrolls the chart into view.
+- **Chart** (`src/components/market/hero-chart.tsx`), below the list: the
+  picked market's name ("NVDAx · NVIDIA"), big live price with the 24h change, a
+  live/paused indicator, a [Liveline](https://github.com/benjitaylor/liveline)
+  chart (line or candles; 1H / 24H / 7D / 30D, kept when switching markets), and
+  stats: market cap, 24h volume, liquidity, holders. It fades in briefly when
+  the market changes. For tokenized stocks the market cap is labelled
+  "on-chain" (tokens on Solana × price), because it is not the company's market
+  cap. The site is monochrome: the line is navy when the 24h move is up and gray
   when it's down, and changes always carry a ▲/▼ and a +/− sign, so colour is
   never the only cue. Liveline's own green/red (candles, momentum) is patched
   to navy and gray (`patches/liveline@0.0.7.patch`).
-- **Market grid** (`src/components/market/market-grid.tsx`): a card per token
-  with logo, price, 24h change and a 24h sparkline; tabs Crypto / Stocks / Top
-  movers (largest absolute 24h change). Clicking a card shows it in the hero.
 - **The call to action**: "Ask Quill", the page's only link to the chat.
   When a tokenized stock is on screen it reads "Ask Quill about NVDA" and
   opens `/chat?q=Tell me about NVDA`. The chat puts that in the input box
@@ -62,7 +66,7 @@ and GeckoTerminal covers what the dashboard needs.
 - **Paused while the tab is hidden** (`visibilitychange`): no requests, the
   charts show Liveline's paused state and the indicator reads "Paused"; it
   fetches straight away when the tab is visible again.
-- Sparkline history is one batched request for all tokens; the hero asks for
+- Sparkline history is one batched request for all tokens; the chart asks for
   its token and window when they change.
 
 ## No made-up data
