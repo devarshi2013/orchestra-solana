@@ -1,34 +1,47 @@
 # Home page
 
-The home page (`src/app/page.tsx`) is a marketing page in the site's white,
-near-black, gray and navy theme, laid out like a premium financial product site.
+The home page (`src/app/page.tsx`) is **dark only**, whatever the site theme:
+`.home-dark` (in `globals.css`) re-points the theme tokens for the page, and
+the footer gets the same tokens on this page (`[data-site-footer]`). The rest of
+the site (chat, terms, risk) is unchanged. Its own navbar replaces the site
+header here (`data-home-page` hides `[data-site-header]`).
+
+**Palette:** page `#07090D`, surfaces `#0D1117` / `#121821`, borders white at
+8%, text `#F5F7FA` (18.6:1) and `#A3ACB9` (8.7:1), navy `#0F1B2D`, glow blues
+`#1E3A8A` / `#3B5BDB` (graphics only, never text), silver `#C9D0D7`, and
+`#8FA4FF` for the small blue labels (8.5:1). Gradients appear only in graphics
+and headline accents, never behind body text.
+
 Each section is its own component in `src/components/home/`:
 
-| Section                        | Component                                 | Notes                                                                                                                                                                                                                                                                                   |
-| ------------------------------ | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Announcement bar               | `announcement-bar.tsx`                    | Thin navy strip linking to `/chat`.                                                                                                                                                                                                                                                     |
-| Navbar                         | `home-navbar.tsx`                         | Wordmark, Product / How it works / FAQ anchors, "Launch app". Sticky and white; its bottom border appears once you scroll. Replaces the site header on this page (`data-home-page` hides `[data-site-header]`, see `globals.css`).                                                      |
-| Hero                           | `hero.tsx`                                | Headline with an italic accent (Geist italic), subtext, a word row that cycles (research · compare · decide · approve · own), "Launch Quill", and a framed field of drifting dithered navy dots (`dither-field.tsx`, the same masks as the footer, `src/components/ui/dither-mask.ts`). |
-| Statement                      | `statement.tsx`                           | "Smarter decisions start here".                                                                                                                                                                                                                                                         |
-| Feature rows (`#how-it-works`) | `feature-rows.tsx`, `feature-visuals.tsx` | Quill Research™, Search™ and Approve™: text on one side and an SVG graphic on the other, swapping sides.                                                                                                                                                                                |
-| Feature grid (`#product`)      | `feature-grid.tsx`                        | Four bordered cards in a 3-column bento grid, each with a small abstract graphic; they lift on hover.                                                                                                                                                                                   |
-| FAQ (`#faq`)                   | `faq.tsx`                                 | Native `<details>` questions (custody, what you can buy, eligibility, cost, not advice).                                                                                                                                                                                                |
-| Email signup                   | `src/components/subscribe-box.tsx`        | Posts to `/api/subscribe` (Resend).                                                                                                                                                                                                                                                     |
+| Section                                                                                                                                                                                                                                                                                                              | Component                                 |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Announcement bar, with a blue gradient line under it                                                                                                                                                                                                                                                                 | `announcement-bar.tsx`                    |
+| Navbar: Q mark + "Quill", Product / How it works / FAQ, white "Launch app"; sticky and glassy                                                                                                                                                                                                                        | `home-navbar.tsx`                         |
+| Hero: pill label, two-line headline with "_Quill_" in a silver-to-blue gradient, subtext, a step word that slides vertically (Research → Compare → Decide → Approve), "Launch Quill" and "See how it works", and slowly turning rings with a feather curve below the text; drifting orbs and a faded dot grid behind | `hero.tsx`                                |
+| Statement: "Clarity is the best edge."                                                                                                                                                                                                                                                                               | `statement.tsx`                           |
+| Feature rows (`#how-it-works`): Research, Search, Approve, each with a blue label and a gradient graphic, swapping sides                                                                                                                                                                                             | `feature-rows.tsx`, `feature-visuals.tsx` |
+| Bento grid (`#product`): a wide card with its own graphic, then three; gradient borders, glowing icon circles                                                                                                                                                                                                        | `bento-grid.tsx`                          |
+| FAQ (`#faq`)                                                                                                                                                                                                                                                                                                         | `faq.tsx`                                 |
+| Email signup (Resend, `/api/subscribe`)                                                                                                                                                                                                                                                                              | `src/components/subscribe-box.tsx`        |
+| Final call to action: navy-to-black panel with a glowing orb in a corner                                                                                                                                                                                                                                             | `final-cta.tsx`                           |
 
-Below them sits a gray "Research only. Not financial advice." line, then the
-site-wide `DitheredFooter`.
+Shared effects (orbs, faded grid, gradient-bordered card with a hover glow,
+grain, SVG gradients) are in `effects.tsx`. Then a gray "Research only. Not
+financial advice." line and the site-wide `DitheredFooter`, here in dark with
+blue (`#3B5BDB`) dots.
 
-**Rules for this page:** no tokens, tickers, prices, charts, chat examples or
-market data, and no market data API calls (checked in the browser: the page
-makes none). No made-up logos, testimonials or stats. All graphics are drawn in
-code (SVG or CSS masks) and follow the theme in dark mode.
+**Rules:** no tokens, tickers, prices, charts, chat examples or market data,
+and no market data API calls (checked in the browser). No made-up logos,
+testimonials or stats. All graphics are CSS/SVG; no images.
 
-**Motion:** sections fade and slide up as they scroll into view (`Reveal`), the
-hero's word row cycles every 2.2 s with a sliding underline, the dot fields
-drift slowly. Under `prefers-reduced-motion` the words don't cycle and the dots
-stand still.
+**Motion:** orbs drift, the hero rings turn (90 s a turn), the step word
+slides every 2.2 s, sections fade in on scroll, cards lift and glow on hover.
+Under `prefers-reduced-motion` none of it moves. On phones the second orb and
+the feather's glow are left out.
 
-The previous live market dashboard (hero chart and market cards, built on
-Liveline) was removed with this redesign. Its API routes
-(`/api/market/prices`, `/tokens`, `/history`) are still there but no page calls
-them; `/api/market/compare` is still used by the chat's comparison tables.
+**Logo:** the Q mark (`src/components/brand/quill-mark.tsx`): a ring, a
+feather inside it, and the Q's tail as a pen nib. White in the home navbar; on
+navy as the favicon (`src/app/icon.svg`), Apple touch icon and install icons
+(`public/brand/quill-icon-*.png`, `public/brand/quill-q-icon.svg`). The rest of
+the site still uses the nib wordmark.

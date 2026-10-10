@@ -1,140 +1,116 @@
+import { HomeGradients } from "./effects";
+
 /**
- * Abstract graphics for the home page's feature rows: navy and gray shapes
- * drawn in SVG, no images and no data. Decorative (aria-hidden).
- * Colours come from the theme, so they follow light and dark mode.
+ * Abstract graphics for the feature rows, in navy / blue / silver gradients
+ * with a soft glow. SVG only, decorative (aria-hidden).
  */
 
-const NAVY = "var(--primary)";
-const MUTED = "var(--muted-foreground)";
-const LINE = "var(--border)";
-const PAPER = "var(--background)";
-
-/** Research: three layered sheets, the front one with lines of "notes". */
+/** Research: layered rounded rectangles, the front one with lines of "notes". */
 export function ResearchVisual() {
-  const sheets = [
-    { x: 46, y: 70, o: 0.25 },
-    { x: 86, y: 46, o: 0.5 },
-    { x: 126, y: 22, o: 1 },
-  ];
   return (
-    <svg viewBox="0 0 360 300" className="h-auto w-full" aria-hidden>
-      {sheets.map((s, i) => (
-        <g key={i} transform={`translate(${s.x} ${s.y})`}>
-          <rect
-            width="170"
-            height="210"
-            rx="14"
-            fill={i === 2 ? PAPER : NAVY}
-            fillOpacity={i === 2 ? 1 : s.o * 0.9}
-            stroke={i === 2 ? NAVY : "none"}
-            strokeWidth="1.5"
-          />
-          {i === 2 && (
-            <>
-              <rect x="20" y="22" width="34" height="34" rx="8" fill={NAVY} />
-              {[0, 1, 2, 3, 4].map((r) => (
-                <rect
-                  key={r}
-                  x="20"
-                  y={76 + r * 22}
-                  width={r % 2 ? 96 : 128}
-                  height="6"
-                  rx="3"
-                  fill={r === 0 ? NAVY : MUTED}
-                  fillOpacity={r === 0 ? 1 : 0.35}
-                />
-              ))}
-              <circle cx="146" cy="186" r="6" fill={NAVY} />
-            </>
-          )}
-        </g>
-      ))}
-    </svg>
-  );
-}
-
-/** Search: a diamond of dots, with a ring picking out a few in navy. */
-export function SearchVisual() {
-  const dots: { x: number; y: number; on: boolean }[] = [];
-  for (let r = -5; r <= 5; r++) {
-    for (let c = -5; c <= 5; c++) {
-      if (Math.abs(r) + Math.abs(c) > 6) continue;
-      const x = 180 + (c - r) * 22;
-      const y = 150 + (c + r) * 13;
-      const near = Math.hypot(x - 214, y - 128) < 46;
-      dots.push({ x, y, on: near });
-    }
-  }
-  return (
-    <svg viewBox="0 0 360 300" className="h-auto w-full" aria-hidden>
-      {dots.map((d, i) => (
-        <ellipse
+    <svg viewBox="0 0 400 320" className="h-auto w-full" aria-hidden>
+      <HomeGradients id="rv" />
+      <ellipse cx="210" cy="170" rx="170" ry="120" fill="url(#rv-glow)" />
+      <rect x="70" y="92" width="190" height="190" rx="22" fill="url(#rv-blue)" opacity="0.35" />
+      <rect x="110" y="66" width="190" height="190" rx="22" fill="url(#rv-blue)" opacity="0.6" />
+      <rect
+        x="150"
+        y="40"
+        width="190"
+        height="190"
+        rx="22"
+        fill="#0D1117"
+        stroke="url(#rv-silver)"
+        strokeWidth="1.5"
+      />
+      <rect
+        x="172"
+        y="64"
+        width="40"
+        height="40"
+        rx="10"
+        fill="url(#rv-blue)"
+        stroke="url(#rv-silver)"
+      />
+      {[0, 1, 2, 3].map((i) => (
+        <rect
           key={i}
-          cx={d.x}
-          cy={d.y}
-          rx="9"
-          ry="5.5"
-          fill={d.on ? NAVY : MUTED}
-          fillOpacity={d.on ? 1 : 0.22}
+          x="172"
+          y={124 + i * 22}
+          width={i % 2 ? 110 : 146}
+          height="7"
+          rx="3.5"
+          fill={i === 0 ? "#C9D0D7" : "#A3ACB9"}
+          fillOpacity={i === 0 ? 0.9 : 0.3}
         />
       ))}
-      <circle cx="214" cy="128" r="52" fill="none" stroke={NAVY} strokeWidth="2" />
-      <line
-        x1="251"
-        y1="165"
-        x2="296"
-        y2="210"
-        stroke={NAVY}
-        strokeWidth="6"
-        strokeLinecap="round"
-      />
     </svg>
   );
 }
 
-/** Approve: concentric rings with nodes, around a navy square holding a check. */
-export function ApproveVisual() {
-  const nodes = [
-    { r: 64, a: -40 },
-    { r: 64, a: 150 },
-    { r: 104, a: 20 },
-    { r: 104, a: 220 },
-    { r: 136, a: -100 },
-    { r: 136, a: 95 },
-  ];
+/** Search: flowing curved lines converging on a focus ring. */
+export function SearchVisual() {
+  const lines = [0, 1, 2, 3, 4, 5, 6];
   return (
-    <svg viewBox="0 0 360 300" className="h-auto w-full" aria-hidden>
-      {[64, 104, 136].map((r) => (
+    <svg viewBox="0 0 400 320" className="h-auto w-full" aria-hidden>
+      <HomeGradients id="sv" />
+      <ellipse cx="250" cy="150" rx="150" ry="110" fill="url(#sv-glow)" />
+      {lines.map((i) => (
+        <path
+          key={i}
+          d={`M10 ${60 + i * 34} C 120 ${70 + i * 30}, 170 ${150 + (i - 3) * 6}, 250 150`}
+          fill="none"
+          stroke="url(#sv-silver)"
+          strokeOpacity={i === 3 ? 1 : 0.35}
+          strokeWidth={i === 3 ? 2 : 1}
+        />
+      ))}
+      <circle cx="250" cy="150" r="46" fill="#0D1117" stroke="url(#sv-silver)" strokeWidth="1.5" />
+      <circle cx="250" cy="150" r="28" fill="none" stroke="#8FA4FF" strokeOpacity="0.5" />
+      <circle cx="250" cy="150" r="7" fill="#F5F7FA" />
+      <path d="M284 184 L 330 230" stroke="url(#sv-silver)" strokeWidth="6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Approve: concentric rings around a glowing check. */
+export function ApproveVisual() {
+  return (
+    <svg viewBox="0 0 400 320" className="h-auto w-full" aria-hidden>
+      <HomeGradients id="av" />
+      <circle cx="200" cy="160" r="150" fill="url(#av-glow)" />
+      {[56, 92, 128].map((r, i) => (
         <circle
           key={r}
-          cx="180"
-          cy="150"
+          cx="200"
+          cy="160"
           r={r}
           fill="none"
-          stroke={LINE}
-          strokeWidth="1.5"
-          strokeDasharray={r === 104 ? "3 6" : undefined}
+          stroke="url(#av-silver)"
+          strokeOpacity={0.6 - i * 0.15}
+          strokeDasharray={i === 1 ? "3 7" : undefined}
         />
       ))}
-      {nodes.map((n, i) => {
-        const rad = (n.a * Math.PI) / 180;
-        return (
-          <circle
-            key={i}
-            cx={180 + n.r * Math.cos(rad)}
-            cy={150 + n.r * Math.sin(rad)}
-            r={i % 3 === 0 ? 9 : 6}
-            fill={i % 3 === 0 ? NAVY : PAPER}
-            stroke={i % 3 === 0 ? "none" : MUTED}
-            strokeWidth="1.5"
-          />
-        );
-      })}
-      <rect x="148" y="118" width="64" height="64" rx="16" fill={NAVY} />
+      {[
+        [200 + 92 * Math.cos(-0.6), 160 + 92 * Math.sin(-0.6)],
+        [200 + 128 * Math.cos(2.5), 160 + 128 * Math.sin(2.5)],
+        [200 + 56 * Math.cos(1.2), 160 + 56 * Math.sin(1.2)],
+      ].map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={i === 0 ? 6 : 4} fill={i === 0 ? "#8FA4FF" : "#C9D0D7"} />
+      ))}
+      <rect
+        x="168"
+        y="128"
+        width="64"
+        height="64"
+        rx="18"
+        fill="url(#av-blue)"
+        stroke="url(#av-silver)"
+      />
       <path
-        d="M166 151 l9 9 l19 -21"
+        d="M186 161 l10 10 l20 -23"
         fill="none"
-        stroke={PAPER}
+        stroke="#F5F7FA"
         strokeWidth="5"
         strokeLinecap="round"
         strokeLinejoin="round"

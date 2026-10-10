@@ -492,6 +492,60 @@ body:has([data-home-page]) [data-site-header] {
 }
 
 /*
+ * The home page is dark only (whatever the site theme). `.home-dark` re-points
+ * the tokens for everything inside it; the footer gets the same tokens on this
+ * page. Contrast: text #F5F7FA 18.6:1 and #A3ACB9 8.7:1 on #07090D (7.8:1 on
+ * raised cards); blue labels #8FA4FF 8.5:1. The glow blues (#1E3A8A, #3B5BDB)
+ * are for graphics only, never text.
+ */
+.home-dark,
+body:has([data-home-page]) [data-site-footer] {
+  --background: #07090d;
+  --foreground: #f5f7fa;
+  --heading: #f5f7fa;
+  --card: #0d1117;
+  --card-foreground: #f5f7fa;
+  --surface: #0d1117;
+  --surface-raised: #121821;
+  --popover: #121821;
+  --popover-foreground: #f5f7fa;
+  --primary: #f5f7fa;
+  --primary-hover: #ffffff;
+  --primary-foreground: #07090d;
+  --primary-text: #f5f7fa;
+  --primary-tint: #121821;
+  --secondary: transparent;
+  --secondary-foreground: #f5f7fa;
+  --muted: #121821;
+  --muted-foreground: #a3acb9;
+  --accent: #121821;
+  --accent-foreground: #f5f7fa;
+  --border: rgb(255 255 255 / 0.08);
+  --input: rgb(255 255 255 / 0.14);
+  --ring: #6e8bff;
+  --shadow-color: 0 0% 0%;
+  --logo-nib: #f5f7fa;
+  --logo-slit: #07090d;
+  --footer-dots: #3b5bdb;
+  --footer-mark: #f5f7fa;
+  /* Home-only accents. */
+  --glow-deep: #1e3a8a;
+  --glow-blue: #3b5bdb;
+  --silver: #c9d0d7;
+  --label-blue: #8fa4ff;
+  color-scheme: dark;
+  background-color: var(--background);
+  color: var(--foreground);
+}
+body:has([data-home-page]) {
+  background: #07090d;
+}
+/* Secondary buttons on the dark home page: a light outline that fills white on hover. */
+.home-dark [data-variant="outline"] {
+  border-color: rgb(255 255 255 / 0.24);
+}
+
+/*
  * Links: a navy underline that grows from left to right on hover.
  * `link-grow` for links that stand apart (navigation, footer); `link-inline`
  * for links inside running text, which also keep a faint underline at rest,
@@ -561,4 +615,33 @@ body:has([data-home-page]) [data-site-header] {
     width: 100%;
     opacity: 0.6;
   }
+}
+
+/* --- Home page effects (dark home only) ------------------------------------ */
+
+/* Soft gradient orbs drift slowly; only when motion is allowed (see `motion-safe:`). */
+@keyframes orb-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3%, -4%, 0) scale(1.06);
+  }
+}
+@utility animate-orb {
+  animation: orb-drift 22s ease-in-out infinite;
+}
+@utility animate-spin-slow {
+  animation: spin 90s linear infinite;
+}
+/* Headline accents: silver to soft electric blue, as text. */
+@utility text-gradient-silver {
+  background-image: linear-gradient(100deg, #e6eaf0 0%, #c9d0d7 35%, #8fa4ff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+@utility bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }

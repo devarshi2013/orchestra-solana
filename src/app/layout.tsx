@@ -65,7 +65,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               {children}
             </div>
             {/* Hidden on /chat, a full-screen app (see data-site-chrome in globals.css). */}
-            <div data-site-chrome>
+            <div data-site-chrome data-site-footer>
               <SiteFooter />
             </div>
             <Toaster />

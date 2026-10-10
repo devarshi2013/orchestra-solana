@@ -35,7 +35,8 @@ export function Faq() {
             id="faq-heading"
             className="text-4xl leading-[1.08] font-semibold tracking-tight sm:text-5xl"
           >
-            Questions, <em className="font-normal italic">answered</em>
+            Questions,{" "}
+            <em className="text-gradient-silver pr-[0.06em] font-semibold italic">answered</em>
           </h2>
         </Reveal>
         <Reveal delay={0.06}>

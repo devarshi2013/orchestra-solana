@@ -1,13 +1,13 @@
 import { ImageResponse } from "next/og";
 
-import { HOLE, LOGO_COLORS, NIB_PATH, SLIT } from "@/components/brand/logo";
+import { Q_ICON_NAVY, qMarkSvg } from "@/components/brand/quill-mark";
 
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
-/** The home-screen icon: the navy nib on white, with room for iOS's rounded corners. */
+/** The home-screen icon: the white Q mark on navy (iOS rounds the corners itself). */
 export default function AppleIcon() {
-  const c = LOGO_COLORS.light;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">${qMarkSvg({ fg: "#FFFFFF", cut: Q_ICON_NAVY })}</svg>`;
   return new ImageResponse(
     <div
       style={{
@@ -16,22 +16,15 @@ export default function AppleIcon() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#FFFFFF",
+        background: Q_ICON_NAVY,
       }}
     >
-      <svg width="128" height="128" viewBox="0 0 32 32">
-        <path d={NIB_PATH} fill={c.nib} />
-        <line
-          x1={SLIT.x1}
-          y1={SLIT.y1}
-          x2={SLIT.x2}
-          y2={SLIT.y2}
-          stroke={c.slit}
-          strokeWidth={SLIT.width}
-          strokeLinecap="round"
-        />
-        <circle cx={HOLE.cx} cy={HOLE.cy} r={HOLE.r} fill={c.hole} />
-      </svg>
+      <img
+        width={150}
+        height={150}
+        alt=""
+        src={`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`}
+      />
     </div>,
     size,
   );
