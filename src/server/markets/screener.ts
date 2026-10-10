@@ -340,7 +340,25 @@ const EXAMPLE_TTL_MS = 30_000;
  * Jupiter call per half minute.
  */
 export function exampleQuote(index = 0): Promise<ExampleQuote> {
-  const ticker = EXAMPLE_TICKERS[Math.abs(Math.trunc(index)) % EXAMPLE_TICKERS.length]!;
+  return quoteTicker(EXAMPLE_TICKERS[Math.abs(Math.trunc(index)) % EXAMPLE_TICKERS.length]!);
+}
+
+/**
+ * The same quote for one named stock, only for the stocks the home page
+ * shows quotes for: the example ones and the current top-3 tech ranking.
+ * Anything else is refused, so the route can't be used to spend our Jupiter
+ * rate limit on arbitrary tokens. Returns null for a ticker that isn't allowed.
+ */
+export async function exampleQuoteFor(ticker: string): Promise<ExampleQuote | null> {
+  const wanted = ticker.toUpperCase();
+  const ranked = await researchTop()
+    .then((top) => top.rows.map((r) => r.ticker))
+    .catch(() => []);
+  const allowed: readonly string[] = [...EXAMPLE_TICKERS, ...ranked];
+  return allowed.includes(wanted) ? quoteTicker(wanted) : null;
+}
+
+function quoteTicker(ticker: string): Promise<ExampleQuote> {
   return cached(`markets:example-quote:${ticker}`, EXAMPLE_TTL_MS, async () => {
     const token = companyTokens(ticker)!.chart;
     const order = await paced(() =>

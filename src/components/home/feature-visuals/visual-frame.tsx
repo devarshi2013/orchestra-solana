@@ -48,7 +48,7 @@ const REDUCE = "(prefers-reduced-motion: reduce)";
  * HTML is being hydrated (the server can't know), then the real value, so the
  * first render always matches the server's.
  */
-function usePrefersReducedMotion() {
+export function usePrefersReducedMotion() {
   return useSyncExternalStore(
     (onChange) => {
       const mq = window.matchMedia(REDUCE);

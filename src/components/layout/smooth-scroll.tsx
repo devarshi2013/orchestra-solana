@@ -3,6 +3,8 @@
 import Lenis from "lenis";
 import { useEffect } from "react";
 
+import { setSmoothScroller } from "@/lib/smooth-scroll";
+
 import "lenis/dist/lenis.css";
 
 /**
@@ -29,7 +31,11 @@ export function SmoothScroll() {
           ),
         ),
     });
-    return () => lenis.destroy();
+    setSmoothScroller(lenis);
+    return () => {
+      setSmoothScroller(null);
+      lenis.destroy();
+    };
   }, []);
   return null;
 }

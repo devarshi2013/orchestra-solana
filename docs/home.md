@@ -18,7 +18,7 @@ Each section is its own component in `src/components/home/`:
 | Navbar (the site-wide one): Q mark + "Quill", Markets, Research, Product / How it works / FAQ, "Launch app"                                                                                                                                                                                                                                       | `src/components/layout/site-navbar.tsx`   |
 | Hero: pill label, two-line headline with "_Quill_" in a silver-to-blue gradient, subtext, a step word that slides vertically (Search → Research → Approve → Trade), "Start trading" (→ `/markets`) and "Research with Quill" (→ `/chat`), and slowly turning rings with a feather curve below the text; drifting orbs and a faded dot grid behind | `hero.tsx`                                |
 | Statement: "Clarity is the best edge."                                                                                                                                                                                                                                                                                                            | `statement.tsx`                           |
-| How Quill works (`#how-it-works`): Search, Research, Approve, Trade in a row joined by a gradient line; the steps light up one by one on scroll                                                                                                                                                                                                   | `how-quill-works.tsx`                     |
+| How Quill works (`#how-it-works`): "From question to trade", a scroll-driven walkthrough of one trade (see below)                                                                                                                                                                                                                                 | `how-quill-works.tsx`, `story/`           |
 | Feature rows (`#features`): Research, Search, Trade, each with a blue label and a gradient graphic, swapping sides                                                                                                                                                                                                                                | `feature-rows.tsx`, `feature-visuals.tsx` |
 | Bento grid (`#product`): a wide card with its own graphic, then three; gradient borders, glowing icon circles                                                                                                                                                                                                                                     | `bento-grid.tsx`                          |
 | FAQ (`#faq`)                                                                                                                                                                                                                                                                                                                                      | `faq.tsx`                                 |
@@ -29,6 +29,33 @@ Shared effects (orbs, faded grid, gradient-bordered card with a hover glow,
 grain, SVG gradients) are in `effects.tsx`. Then a gray "Research only. Not
 financial advice." line and the site-wide `DitheredFooter`, here in dark with
 blue (`#3B5BDB`) dots.
+
+## "From question to trade" walkthrough
+
+`src/components/home/story/`: a sticky scroll story (`scroll-story.tsx`). A
+rail of five steps on the left (a 1/5 … 5/5 progress bar on phones, with the
+step's copy under the frame) and one device frame on the right (an app window
+on desktop, a phone on small screens) whose screen changes as you scroll,
+about 70vh a step. The section is tall on purpose (five steps of scrolling).
+
+| Step       | Screen (`story-screens.tsx`)                                                                                                                                        | Data                                                                                                                                             |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1 Ask      | The chat box types "Put $10 each into the top 3 tech stocks".                                                                                                       | None                                                                                                                                             |
+| 2 Research | The reply streams in, then "Data used" chips and a ranked table: logo, ticker, market-cap bar, 1Y return.                                                           | `/api/markets/research-top` (FMP when configured, else Jupiter on-chain market cap and "—" for 1Y return)                                        |
+| 3 Quote    | A plan card with, per stock, 10 USDC → tokens out, a price-impact meter, the fee and the route's venues.                                                            | Real Jupiter `/order` quotes with no taker (`/api/markets/example-quote?ticker=`, cached 30 s; only the ranked and example tickers are accepted) |
+| 4 Approve  | A wallet pop-up over the plan: "Approve swap? 10 USDC → x SYMBOL", Reject / Approve (pulsing). Labelled "Demo, no transaction is sent"; the buttons aren't buttons. | The first item's real quote                                                                                                                      |
+| 5 Own      | Three green checks one by one, then "Your holdings" with each token's live value, and a greyed "View on Solscan (demo, not a link)". Labelled "Demo".               | Quote's tokens out × live price from the page's shared poll                                                                                      |
+
+- **Behaviour:** Motion's `useScroll` drives the active step and the rail's
+  line; clicking a step scrolls to it (through Lenis, `src/lib/smooth-scroll.ts`);
+  after 6 s without scrolling while the section is on screen the steps advance
+  by themselves every few seconds, paused on hover. Only transform and opacity
+  animate.
+- **Reduced motion:** no sticky scrolling or typing: the five screens are a
+  static row you scroll sideways, each in its final state.
+- **Accessibility:** the rail is a list of buttons with `aria-current="step"`;
+  every screen has a text description read politely as the step changes; the
+  mock UI inside the frame is hidden from assistive tech.
 
 ## Research / Search / Trade cards
 
