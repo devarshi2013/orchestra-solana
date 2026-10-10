@@ -34,7 +34,7 @@ export function SiteFooter() {
         { label: "Share Quill on X", href: SHARE_ON_X, icon: <XIcon className="size-4" /> },
         { label: "Quill on GitHub", href: REPO, icon: <GitHubIcon className="size-4" /> },
       ]}
-      copyright="© 2026 Quill"
+      copyright="© 2026 Quill. All rights reserved."
       // No link yet: pass `href` (portfolio, GitHub or X) to make the name clickable.
       credit={{ name: "Devarshi" }}
       status={null}

@@ -486,25 +486,9 @@ html .wallet-adapter-dropdown-list-item:not([disabled]):hover {
 body:has([data-chat-shell]) [data-site-chrome] {
   display: none;
 }
-
-/*
- * Liveline's window and mode buttons are styled inline at 22-25% opacity, which
- * is below AA on white; they sit on a faint gray pill, so give them the darker
- * gray (7:1 there), ink for the active one, and the navy focus ring.
- */
-.liveline-controls button {
-  color: var(--gray-dark) !important;
-}
-.dark .liveline-controls button {
-  color: var(--muted-foreground) !important;
-}
-.liveline-controls button[style*="font-weight:600"],
-.liveline-controls button[style*="font-weight: 600"] {
-  color: var(--foreground) !important;
-}
-.liveline-controls button:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 1px;
+/* The home page has its own announcement bar and navbar instead of the site header. */
+body:has([data-home-page]) [data-site-header] {
+  display: none;
 }
 
 /*

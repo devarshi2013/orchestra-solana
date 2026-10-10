@@ -1,30 +1,34 @@
-import { HowItWorks } from "@/components/how-it-works";
-import { MarketDashboard } from "@/components/market/market-dashboard";
-import { Reveal } from "@/components/motion";
+import { AnnouncementBar } from "@/components/home/announcement-bar";
+import { Faq } from "@/components/home/faq";
+import { FeatureGrid } from "@/components/home/feature-grid";
+import { FeatureRows } from "@/components/home/feature-rows";
+import { Hero } from "@/components/home/hero";
+import { HomeNavbar } from "@/components/home/home-navbar";
+import { Statement } from "@/components/home/statement";
 import { SubscribeBox } from "@/components/subscribe-box";
-import { TAGLINE } from "@/lib/brand";
 
 /**
- * The home page: a live market dashboard (prices from Jupiter, history from
- * GeckoTerminal) with one button into the chat, in the hero.
+ * The home page: announcement bar, navbar, hero, statement, the three product
+ * rows, the feature grid, FAQ and the email signup. No market data: nothing
+ * here calls a price or quote API. It has its own navbar, so the site header
+ * is hidden here (data-home-page, see globals.css).
  */
 export default function Home() {
   return (
-    <main className="flex-1">
-      <section className="mx-auto w-full max-w-7xl space-y-6 px-4 pt-8 pb-16 sm:px-6 sm:pt-10">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-semibold sm:text-4xl">{TAGLINE}</h1>
-          <p className="text-sm text-muted-foreground">
-            Live markets: tokenized US stocks and Solana tokens, priced by Jupiter.
-          </p>
-        </div>
-        <Reveal>
-          <MarketDashboard />
-        </Reveal>
-      </section>
-
-      <HowItWorks />
-      <SubscribeBox />
-    </main>
+    <div data-home-page className="flex flex-1 flex-col">
+      <AnnouncementBar />
+      <HomeNavbar />
+      <main className="flex-1">
+        <Hero />
+        <Statement />
+        <FeatureRows />
+        <FeatureGrid />
+        <Faq />
+        <SubscribeBox />
+        <p className="mx-auto w-full max-w-6xl px-4 pb-8 text-center text-xs text-muted-foreground sm:px-6">
+          Research only. Not financial advice.
+        </p>
+      </main>
+    </div>
   );
 }

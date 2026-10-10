@@ -18,7 +18,7 @@ An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain Engli
 
 | Route                 | What it does                                                                                                                                                                                                                                                  |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                   | Live market dashboard: a Liveline hero chart (line/candles, 1H–30D) and a market grid for Solana tokens and tokenized stocks, with one "Ask Quill" button into the chat ([docs](docs/home-dashboard.md))                                                      |
+| `/`                   | Home page: hero, Quill Research™ / Search™ / Approve™, feature grid, FAQ and email signup; no market data ([docs](docs/home.md))                                                                                                                              |
 | `/chat`, `/chat/[id]` | The chatbot (`/assistant` redirects here), with a ChatGPT-style chat history sidebar and a "Browse stocks" panel: streamed answers, "Data used" panels, plan cards with live quotes, warnings, pre-flight checks, and wallet-approved buys with Solscan links |
 
 There's **no database**:
@@ -37,11 +37,11 @@ See [docs/assistant.md](docs/assistant.md).
   - Light (the default): white `#FFFFFF` page, off-white `#FAFAFA` cards and sections, near-black `#0A0A0A` text and headings, gray `#6B7280` secondary text, light gray `#E5E7EB` borders, dark navy `#0F1B2D` accent (hover `#1C2B44`).
   - The navbar is a navy band with white text in both themes (`.theme-navy`). The footer is `DitheredFooter` (`src/components/ui/dithered-footer.tsx`, MIT, from 21st.dev), set up in `src/app/layout.tsx`: a solid near-black "Quill" (with a thin white outline) over a field of navy dots that brighten under the cursor (light gray dots in dark mode). It links only to pages that exist. The email signup is the "Stay in the loop" box on the home page (not in the footer); it posts to `/api/subscribe`, which adds the address to a Resend audience (validated, rate-limited per IP, with a hidden honeypot field against bots).
   - Dark: near-black page, gray surfaces, white text; the accent becomes white with navy text, since navy can't be read on black.
-  - No red or green: price changes always carry a ▲/▼ and a +/− sign. Rises are navy (white in dark mode), falls gray or near-black. Liveline's candle and momentum colours are patched to match (`patches/liveline@0.0.7.patch`). Token and company logos are the projects' own images.
+  - No red or green: price changes always carry a ▲/▼ and a +/− sign. Rises are navy (white in dark mode), falls gray or near-black. Token and company logos are the projects' own images.
   - WCAG AA checked for every text/background pair (notes at the top of `globals.css`). Links inside text keep an underline, since navy and body text are too close to tell apart by colour alone.
 - **Buttons:** navy with white text, 8–12px corners; hover lightens to `#1C2B44`, lifts 2px and adds a soft shadow. Secondary buttons are white with a navy border and text, filling navy on hover. 0.3s ease transitions.
 - **Motion** (200–600ms, navy and gray only): sections fade and slide up as they scroll into view (`Reveal` in `src/components/motion.tsx`), link underlines grow from the left (`link-grow` / `link-inline`), cards lift with a soft navy-tinted shadow (`card-lift`), and a navy progress bar shows while a reply is written. All movement is off under `prefers-reduced-motion`.
-- **Type:** Geist for all text (headings in semibold with tighter tracking) and Geist Mono with tabular figures for prices, tickers, percentages, chart labels and addresses, both via `next/font/google` in `src/app/layout.tsx` (`--font-geist-sans` / `--font-geist-mono`, mapped to Tailwind's `font-sans` / `font-mono`). No other fonts load: the wallet library's DM Sans import is patched out, and Liveline's canvas labels use Geist Mono (both in `patches/`).
+- **Type:** Geist for all text (headings in semibold with tighter tracking) and Geist Mono with tabular figures for prices, tickers, percentages, chart labels and addresses, both via `next/font/google` in `src/app/layout.tsx` (`--font-geist-sans` / `--font-geist-mono`, mapped to Tailwind's `font-sans` / `font-mono`). No other fonts load: the wallet library's DM Sans import is patched out (in `patches/`).
 - **Surfaces:** 1px borders, 8px controls and 14px cards, very soft shadows. Your messages are navy bubbles; the AI's are off-white cards.
 
 ## Stack
@@ -93,7 +93,7 @@ Import `serverEnv` from `@/env/server` (guarded by `server-only`) and `clientEnv
 docs/                        Assistant, home dashboard, tokenized stocks (issuers, sync), Jupiter API notes, deployment
 src/app/                     Pages (/ and /chat) and /api route handlers
 src/components/assistant/    Chat, plan card, data-used panels, disclosure and wallet gates
-src/components/market/       Home dashboard: hero chart, market grid (Liveline)
+src/components/home/         Home page sections (hero, feature rows and grid, FAQ)
 src/hooks/                   Chat stream, plan quotes, plan buying
 src/lib/agent/               System prompt, plan validation, address redaction
 src/lib/stocks/              Stock registry + sync logic, best-issuer choice, tools (listStocks, metrics, quotes, balances)

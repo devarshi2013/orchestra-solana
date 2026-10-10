@@ -164,7 +164,6 @@ settings:
 
 patchedDependencies:
   '@solana/wallet-adapter-react-ui@0.9.40': 0afd35829f79575fa09cf404a341252b19745432b490d42e72031d203c8f5ae2
-  liveline@0.0.7: df30271826b6a3402b2a62a77fdd93a2b1c9e59829b264e84cadd4893480e760
 
 importers:
 
@@ -197,9 +196,6 @@ importers:
       framer-motion:
         specifier: ^14.0.0
         version: 14.0.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      liveline:
-        specifier: 0.0.7
-        version: 0.0.7(patch_hash=df30271826b6a3402b2a62a77fdd93a2b1c9e59829b264e84cadd4893480e760)(react@19.3.0)
       lucide-react:
         specifier: ^1.52.0
         version: 1.52.0(@types/react@19.3.0)(react@19.3.0)
@@ -4331,12 +4327,6 @@ packages:
   lightningcss@1.33.0:
     resolution: {integrity: sha512-WkUDrojuJs0xkgGf2udWxa3yGBRxPtxUkB79i6aCZLRgc7PM8fZe9TosfPDcvEpQZbuFASnHYmRLBLUbmLOIIA==}
     engines: {node: '>= 12.0.0'}
-
-  liveline@0.0.7:
-    resolution: {integrity: sha512-S1Weo1kmefiOCNaW/WFXErqJXlV8A/ldIkIthaOeT57I2ZhqhKLKQDJ1wfabtMSK9vJeU8PeMNHd8Sr8TLByWQ==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      react: '>=18'
 
   locate-path@3.0.0:
     resolution: {integrity: sha512-7AO748wWnIhNqAuaty2ZWHkQHRSNfPVIsPIfwEOWO22AmaoVrWavlOcMR5nzTLNYvp36X220/maaRsrec1G65A==}
@@ -10342,10 +10332,6 @@ snapshots:
       lightningcss-linux-x64-musl: 1.33.0
       lightningcss-win32-arm64-msvc: 1.33.0
       lightningcss-win32-x64-msvc: 1.33.0
-
-  liveline@0.0.7(patch_hash=df30271826b6a3402b2a62a77fdd93a2b1c9e59829b264e84cadd4893480e760)(react@19.3.0):
-    dependencies:
-      react: 19.3.0
 
   locate-path@3.0.0:
     dependencies:
