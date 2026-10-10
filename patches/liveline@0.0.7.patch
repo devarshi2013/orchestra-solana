@@ -1,8 +1,26 @@
 diff --git a/dist/index.cjs b/dist/index.cjs
-index 4709730f1d6608dee4ffb3a386d1732f776c5f5c..8020e02cabc71b64052bad7dba53ceb4e274266b 100644
+index 4709730f1d6608dee4ffb3a386d1732f776c5f5c..dce535fdcf69be0fce93f396a1d309d921fc1a4b 100644
 --- a/dist/index.cjs
 +++ b/dist/index.cjs
-@@ -57,11 +57,14 @@ function resolveTheme(color, mode) {
+@@ -29,6 +29,17 @@ module.exports = __toCommonJS(index_exports);
+ var import_react2 = require("react");
+ 
+ // src/theme.ts
++// Quill patch: draw text in the site's fonts (Geist / Geist Mono), read once from the CSS variables.
++var quillFonts = {};
++function quillFont(kind) {
++  if (quillFonts[kind]) return quillFonts[kind];
++  var fallback = kind === "mono" ? '"SF Mono", Menlo, monospace' : "system-ui, sans-serif";
++  try {
++    var v = getComputedStyle(document.body).getPropertyValue(kind === "mono" ? "--font-geist-mono" : "--font-geist-sans").trim();
++    if (v) return (quillFonts[kind] = v + ", " + fallback);
++  } catch (e) {}
++  return fallback;
++}
+ function parseColorRgb(color) {
+   const hex = color.match(/^#([0-9a-f]{3,8})$/i);
+   if (hex) {
+@@ -57,11 +68,14 @@ function resolveTheme(color, mode) {
      gridLine: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)",
      gridLabel: isDark ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.35)",
      // Dot — always semantic
@@ -21,7 +39,56 @@ index 4709730f1d6608dee4ffb3a386d1732f776c5f5c..8020e02cabc71b64052bad7dba53ceb4
      glowFlat: rgba(r, g, b, 0.12),
      // Badge
      badgeOuterBg: isDark ? "rgba(40, 40, 40, 0.95)" : "rgba(255, 255, 255, 0.95)",
-@@ -1116,10 +1119,10 @@ function drawParticles(ctx, state, dt) {
+@@ -83,9 +97,9 @@ function resolveTheme(color, mode) {
+     // Background
+     bgRgb: isDark ? [10, 10, 10] : [255, 255, 255],
+     // Fonts
+-    labelFont: '11px "SF Mono", Menlo, Monaco, "Cascadia Code", monospace',
+-    valueFont: '600 11px "SF Mono", Menlo, monospace',
+-    badgeFont: '500 11px "SF Mono", Menlo, monospace'
++    labelFont: "11px " + quillFont("mono"),
++    valueFont: "600 11px " + quillFont("mono"),
++    badgeFont: "500 11px " + quillFont("mono")
+   };
+ }
+ var SERIES_COLORS = [
+@@ -639,7 +653,7 @@ function drawCrosshair(ctx, layout, palette, hoverX, hoverValue, hoverTime, form
+   const separator = "  \xB7  ";
+   ctx.save();
+   ctx.globalAlpha = scrubOpacity;
+-  ctx.font = '400 13px "SF Mono", Menlo, monospace';
++  ctx.font = "400 13px " + quillFont("mono");
+   const valueW = ctx.measureText(valueText).width;
+   const sepW = ctx.measureText(separator).width;
+   const timeW = ctx.measureText(timeText).width;
+@@ -691,7 +705,7 @@ function drawMultiCrosshair(ctx, layout, palette, hoverX, hoverTime, entries, fo
+   if (scrubOpacity < 0.1 || layout.w < 300) return;
+   ctx.save();
+   ctx.globalAlpha = scrubOpacity;
+-  ctx.font = '400 13px "SF Mono", Menlo, monospace';
++  ctx.font = "400 13px " + quillFont("mono");
+   ctx.textAlign = "left";
+   const timeText = formatTime(hoverTime);
+   const sep = "  \xB7  ";
+@@ -757,7 +771,7 @@ function drawReferenceLine(ctx, layout, palette, ref) {
+   if (y < pad.top - 10 || y > h - pad.bottom + 10) return;
+   const label = ref.label ?? "";
+   if (label) {
+-    ctx.font = "500 11px system-ui, sans-serif";
++    ctx.font = "500 11px " + quillFont("sans");
+     const textW = ctx.measureText(label).width;
+     const centerX = pad.left + chartW / 2;
+     const gapPad = 8;
+@@ -1018,7 +1032,7 @@ function drawOrderbook(ctx, layout, palette, orderbook, dt, state, swingMagnitud
+   state.labels.length = writeIdx;
+   const baseAlpha = ctx.globalAlpha;
+   ctx.save();
+-  ctx.font = '600 13px "SF Mono", Menlo, monospace';
++  ctx.font = "600 13px " + quillFont("mono");
+   ctx.textAlign = "left";
+   ctx.textBaseline = "middle";
+   ctx.globalAlpha = baseAlpha;
+@@ -1116,10 +1130,10 @@ function drawParticles(ctx, state, dt) {
  }
  
  // src/draw/candlestick.ts
@@ -36,7 +103,43 @@ index 4709730f1d6608dee4ffb3a386d1732f776c5f5c..8020e02cabc71b64052bad7dba53ceb4
  function blendColor2(t) {
    const r = Math.round(BEAR_RGB[0] + (BULL_RGB[0] - BEAR_RGB[0]) * t);
    const g = Math.round(BEAR_RGB[1] + (BULL_RGB[1] - BEAR_RGB[1]) * t);
-@@ -1714,6 +1717,12 @@ function drawMultiFrame(ctx, layout, opts) {
+@@ -1274,7 +1288,7 @@ function drawCandleCrosshair(ctx, layout, palette, hoverX, candle, hoverTime, fo
+   const time = formatTime(hoverTime);
+   ctx.save();
+   ctx.globalAlpha = opacity;
+-  ctx.font = '400 13px "SF Mono", Menlo, monospace';
++  ctx.font = "400 13px " + quillFont("mono");
+   ctx.textAlign = "left";
+   let parts;
+   if (layout.w >= 400) {
+@@ -1353,7 +1367,7 @@ function drawLineModeCrosshair(ctx, layout, palette, hoverX, value, hoverTime, f
+   const time = formatTime(hoverTime);
+   ctx.save();
+   ctx.globalAlpha = opacity;
+-  ctx.font = '400 13px "SF Mono", Menlo, monospace';
++  ctx.font = "400 13px " + quillFont("mono");
+   ctx.textAlign = "left";
+   const parts = [
+     { text: val, color: palette.line },
+@@ -1399,7 +1413,7 @@ function drawEmpty(ctx, w, h, pad, palette, alpha = 1, now_ms = 0, skipLine = fa
+   const text = emptyText ?? "No data to display";
+   const amplitude = chartH * LOADING_AMPLITUDE_RATIO;
+   ctx.save();
+-  ctx.font = "400 12px system-ui, -apple-system, sans-serif";
++  ctx.font = "400 12px " + quillFont("sans");
+   const textW = ctx.measureText(text).width;
+   const gapHalf = textW / 2 + 20;
+   const fadeW = 30;
+@@ -1669,7 +1683,7 @@ function drawMultiFrame(ctx, layout, opts) {
+         drawSimpleDot(ctx, lastPt[0], lastPt[1], entry.palette.line, 3);
+       }
+       if (entry.label) {
+-        ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
++        ctx.font = "600 10px " + quillFont("sans");
+         ctx.textAlign = "left";
+         ctx.fillStyle = entry.palette.line;
+         ctx.fillText(entry.label, lastPt[0] + 6, lastPt[1] + 3.5);
+@@ -1714,6 +1728,12 @@ function drawMultiFrame(ctx, layout, opts) {
    }
  }
  function drawCandleFrame(ctx, layout, palette, opts) {
@@ -49,7 +152,7 @@ index 4709730f1d6608dee4ffb3a386d1732f776c5f5c..8020e02cabc71b64052bad7dba53ceb4
    const { w, h, pad, chartW, chartH } = layout;
    const reveal = opts.chartReveal;
    const fullLineMode = opts.lineModeProg >= 0.99;
-@@ -1988,8 +1997,8 @@ var WINDOW_BUFFER = 0.05;
+@@ -1988,8 +2008,8 @@ var WINDOW_BUFFER = 0.05;
  var WINDOW_BUFFER_NO_BADGE = 0.015;
  var VALUE_SNAP_THRESHOLD = 1e-3;
  var ADAPTIVE_SPEED_BOOST = 0.2;
@@ -60,7 +163,16 @@ index 4709730f1d6608dee4ffb3a386d1732f776c5f5c..8020e02cabc71b64052bad7dba53ceb4
  var CHART_REVEAL_SPEED = 0.14;
  var CHART_REVEAL_SPEED_FWD = 0.09;
  var PAUSE_PROGRESS_SPEED = 0.12;
-@@ -3490,7 +3499,7 @@ function useLivelineEngine(canvasRef, containerRef, config) {
+@@ -3067,7 +3087,7 @@ function useLivelineEngine(canvasRef, containerRef, config) {
+       const effectiveMultiSeries = useMultiStash ? lastMultiSeriesRef.current : cfg.multiSeries;
+       let labelReserve = 0;
+       if (effectiveMultiSeries.some((s) => s.label)) {
+-        ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
++        ctx.font = "600 10px " + quillFont("sans");
+         let maxLabelW = 0;
+         for (const s of effectiveMultiSeries) {
+           if (s.label) {
+@@ -3490,7 +3510,7 @@ function useLivelineEngine(canvasRef, containerRef, config) {
          const displayVal = cfg.valueMomentumColor ? Math.abs(smoothValue) : smoothValue;
          valEl.textContent = cfg.formatValue(displayVal);
          if (cfg.valueMomentumColor) {
@@ -69,11 +181,56 @@ index 4709730f1d6608dee4ffb3a386d1732f776c5f5c..8020e02cabc71b64052bad7dba53ceb4
            if (mc) valEl.style.color = mc;
            else valEl.style.removeProperty("color");
          }
+@@ -3709,7 +3729,7 @@ function Liveline({
+           display: "block",
+           fontSize: 20,
+           fontWeight: 500,
+-          fontFamily: '"SF Mono", Menlo, monospace',
++          fontFamily: "var(--font-geist-mono), monospace",
+           color: isDark ? "rgba(255,255,255,0.85)" : "#111",
+           transition: "color 0.3s",
+           letterSpacing: "-0.01em",
+@@ -3765,7 +3785,7 @@ function Liveline({
+                     borderRadius: ws === "rounded" ? 999 : 4,
+                     border: "none",
+                     cursor: "pointer",
+-                    fontFamily: "system-ui, -apple-system, sans-serif",
++                    fontFamily: "var(--font-geist-sans), sans-serif",
+                     fontWeight: isActive ? 600 : 400,
+                     background: "transparent",
+                     color: isActive ? activeColor : inactiveColor,
+@@ -3929,7 +3949,7 @@ function Liveline({
+               borderRadius: ws === "rounded" ? 999 : 4,
+               border: "none",
+               cursor: "pointer",
+-              fontFamily: "system-ui, -apple-system, sans-serif",
++              fontFamily: "var(--font-geist-sans), sans-serif",
+               fontWeight: 500,
+               background: isHidden ? "transparent" : ws === "text" ? "transparent" : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.035)",
+               color: isHidden ? inactiveColor : activeColor,
 diff --git a/dist/index.js b/dist/index.js
-index fd0506272e9a54432a0882c3a389ee74302e4718..c29f00aeabc280a954f30ef673eb638be693a6db 100644
+index fd0506272e9a54432a0882c3a389ee74302e4718..5d2244d872aba9ffcaf2b1abc66c8062e07eede3 100644
 --- a/dist/index.js
 +++ b/dist/index.js
-@@ -30,11 +30,14 @@ function resolveTheme(color, mode) {
+@@ -2,6 +2,17 @@
+ import { useRef as useRef2, useState, useLayoutEffect, useMemo, useCallback as useCallback2 } from "react";
+ 
+ // src/theme.ts
++// Quill patch: draw text in the site's fonts (Geist / Geist Mono), read once from the CSS variables.
++var quillFonts = {};
++function quillFont(kind) {
++  if (quillFonts[kind]) return quillFonts[kind];
++  var fallback = kind === "mono" ? '"SF Mono", Menlo, monospace' : "system-ui, sans-serif";
++  try {
++    var v = getComputedStyle(document.body).getPropertyValue(kind === "mono" ? "--font-geist-mono" : "--font-geist-sans").trim();
++    if (v) return (quillFonts[kind] = v + ", " + fallback);
++  } catch (e) {}
++  return fallback;
++}
+ function parseColorRgb(color) {
+   const hex = color.match(/^#([0-9a-f]{3,8})$/i);
+   if (hex) {
+@@ -30,11 +41,14 @@ function resolveTheme(color, mode) {
      gridLine: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)",
      gridLabel: isDark ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.35)",
      // Dot — always semantic
@@ -92,7 +249,56 @@ index fd0506272e9a54432a0882c3a389ee74302e4718..c29f00aeabc280a954f30ef673eb638b
      glowFlat: rgba(r, g, b, 0.12),
      // Badge
      badgeOuterBg: isDark ? "rgba(40, 40, 40, 0.95)" : "rgba(255, 255, 255, 0.95)",
-@@ -1089,10 +1092,10 @@ function drawParticles(ctx, state, dt) {
+@@ -56,9 +70,9 @@ function resolveTheme(color, mode) {
+     // Background
+     bgRgb: isDark ? [10, 10, 10] : [255, 255, 255],
+     // Fonts
+-    labelFont: '11px "SF Mono", Menlo, Monaco, "Cascadia Code", monospace',
+-    valueFont: '600 11px "SF Mono", Menlo, monospace',
+-    badgeFont: '500 11px "SF Mono", Menlo, monospace'
++    labelFont: "11px " + quillFont("mono"),
++    valueFont: "600 11px " + quillFont("mono"),
++    badgeFont: "500 11px " + quillFont("mono")
+   };
+ }
+ var SERIES_COLORS = [
+@@ -612,7 +626,7 @@ function drawCrosshair(ctx, layout, palette, hoverX, hoverValue, hoverTime, form
+   const separator = "  \xB7  ";
+   ctx.save();
+   ctx.globalAlpha = scrubOpacity;
+-  ctx.font = '400 13px "SF Mono", Menlo, monospace';
++  ctx.font = "400 13px " + quillFont("mono");
+   const valueW = ctx.measureText(valueText).width;
+   const sepW = ctx.measureText(separator).width;
+   const timeW = ctx.measureText(timeText).width;
+@@ -664,7 +678,7 @@ function drawMultiCrosshair(ctx, layout, palette, hoverX, hoverTime, entries, fo
+   if (scrubOpacity < 0.1 || layout.w < 300) return;
+   ctx.save();
+   ctx.globalAlpha = scrubOpacity;
+-  ctx.font = '400 13px "SF Mono", Menlo, monospace';
++  ctx.font = "400 13px " + quillFont("mono");
+   ctx.textAlign = "left";
+   const timeText = formatTime(hoverTime);
+   const sep = "  \xB7  ";
+@@ -730,7 +744,7 @@ function drawReferenceLine(ctx, layout, palette, ref) {
+   if (y < pad.top - 10 || y > h - pad.bottom + 10) return;
+   const label = ref.label ?? "";
+   if (label) {
+-    ctx.font = "500 11px system-ui, sans-serif";
++    ctx.font = "500 11px " + quillFont("sans");
+     const textW = ctx.measureText(label).width;
+     const centerX = pad.left + chartW / 2;
+     const gapPad = 8;
+@@ -991,7 +1005,7 @@ function drawOrderbook(ctx, layout, palette, orderbook, dt, state, swingMagnitud
+   state.labels.length = writeIdx;
+   const baseAlpha = ctx.globalAlpha;
+   ctx.save();
+-  ctx.font = '600 13px "SF Mono", Menlo, monospace';
++  ctx.font = "600 13px " + quillFont("mono");
+   ctx.textAlign = "left";
+   ctx.textBaseline = "middle";
+   ctx.globalAlpha = baseAlpha;
+@@ -1089,10 +1103,10 @@ function drawParticles(ctx, state, dt) {
  }
  
  // src/draw/candlestick.ts
@@ -107,7 +313,43 @@ index fd0506272e9a54432a0882c3a389ee74302e4718..c29f00aeabc280a954f30ef673eb638b
  function blendColor2(t) {
    const r = Math.round(BEAR_RGB[0] + (BULL_RGB[0] - BEAR_RGB[0]) * t);
    const g = Math.round(BEAR_RGB[1] + (BULL_RGB[1] - BEAR_RGB[1]) * t);
-@@ -1687,6 +1690,12 @@ function drawMultiFrame(ctx, layout, opts) {
+@@ -1247,7 +1261,7 @@ function drawCandleCrosshair(ctx, layout, palette, hoverX, candle, hoverTime, fo
+   const time = formatTime(hoverTime);
+   ctx.save();
+   ctx.globalAlpha = opacity;
+-  ctx.font = '400 13px "SF Mono", Menlo, monospace';
++  ctx.font = "400 13px " + quillFont("mono");
+   ctx.textAlign = "left";
+   let parts;
+   if (layout.w >= 400) {
+@@ -1326,7 +1340,7 @@ function drawLineModeCrosshair(ctx, layout, palette, hoverX, value, hoverTime, f
+   const time = formatTime(hoverTime);
+   ctx.save();
+   ctx.globalAlpha = opacity;
+-  ctx.font = '400 13px "SF Mono", Menlo, monospace';
++  ctx.font = "400 13px " + quillFont("mono");
+   ctx.textAlign = "left";
+   const parts = [
+     { text: val, color: palette.line },
+@@ -1372,7 +1386,7 @@ function drawEmpty(ctx, w, h, pad, palette, alpha = 1, now_ms = 0, skipLine = fa
+   const text = emptyText ?? "No data to display";
+   const amplitude = chartH * LOADING_AMPLITUDE_RATIO;
+   ctx.save();
+-  ctx.font = "400 12px system-ui, -apple-system, sans-serif";
++  ctx.font = "400 12px " + quillFont("sans");
+   const textW = ctx.measureText(text).width;
+   const gapHalf = textW / 2 + 20;
+   const fadeW = 30;
+@@ -1642,7 +1656,7 @@ function drawMultiFrame(ctx, layout, opts) {
+         drawSimpleDot(ctx, lastPt[0], lastPt[1], entry.palette.line, 3);
+       }
+       if (entry.label) {
+-        ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
++        ctx.font = "600 10px " + quillFont("sans");
+         ctx.textAlign = "left";
+         ctx.fillStyle = entry.palette.line;
+         ctx.fillText(entry.label, lastPt[0] + 6, lastPt[1] + 3.5);
+@@ -1687,6 +1701,12 @@ function drawMultiFrame(ctx, layout, opts) {
    }
  }
  function drawCandleFrame(ctx, layout, palette, opts) {
@@ -120,7 +362,7 @@ index fd0506272e9a54432a0882c3a389ee74302e4718..c29f00aeabc280a954f30ef673eb638b
    const { w, h, pad, chartW, chartH } = layout;
    const reveal = opts.chartReveal;
    const fullLineMode = opts.lineModeProg >= 0.99;
-@@ -1961,8 +1970,8 @@ var WINDOW_BUFFER = 0.05;
+@@ -1961,8 +1981,8 @@ var WINDOW_BUFFER = 0.05;
  var WINDOW_BUFFER_NO_BADGE = 0.015;
  var VALUE_SNAP_THRESHOLD = 1e-3;
  var ADAPTIVE_SPEED_BOOST = 0.2;
@@ -131,7 +373,16 @@ index fd0506272e9a54432a0882c3a389ee74302e4718..c29f00aeabc280a954f30ef673eb638b
  var CHART_REVEAL_SPEED = 0.14;
  var CHART_REVEAL_SPEED_FWD = 0.09;
  var PAUSE_PROGRESS_SPEED = 0.12;
-@@ -3463,7 +3472,7 @@ function useLivelineEngine(canvasRef, containerRef, config) {
+@@ -3040,7 +3060,7 @@ function useLivelineEngine(canvasRef, containerRef, config) {
+       const effectiveMultiSeries = useMultiStash ? lastMultiSeriesRef.current : cfg.multiSeries;
+       let labelReserve = 0;
+       if (effectiveMultiSeries.some((s) => s.label)) {
+-        ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
++        ctx.font = "600 10px " + quillFont("sans");
+         let maxLabelW = 0;
+         for (const s of effectiveMultiSeries) {
+           if (s.label) {
+@@ -3463,7 +3483,7 @@ function useLivelineEngine(canvasRef, containerRef, config) {
          const displayVal = cfg.valueMomentumColor ? Math.abs(smoothValue) : smoothValue;
          valEl.textContent = cfg.formatValue(displayVal);
          if (cfg.valueMomentumColor) {
@@ -140,3 +391,30 @@ index fd0506272e9a54432a0882c3a389ee74302e4718..c29f00aeabc280a954f30ef673eb638b
            if (mc) valEl.style.color = mc;
            else valEl.style.removeProperty("color");
          }
+@@ -3682,7 +3702,7 @@ function Liveline({
+           display: "block",
+           fontSize: 20,
+           fontWeight: 500,
+-          fontFamily: '"SF Mono", Menlo, monospace',
++          fontFamily: "var(--font-geist-mono), monospace",
+           color: isDark ? "rgba(255,255,255,0.85)" : "#111",
+           transition: "color 0.3s",
+           letterSpacing: "-0.01em",
+@@ -3738,7 +3758,7 @@ function Liveline({
+                     borderRadius: ws === "rounded" ? 999 : 4,
+                     border: "none",
+                     cursor: "pointer",
+-                    fontFamily: "system-ui, -apple-system, sans-serif",
++                    fontFamily: "var(--font-geist-sans), sans-serif",
+                     fontWeight: isActive ? 600 : 400,
+                     background: "transparent",
+                     color: isActive ? activeColor : inactiveColor,
+@@ -3902,7 +3922,7 @@ function Liveline({
+               borderRadius: ws === "rounded" ? 999 : 4,
+               border: "none",
+               cursor: "pointer",
+-              fontFamily: "system-ui, -apple-system, sans-serif",
++              fontFamily: "var(--font-geist-sans), sans-serif",
+               fontWeight: 500,
+               background: isHidden ? "transparent" : ws === "text" ? "transparent" : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.035)",
+               color: isHidden ? inactiveColor : activeColor,

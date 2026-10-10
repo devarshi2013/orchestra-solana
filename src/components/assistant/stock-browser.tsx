@@ -380,7 +380,7 @@ export function StockBrowser({
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-medium">{c.ticker}</span>
+                        <span className="font-mono text-sm font-medium">{c.ticker}</span>
                         {c.type === "etf" && (
                           <span className="rounded bg-muted px-1 text-[10px] text-muted-foreground uppercase">
                             ETF

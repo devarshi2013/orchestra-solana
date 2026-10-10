@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 
 import { SiteFooter } from "@/components/layout/site-footer";
 import { MotionProvider } from "@/components/motion";
@@ -12,20 +12,9 @@ import { TAGLINE } from "@/lib/brand";
 
 import "./globals.css";
 
-/** Body text: highly legible at small sizes, with tabular figures. */
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
-/**
- * Headings and the wordmark: Fraunces, a literary "old style" serif, for the
- * ink-and-paper feel of Quill. Variable, with an optical-size axis so large
- * headings get finer contrast and small ones stay sturdy.
- */
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  axes: ["opsz"],
-});
-/** Prices and amounts: fixed-width figures and a slashed zero. */
-const jetbrainsMono = JetBrains_Mono({ variable: "--font-jetbrains-mono", subsets: ["latin"] });
+/** Geist for all text; Geist Mono for prices, tickers and addresses (tabular figures). */
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
@@ -54,14 +43,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${fraunces.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className="h-full"
       // The theme script adds class="dark" before hydration when the visitor chose it.
       suppressHydrationWarning
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} flex min-h-full flex-col font-sans antialiased`}
+      >
         <MotionProvider>
           <SolanaWalletProvider>
             <SiteHeader />

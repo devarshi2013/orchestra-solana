@@ -12,8 +12,8 @@ export const contentType = "image/png";
 
 /** The link preview: the wordmark on white, the tagline, and the three facts that matter. */
 export default async function OpengraphImage() {
-  // Fraunces SemiBold (SIL Open Font License), the display serif, bundled for ImageResponse.
-  const fraunces = await readFile(join(process.cwd(), "src/app/_fonts/Fraunces-SemiBold.woff"));
+  // Geist SemiBold (SIL Open Font License), the site font, bundled for ImageResponse.
+  const geist = await readFile(join(process.cwd(), "src/app/_fonts/Geist-SemiBold.ttf"));
   const c = LOGO_COLORS.light;
   const [first, second] = TAGLINE.split(". ");
   return new ImageResponse(
@@ -27,7 +27,7 @@ export default async function OpengraphImage() {
         padding: "72px 80px",
         background: "#FFFFFF",
         color: "#0A0A0A",
-        fontFamily: "Fraunces",
+        fontFamily: "Geist",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -71,7 +71,7 @@ export default async function OpengraphImage() {
     </div>,
     {
       ...size,
-      fonts: [{ name: "Fraunces", data: fraunces, weight: 600, style: "normal" }],
+      fonts: [{ name: "Geist", data: geist, weight: 600, style: "normal" }],
     },
   );
 }

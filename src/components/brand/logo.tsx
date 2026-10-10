@@ -40,7 +40,7 @@ export function LogoMark({ className, title }: { className?: string; title?: str
   );
 }
 
-/** Mark + "quill" in the display serif, for the header and footer. */
+/** Mark + "quill" in Geist SemiBold, for the header. */
 export function Wordmark({
   className,
   markClassName,
@@ -53,7 +53,7 @@ export function Wordmark({
       <LogoMark className={cn("size-7", markClassName)} />
       <span
         aria-hidden
-        className="font-serif text-[1.375rem] leading-none font-semibold tracking-[-0.02em] text-foreground"
+        className="text-[1.375rem] leading-none font-semibold tracking-tight text-foreground"
       >
         quill
       </span>

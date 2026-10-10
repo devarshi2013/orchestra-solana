@@ -18,7 +18,7 @@ export const ChatAppLoader = dynamic(() => import("./assistant-chat").then((m) =
       aria-label="Loading Quill"
     >
       <LogoMark className="size-12" />
-      <span className="font-serif text-lg text-primary-text">quill</span>
+      <span className="text-lg font-semibold tracking-tight text-primary-text">quill</span>
       <ProgressBar label="Loading" className="mt-2 w-40 rounded-full" />
     </div>
   ),

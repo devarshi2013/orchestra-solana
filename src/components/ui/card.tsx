@@ -36,7 +36,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn("font-heading type-h2 group-data-[size=sm]/card:type-h3", className)}
+      className={cn("type-h2 group-data-[size=sm]/card:type-h3", className)}
       {...props}
     />
   );

@@ -139,7 +139,7 @@ function MarketCard({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{token.name}</p>
           <p className="text-xs text-muted-foreground">
-            {token.symbol}
+            <span className="font-mono">{token.symbol}</span>
             {token.kind === "stock" && " · Stock"}
           </p>
         </div>

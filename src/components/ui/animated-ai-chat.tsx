@@ -76,9 +76,7 @@ export function ChatHero({ title, subtitle }: { title: string; subtitle?: string
         transition={{ delay: 0.2, duration: 0.5 }}
         className="inline-block"
       >
-        <h2 className="pb-1 font-serif text-3xl font-medium tracking-tight text-heading">
-          {title}
-        </h2>
+        <h2 className="pb-1 text-3xl font-semibold tracking-tight text-heading">{title}</h2>
         <motion.div
           className="h-px bg-linear-to-r from-transparent via-primary/30 to-transparent"
           initial={{ width: 0, opacity: 0 }}

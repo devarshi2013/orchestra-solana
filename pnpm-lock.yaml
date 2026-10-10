@@ -163,7 +163,8 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  liveline@0.0.7: 83fe3943569d6ce3bdc54aeecc7cb2a49ad8bec89403e392d87b5a04a681d9e4
+  '@solana/wallet-adapter-react-ui@0.9.40': 0afd35829f79575fa09cf404a341252b19745432b490d42e72031d203c8f5ae2
+  liveline@0.0.7: df30271826b6a3402b2a62a77fdd93a2b1c9e59829b264e84cadd4893480e760
 
 importers:
 
@@ -180,7 +181,7 @@ importers:
         version: 0.15.40(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bs58@6.0.0)(bufferutil@4.1.0)(react-native@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.3.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
       '@solana/wallet-adapter-react-ui':
         specifier: ^0.9.40
-        version: 0.9.40(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bs58@6.0.0)(bufferutil@4.1.0)(react-dom@19.3.0(react@19.3.0))(react-native@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.3.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
+        version: 0.9.40(patch_hash=0afd35829f79575fa09cf404a341252b19745432b490d42e72031d203c8f5ae2)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bs58@6.0.0)(bufferutil@4.1.0)(react-dom@19.3.0(react@19.3.0))(react-native@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.3.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
       '@solana/web3.js':
         specifier: ^1.99.0
         version: 1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
@@ -198,7 +199,7 @@ importers:
         version: 14.0.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       liveline:
         specifier: 0.0.7
-        version: 0.0.7(patch_hash=83fe3943569d6ce3bdc54aeecc7cb2a49ad8bec89403e392d87b5a04a681d9e4)(react@19.3.0)
+        version: 0.0.7(patch_hash=df30271826b6a3402b2a62a77fdd93a2b1c9e59829b264e84cadd4893480e760)(react@19.3.0)
       lucide-react:
         specifier: ^1.52.0
         version: 1.52.0(@types/react@19.3.0)(react@19.3.0)
@@ -8097,7 +8098,7 @@ snapshots:
       '@wallet-standard/features': 1.1.1
       eventemitter3: 5.0.4
 
-  '@solana/wallet-adapter-react-ui@0.9.40(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bs58@6.0.0)(bufferutil@4.1.0)(react-dom@19.3.0(react@19.3.0))(react-native@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.3.0)(typescript@5.9.3)(utf-8-validate@6.0.6)':
+  '@solana/wallet-adapter-react-ui@0.9.40(patch_hash=0afd35829f79575fa09cf404a341252b19745432b490d42e72031d203c8f5ae2)(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bs58@6.0.0)(bufferutil@4.1.0)(react-dom@19.3.0(react@19.3.0))(react-native@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.3.0)(typescript@5.9.3)(utf-8-validate@6.0.6)':
     dependencies:
       '@solana/wallet-adapter-base': 0.9.28(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))
       '@solana/wallet-adapter-base-ui': 0.1.7(@solana/web3.js@1.99.0(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@6.0.6))(bs58@6.0.0)(bufferutil@4.1.0)(react-native@0.87.1(@babel/core@7.29.7(supports-color@8.1.1))(@types/react@19.3.0)(bufferutil@4.1.0)(react@19.3.0)(supports-color@8.1.1)(utf-8-validate@6.0.6))(react@19.3.0)(typescript@5.9.3)(utf-8-validate@6.0.6)
@@ -10342,7 +10343,7 @@ snapshots:
       lightningcss-win32-arm64-msvc: 1.33.0
       lightningcss-win32-x64-msvc: 1.33.0
 
-  liveline@0.0.7(patch_hash=83fe3943569d6ce3bdc54aeecc7cb2a49ad8bec89403e392d87b5a04a681d9e4)(react@19.3.0):
+  liveline@0.0.7(patch_hash=df30271826b6a3402b2a62a77fdd93a2b1c9e59829b264e84cadd4893480e760)(react@19.3.0):
     dependencies:
       react: 19.3.0
 
