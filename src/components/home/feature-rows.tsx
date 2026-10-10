@@ -4,7 +4,9 @@ import { Reveal } from "@/components/motion";
 import { cn } from "@/lib/utils";
 
 import { GradientCard } from "./effects";
-import { ApproveVisual, ResearchVisual, SearchVisual } from "./feature-visuals";
+import { ResearchVisual } from "./feature-visuals/research-visual";
+import { SearchVisual } from "./feature-visuals/search-visual";
+import { TradeVisual } from "./feature-visuals/trade-visual";
 import { SectionLabel } from "./hover-text";
 
 const ROWS: { label: string; title: string; text: string; visual: ReactNode }[] = [
@@ -24,7 +26,7 @@ const ROWS: { label: string; title: string; text: string; visual: ReactNode }[] 
     label: "Quill Trade",
     title: "You approve. Quill executes.",
     text: "Once you sign in your wallet, Quill places the trade for you. No approval, no trade, ever.",
-    visual: <ApproveVisual />,
+    visual: <TradeVisual />,
   },
 ];
 

@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
   ];
   if (tickers.length === 0 || tickers.length > MAX_TICKERS)
     return errorResponse(400, "Ask for 1 to 40 stocks");
-  const window = request.nextUrl.searchParams.get("window") === "7d" ? "7d" : "24h";
+  const asked = request.nextUrl.searchParams.get("window");
+  const window = asked === "7d" || asked === "30d" ? asked : "24h";
   return Response.json(await sparklines(tickers, window), {
     headers: { "cache-control": "no-store" },
   });

@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { getJson, PRICE_POLL_MS, type LivePrice } from "@/hooks/use-markets";
 import { homeRows, tapeRows, type HomeSort, type HomeTab } from "@/lib/markets/home";
@@ -27,6 +35,12 @@ type HomeMarket = {
   setSort: (sort: HomeSort) => void;
   /** The rows the markets table is showing. */
   tableRows: MarketRow[];
+  /** Adds tickers to the page's one price poll under an id (an empty list removes them). */
+  setWatch: (id: string, tickers: readonly string[]) => void;
+  /** The asset whose details drawer is open, if any. */
+  selected: MarketRow | null;
+  openAsset: (ticker: string) => void;
+  closeAsset: () => void;
 };
 
 const Context = createContext<HomeMarket | null>(null);
@@ -62,6 +76,15 @@ export function HomeMarketProvider({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<HomeTab>("stocks");
   const [sector, setSector] = useState<string | null>(null);
   const [sort, setSort] = useState<HomeSort>(null);
+  const [extra, setExtra] = useState<Record<string, string>>({});
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+
+  const setWatch = useCallback((id: string, tickers: readonly string[]) => {
+    const key = [...tickers].sort().join(",");
+    setExtra((current) => (current[id] === key ? current : { ...current, [id]: key }));
+  }, []);
+  const openAsset = useCallback((ticker: string) => setSelectedTicker(ticker), []);
+  const closeAsset = useCallback(() => setSelectedTicker(null), []);
 
   useEffect(() => {
     if (!visible) return;
@@ -111,11 +134,13 @@ export function HomeMarketProvider({ children }: { children: ReactNode }) {
     return tableTickers.flatMap((t) => byTicker.get(t) ?? []);
   }, [tableTickers, stocks, crypto]);
 
-  // One batched request for the tape and the table together.
+  // One batched request for everything on the page: the tape, the table, and
+  // whatever the feature cards registered (setWatch).
   const watch = useMemo(() => {
     const tape = tapeRows(overview?.rows ?? [], overview?.crypto ?? []).map((r) => r.ticker);
-    return [...new Set([...tape, ...tableTickers])].sort().slice(0, 40).join(",");
-  }, [overview, tableTickers]);
+    const cards = Object.values(extra).flatMap((key) => (key ? key.split(",") : []));
+    return [...new Set([...tape, ...tableTickers, ...cards])].sort().slice(0, 40).join(",");
+  }, [overview, tableTickers, extra]);
 
   useEffect(() => {
     if (!watch || !visible) return;
@@ -140,6 +165,11 @@ export function HomeMarketProvider({ children }: { children: ReactNode }) {
     };
   }, [watch, visible]);
 
+  const selected = useMemo(
+    () => [...stocks, ...crypto].find((r) => r.ticker === selectedTicker) ?? null,
+    [stocks, crypto, selectedTicker],
+  );
+
   const value = useMemo(
     () => ({
       overview,
@@ -154,10 +184,38 @@ export function HomeMarketProvider({ children }: { children: ReactNode }) {
       sort,
       setSort,
       tableRows,
+      setWatch,
+      selected,
+      openAsset,
+      closeAsset,
     }),
-    [overview, failed, stocks, crypto, asOf, tab, sector, sort, tableRows],
+    [
+      overview,
+      failed,
+      stocks,
+      crypto,
+      asOf,
+      tab,
+      sector,
+      sort,
+      tableRows,
+      setWatch,
+      selected,
+      openAsset,
+      closeAsset,
+    ],
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
+}
+
+/** Registers tickers with the page's shared price poll while the component is mounted. */
+export function useWatch(id: string, tickers: readonly string[]) {
+  const { setWatch } = useHomeMarket();
+  const key = tickers.join(",");
+  useEffect(() => {
+    setWatch(id, key ? key.split(",") : []);
+    return () => setWatch(id, []);
+  }, [id, key, setWatch]);
 }
 
 const time = (ms: number) =>

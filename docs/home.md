@@ -30,6 +30,22 @@ grain, SVG gradients) are in `effects.tsx`. Then a gray "Research only. Not
 financial advice." line and the site-wide `DitheredFooter`, here in dark with
 blue (`#3B5BDB`) dots.
 
+## Research / Search / Trade cards
+
+The three feature rows' graphics are live visuals (`src/components/home/feature-visuals/`),
+each in the same 5:4 box the old graphics used (`visual-frame.tsx`), so the
+cards keep their size. Animations start when a card scrolls into view, pause
+off screen, and show their final state under reduced motion.
+
+| Card     | Component             | What it shows                                                                                                                                                                                                                                                | Source                                                                                                                                                                                                                                                                                                                                                                                                 |
+| -------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Research | `research-visual.tsx` | "Top 3 tech by market cap?" types out, then the three largest technology stocks appear: rank, logo, ticker, a proportional market-cap bar, 1Y return, a 30-day sparkline. "Data used" chips highlight their column; hovering a row shows P/E and 24h change. | `/api/markets/research-top` (cached 15 min): companies' market caps, 1Y return and P/E from FMP when `MARKET_DATA_API_KEY` is set; otherwise ranked by Jupiter's on-chain market cap, labelled "(on-chain)", with 1Y return and P/E shown as "—". Liquidity from Jupiter Tokens v2. 24h change from the page's shared price poll. Sparkline from GeckoTerminal (`/api/markets/sparklines?window=30d`). |
+| Search   | `search-visual.tsx`   | A box that types "nvidia", "healthcare", "energy ETF" in turn (every 4 s) and lists real matches: logo, name, ticker, live price, 24h %. Sector pills with counts. Typing in it searches for real (200 ms debounce); a result opens the details drawer.      | Registry rows and prices from the shared provider (`/api/markets/overview`, `/api/markets/prices`); counts from the registry.                                                                                                                                                                                                                                                                          |
+| Trade    | `trade-visual.tsx`    | "10 USDC → x NVDAx" with rate, fee, the route's venues, a low / medium / high price-impact meter, a looping "Quote → Sign in wallet → Confirmed" strip labelled as a demo, and a 30 s countdown ring; each refresh moves to the next of NVDA, TSLA, AAPL.    | A real Jupiter Swap v2 `/order` quote with no taker (`/api/markets/example-quote?i=`, cached 30 s per stock); the route nodes are the quote's own `routePlan` (or its router when it lists none). Rate = USDC in ÷ tokens out.                                                                                                                                                                         |
+
+The cards register their tickers with the page's one price poll (`useWatch`);
+none of them polls prices itself.
+
 ## Live sections
 
 Slotted between the existing sections (nothing existing moved): the ticker

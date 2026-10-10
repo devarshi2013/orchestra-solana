@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { homeRows, sectorTiles, tapeRows } from "./home";
+import { homeRows, searchStocks, sectorCounts, sectorTiles, tapeRows } from "./home";
 import type { MarketRow } from "./types";
 
 const row = (ticker: string, o: Partial<MarketRow> = {}): MarketRow => ({
@@ -84,4 +84,29 @@ describe("sectorTiles", () => {
 
 it("builds the tape from the largest priced stocks, then SOL and JUP", () => {
   expect(tickers(tapeRows(STOCKS, CRYPTO))).toEqual(["GLD", "SPY", "AAA", "BBB", "CCC", "SOL"]);
+});
+
+describe("searchStocks", () => {
+  const list = [
+    row("NVDA", { name: "NVIDIA", marketCap: 9 }),
+    row("LLY", { name: "Eli Lilly", sector: "Health Care", marketCap: 5 }),
+    row("PFE", { name: "Pfizer", sector: "Health Care", marketCap: 7 }),
+    row("XLE", { name: "Energy Select", sector: "Energy", category: "etf", marketCap: 3 }),
+    row("XOM", { name: "Exxon", sector: "Energy", marketCap: 8 }),
+  ];
+  it("matches names, sectors written either way, and the type", () => {
+    expect(tickers(searchStocks(list, "nvidia", 4))).toEqual(["NVDA"]);
+    expect(tickers(searchStocks(list, "healthcare", 4))).toEqual(["PFE", "LLY"]);
+    expect(tickers(searchStocks(list, "energy ETF", 4))).toEqual(["XLE"]);
+    expect(tickers(searchStocks(list, "energy", 1))).toEqual(["XOM"]);
+    expect(searchStocks(list, "  ", 4)).toEqual([]);
+    expect(searchStocks(list, "zzz", 4)).toEqual([]);
+  });
+  it("counts companies per sector", () => {
+    expect(sectorCounts(list)).toEqual([
+      { sector: "Energy", count: 2 },
+      { sector: "Health Care", count: 2 },
+      { sector: "Technology", count: 1 },
+    ]);
+  });
 });

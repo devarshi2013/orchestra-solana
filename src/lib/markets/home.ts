@@ -115,3 +115,35 @@ export function tapeRows(stocks: readonly MarketRow[], crypto: readonly MarketRo
   ).slice(0, 12);
   return [...top, ...crypto.filter((c) => c.ticker === "SOL" || c.ticker === "JUP")];
 }
+
+const squash = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+/**
+ * Registry search for the home page's search card: every word of the query
+ * must match the company name, ticker, token symbol, sector, or "etf" /
+ * "stock" for the type ("healthcare" finds the Health Care sector; "energy
+ * etf" finds energy funds). Largest market cap first.
+ */
+export function searchStocks(
+  stocks: readonly MarketRow[],
+  query: string,
+  limit: number,
+): MarketRow[] {
+  const words = query.toLowerCase().split(/\s+/).map(squash).filter(Boolean);
+  if (words.length === 0) return [];
+  const matches = stocks.filter((r) => {
+    const fields = [r.name, r.ticker, r.symbol, r.sector].map(squash);
+    const kind = r.category === "equity" ? "stock" : "etf";
+    return words.every((w) => w === kind || fields.some((f) => f.includes(w)));
+  });
+  return sortRows(matches, { key: "marketCap", dir: "desc" }).slice(0, limit);
+}
+
+/** How many registry companies each sector has, largest first. */
+export function sectorCounts(stocks: readonly MarketRow[]): { sector: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const r of stocks) counts.set(r.sector, (counts.get(r.sector) ?? 0) + 1);
+  return [...counts]
+    .map(([sector, count]) => ({ sector, count }))
+    .sort((a, b) => b.count - a.count || a.sector.localeCompare(b.sector));
+}

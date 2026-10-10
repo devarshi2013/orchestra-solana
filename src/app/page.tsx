@@ -5,6 +5,7 @@ import { Faq } from "@/components/home/faq";
 import { FeatureRows } from "@/components/home/feature-rows";
 import { FinalCta } from "@/components/home/final-cta";
 import { Hero } from "@/components/home/hero";
+import { AssetDrawer } from "@/components/home/live/asset-drawer";
 import { HomeMarketProvider } from "@/components/home/live/home-market";
 import { HomeMarkets } from "@/components/home/live/home-markets";
 import { LiveQuote } from "@/components/home/live/live-quote";
@@ -49,6 +50,7 @@ export default function Home() {
           <HomeMarkets />
           <SectorHeatmap />
           <Trust />
+          <AssetDrawer />
         </HomeMarketProvider>
         <Faq />
         <SubscribeBox />

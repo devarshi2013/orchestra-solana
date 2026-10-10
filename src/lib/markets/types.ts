@@ -64,5 +64,30 @@ export type ExampleQuote = {
   tokensOut: number;
   priceImpactPct: number | null;
   feeBps: number | null;
+  /** The venues Jupiter routed through, exactly as the quote returned them (empty when it lists none). */
+  route: { label: string; percent: number }[];
+  /** Which Jupiter router priced it (e.g. "metis", "jupiterz"). */
+  router: string;
+  asOf: string;
+};
+
+/** One row of the home page's "top 3 tech" comparison. */
+export type ResearchRow = {
+  ticker: string;
+  name: string;
+  icon: string | null;
+  /** The market cap the ranking uses (see `basis`). */
+  marketCap: number;
+  /** Percent; null when there's no fundamentals source. */
+  return1y: number | null;
+  pe: number | null;
+  /** USD liquidity of the token on Solana (Jupiter); null when unknown. */
+  liquidity: number | null;
+};
+
+export type ResearchTop = {
+  rows: ResearchRow[];
+  /** "company": the real companies' market caps; "on-chain": tokens on Solana × price. */
+  basis: "company" | "on-chain";
   asOf: string;
 };

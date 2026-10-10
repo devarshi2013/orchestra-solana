@@ -640,3 +640,13 @@ body:has([data-home-page]) [data-site-header] {
 @utility animate-tape {
   animation: tape 70s linear infinite;
 }
+
+/* The Trade card's 30-second countdown ring: the stroke empties, then the quote refreshes. */
+@keyframes ring-countdown {
+  to {
+    stroke-dashoffset: 50.3;
+  }
+}
+@utility animate-ring {
+  animation: ring-countdown 30s linear forwards;
+}

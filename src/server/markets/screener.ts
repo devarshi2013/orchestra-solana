@@ -5,7 +5,14 @@ import { z } from "zod";
 import { mintInformationSchema } from "@/lib/jupiter/schemas";
 import { MARKET_TOKENS, WINDOWS, type WindowId } from "@/lib/market/config";
 import type { Candle, Point } from "@/lib/market/series";
-import type { ExampleQuote, MarketCategory, MarketOverview, MarketRow } from "@/lib/markets/types";
+import type {
+  ExampleQuote,
+  MarketCategory,
+  MarketOverview,
+  MarketRow,
+  ResearchTop,
+} from "@/lib/markets/types";
+import { summarizeRoute } from "@/lib/swap/quote";
 import { REGISTRY, STOCKS } from "@/lib/stocks/registry";
 import { USDC_MINT } from "@/lib/tokens";
 import { toBaseUnits, toUnits, USDC_DECIMALS } from "@/lib/units";
@@ -15,7 +22,9 @@ import { jupiterFetch } from "@/server/jupiter/client";
 import { paced } from "@/server/jupiter/pace";
 import { getOrder } from "@/server/jupiter/swap";
 import { bestToken, sparklinePoints } from "@/server/market/compare";
+import { fetchRatiosTtm, fmpConfigured } from "@/server/market/fmp";
 import { getHistory, loadCandles, primePools } from "@/server/market/history";
+import { fundamentals } from "@/server/stocks/metrics";
 
 /**
  * Data for the stocks screener (/markets) and the stock pages, from the
@@ -211,7 +220,7 @@ const cryptoBySymbol = (symbol: string) => CRYPTO.find((t) => t.symbol === symbo
 /** Sparklines for some stocks (by ticker) or crypto tokens (by symbol), answering within ~3 s; the rest are `pending`. */
 export async function sparklines(
   tickers: readonly string[],
-  window: "24h" | "7d" = "24h",
+  window: "24h" | "7d" | "30d" = "24h",
 ): Promise<{ series: Record<string, Point[] | null>; pending: string[] }> {
   const wanted = tickers.flatMap((t) => {
     const c = companyTokens(t);
@@ -319,18 +328,21 @@ export function marketOverview(): Promise<MarketOverview> {
   });
 }
 
-const EXAMPLE_TICKER = "NVDA";
+/** Liquid stocks the home page's example quotes rotate through (their xStocks tokens trade around the clock). */
+export const EXAMPLE_TICKERS = ["NVDA", "TSLA", "AAPL"] as const;
 const EXAMPLE_USDC = 10;
 const EXAMPLE_TTL_MS = 30_000;
 
 /**
- * A real Jupiter /order quote for spending 10 USDC on NVDA's xStocks token,
- * with no taker (so Jupiter returns pricing only, never a transaction).
- * Cached 30 s, so every visitor shares one Jupiter call per half minute.
+ * A real Jupiter /order quote for spending 10 USDC on one of the example
+ * stocks' xStocks token, with no taker (so Jupiter returns pricing only,
+ * never a transaction). Cached 30 s per stock, so every visitor shares one
+ * Jupiter call per half minute.
  */
-export function exampleQuote(): Promise<ExampleQuote> {
-  return cached("markets:example-quote", EXAMPLE_TTL_MS, async () => {
-    const token = companyTokens(EXAMPLE_TICKER)!.chart;
+export function exampleQuote(index = 0): Promise<ExampleQuote> {
+  const ticker = EXAMPLE_TICKERS[Math.abs(Math.trunc(index)) % EXAMPLE_TICKERS.length]!;
+  return cached(`markets:example-quote:${ticker}`, EXAMPLE_TTL_MS, async () => {
+    const token = companyTokens(ticker)!.chart;
     const order = await paced(() =>
       getOrder({
         inputMint: USDC_MINT,
@@ -348,7 +360,51 @@ export function exampleQuote(): Promise<ExampleQuote> {
           ? null
           : Math.abs(order.priceImpact),
       feeBps: order.feeBps ?? null,
+      route: summarizeRoute(order),
+      router: order.router,
       asOf: new Date().toISOString(),
     };
+  });
+}
+
+const RESEARCH_TTL_MS = 15 * 60_000;
+
+/**
+ * The three largest technology stocks in the registry (public companies, so
+ * no pre-IPO tokens), for the home page's ranked comparison. With a
+ * fundamentals source (FMP) they're ranked by the companies' real market caps
+ * and carry 1Y return and P/E; without one they're ranked by on-chain market
+ * cap from Jupiter and those two are null. Never estimated. Cached 15 min.
+ */
+export function researchTop(): Promise<ResearchTop> {
+  return cached("markets:research-top", RESEARCH_TTL_MS, async () => {
+    const tech = (await listMarkets()).filter(
+      (r) => r.sector === "Technology" && r.category === "equity" && !r.preIpo,
+    );
+    const fund = await fundamentals().catch(() => ({ marketCap: null, return1y: null }));
+    const company = fund.marketCap;
+    const cap = (r: MarketRow) => (company ? (company[r.ticker] ?? null) : r.marketCap);
+    const top = tech
+      .flatMap((r) => {
+        const marketCap = cap(r);
+        return marketCap && marketCap > 0 ? [{ r, marketCap }] : [];
+      })
+      .sort((a, b) => b.marketCap - a.marketCap)
+      .slice(0, 3);
+    const rows = await Promise.all(
+      top.map(async ({ r, marketCap }) => {
+        const ratios = fmpConfigured() ? await fetchRatiosTtm(r.ticker).catch(() => null) : null;
+        return {
+          ticker: r.ticker,
+          name: r.name,
+          icon: r.icon,
+          marketCap,
+          return1y: fund.return1y?.[r.ticker] ?? null,
+          pe: ratios?.priceToEarningsRatioTTM ?? ratios?.peRatioTTM ?? null,
+          liquidity: r.liquidity,
+        };
+      }),
+    );
+    return { rows, basis: company ? "company" : "on-chain", asOf: new Date().toISOString() };
   });
 }

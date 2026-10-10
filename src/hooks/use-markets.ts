@@ -97,7 +97,7 @@ export function useLivePrices(tickers: readonly string[]) {
  * 24h sparklines for the given tickers, asked for once each; ones still
  * loading on the server are asked for again a few seconds later.
  */
-export function useSparklines(tickers: readonly string[], window: "24h" | "7d" = "24h") {
+export function useSparklines(tickers: readonly string[], window: "24h" | "7d" | "30d" = "24h") {
   const [series, setSeries] = useState<Record<string, Point[] | null>>({});
   const [retry, setRetry] = useState(0);
   // A few at a time, so the rows at the top of the screen fill in first.

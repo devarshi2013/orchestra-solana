@@ -85,7 +85,7 @@ type Fundamentals = {
 };
 
 /** Market caps and 1Y returns from FMP's batch endpoints; each null when unavailable. */
-function fundamentals(): Promise<Fundamentals> {
+export function fundamentals(): Promise<Fundamentals> {
   return cached("browse:fundamentals", FUNDAMENTALS_TTL_MS, async () => {
     if (!fmpConfigured()) return { marketCap: null, return1y: null };
     const symbols = [...byTicker().keys()];
