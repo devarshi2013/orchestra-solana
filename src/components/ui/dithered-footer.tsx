@@ -10,7 +10,8 @@ import {
 } from "react";
 
 // Dithered Footer by Ato Augustine (MIT), from 21st.dev/@otatechie/components/dithered-footer.
-// Changed for Quill: the signup form only renders when `onSubscribe` is passed,
+// Changed for Quill: the signup form only renders when `onSubscribe` is passed
+// (it shows the error `onSubscribe` throws, and has a hidden honeypot field),
 // external links open in a new tab, the status dot uses the accent, and the
 // brand name's colour can be set (`markColor`).
 
@@ -33,8 +34,12 @@ export type DitheredFooterProps = {
   accent?: string;
   /** Colour of the big brand name in the dot band. Defaults to the page background (a cut-out). */
   markColor?: string;
-  /** Called with the email address. Without it there is no signup form. */
-  onSubscribe?: (email: string) => void | Promise<void>;
+  /**
+   * Called with the email address and the honeypot field's value (only bots
+   * fill it). Resolve to show the thank-you; throw an Error to show its
+   * message. Without it there is no signup form.
+   */
+  onSubscribe?: (email: string, honeypot: string) => void | Promise<void>;
 };
 
 // Stochastic dither: vertical noise, sparse at the top and dense at the bottom,
@@ -144,18 +149,23 @@ export default function DitheredFooter({
 }: DitheredFooterProps) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
+  const [error, setError] = useState("");
+  const honeypot = useRef<HTMLInputElement>(null);
   const field = useRef<HTMLDivElement>(null);
   const frame = useRef(0);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!onSubscribe) return;
+    if (!onSubscribe || state === "sending") return;
     setState("sending");
     try {
-      await onSubscribe(email);
+      await onSubscribe(email, honeypot.current?.value ?? "");
       setState("done");
       setEmail("");
-    } catch {
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message ? e.message : "Something went wrong. Please try again.",
+      );
       setState("error");
     }
   };
@@ -204,11 +214,23 @@ export default function DitheredFooter({
           <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">{tagline}</p>
 
           {onSubscribe && (
-            <form className="mt-8 max-w-sm" onSubmit={submit}>
+            <form className="relative mt-8 max-w-sm" onSubmit={submit}>
               {/* A visible label, not a placeholder: placeholders vanish while you type. */}
               <label htmlFor="df-email" className="block text-sm font-medium">
-                Get product updates by email
+                Get updates by email
               </label>
+              {/* Honeypot: hidden from people (and screen readers), so only bots fill it in. */}
+              <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
+                <label htmlFor="df-website">Website</label>
+                <input
+                  ref={honeypot}
+                  id="df-website"
+                  name="website"
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
               <div className="mt-2 flex gap-2">
                 <input
                   id="df-email"
@@ -224,15 +246,17 @@ export default function DitheredFooter({
                 />
                 <button
                   disabled={state === "sending"}
-                  className={`h-10 shrink-0 rounded-md bg-foreground px-4 text-sm font-medium text-background transition hover:opacity-90 active:scale-[0.97] disabled:opacity-60 ${focus} [@media(pointer:coarse)]:h-11`}
+                  type="submit"
+                  className={`h-10 shrink-0 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary-hover active:scale-[0.97] disabled:opacity-60 ${focus} [@media(pointer:coarse)]:h-11`}
                 >
                   {state === "sending" ? "Subscribing…" : "Subscribe"}
                 </button>
               </div>
               <p role="status" className="mt-2 min-h-5 text-sm text-muted-foreground">
-                {state === "done" && "Thanks. You're on the list."}
-                {state === "error" && "That didn't go through. Please try again."}
+                {state === "done" && "Thanks, you're on the list."}
+                {state === "error" && <span className="font-medium text-foreground">{error}</span>}
               </p>
+              <p className="text-xs text-muted-foreground">No spam. Unsubscribe anytime.</p>
             </form>
           )}
         </div>

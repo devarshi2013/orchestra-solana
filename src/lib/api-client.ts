@@ -103,3 +103,12 @@ export const assistantApi = {
   quote: (body: { wallet: string; symbol: string; usdcAmount: number }, signal?: AbortSignal) =>
     request("/api/assistant/quote", { ...json("POST", body), signal }, trusted<ItemQuote>()),
 };
+
+/** Joins the email list (POST /api/subscribe); throws ApiError with the server's message. */
+export function subscribeEmail(email: string, website = ""): Promise<{ ok: true }> {
+  return request(
+    "/api/subscribe",
+    json("POST", { email, website }),
+    z.object({ ok: z.literal(true) }),
+  );
+}

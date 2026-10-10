@@ -1,6 +1,7 @@
 import { HowItWorks } from "@/components/how-it-works";
 import { MarketDashboard } from "@/components/market/market-dashboard";
 import { Reveal } from "@/components/motion";
+import { SubscribeBox } from "@/components/subscribe-box";
 import { TAGLINE } from "@/lib/brand";
 
 /**
@@ -23,6 +24,7 @@ export default function Home() {
       </section>
 
       <HowItWorks />
+      <SubscribeBox />
     </main>
   );
 }

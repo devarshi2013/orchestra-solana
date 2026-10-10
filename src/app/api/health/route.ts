@@ -20,6 +20,10 @@ export async function GET() {
       stockFundamentals: serverEnv.MARKET_DATA_API_KEY
         ? "configured"
         : "off (no MARKET_DATA_API_KEY)",
+      emailSignup:
+        serverEnv.RESEND_API_KEY && serverEnv.RESEND_AUDIENCE_ID
+          ? "configured"
+          : "off (needs RESEND_API_KEY and RESEND_AUDIENCE_ID)",
     },
     { status: ok ? 200 : 503, headers: { "cache-control": "no-store" } },
   );

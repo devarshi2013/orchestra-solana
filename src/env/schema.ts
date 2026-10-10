@@ -50,6 +50,10 @@ export const serverEnvSchema = z.object({
   ANTHROPIC_API_KEY: optionalSecret(z.string().trim()),
   /** Financial Modeling Prep key for stock fundamentals (docs/market-tools.md). Optional. */
   MARKET_DATA_API_KEY: optionalSecret(z.string().trim()),
+  /** Resend API key for the email signup (/api/subscribe). Server-only; without it signup is off. */
+  RESEND_API_KEY: optionalSecret(z.string().trim()),
+  /** The Resend audience (now called a segment) that new subscribers are added to. */
+  RESEND_AUDIENCE_ID: optionalSecret(z.string().trim()),
   /** Server-side Solana RPC (may embed a provider key). Never exposed to the browser. */
   SOLANA_RPC_URL: z.url().default("https://api.mainnet-beta.solana.com"),
 });

@@ -1,34 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter, JetBrains_Mono } from "next/font/google";
 
+import { SiteFooter } from "@/components/layout/site-footer";
 import { MotionProvider } from "@/components/motion";
 import { SolanaWalletProvider } from "@/components/providers/wallet-provider";
 import { themeScript } from "@/components/layout/theme-toggle";
-import { GitHubIcon, XIcon } from "@/components/brand/social-icons";
 import { SiteHeader } from "@/components/site-header";
-import { DitheredFooter, type FooterColumn } from "@/components/ui/dithered-footer";
 import { Toaster } from "@/components/ui/toast";
 
 import { TAGLINE } from "@/lib/brand";
 
 import "./globals.css";
-
-const REPO = "https://github.com/devarshi2013/orchestra-solana";
-/** No X account yet: the X icon shares Quill instead of linking a profile. */
-const SHARE_ON_X = `https://x.com/intent/post?text=${encodeURIComponent(
-  "Quill: an AI that researches tokenized US stocks on Solana, and only buys after you approve.",
-)}`;
-/** Only pages that exist: there's no FAQ, About, Contact or Privacy page (yet). */
-const FOOTER_COLUMNS: FooterColumn[] = [
-  { title: "Product", links: [{ label: "How it works", href: "/#how-it-works" }] },
-  {
-    title: "Resources",
-    links: [
-      { label: "Docs", href: `${REPO}/tree/main/docs` },
-      { label: "Risk disclosure", href: "/risk" },
-    ],
-  },
-];
 
 /** Body text: highly legible at small sizes, with tabular figures. */
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -88,26 +70,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </div>
             {/* Hidden on /chat, a full-screen app (see data-site-chrome in globals.css). */}
             <div data-site-chrome>
-              <DitheredFooter
-                brand="Quill"
-                brandHref="/"
-                tagline="Ask an AI about tokenized US stocks. Approve every trade in your own wallet."
-                columns={FOOTER_COLUMNS}
-                legal={[{ label: "Terms", href: "/terms" }]}
-                socials={[
-                  {
-                    label: "Share Quill on X",
-                    href: SHARE_ON_X,
-                    icon: <XIcon className="size-4" />,
-                  },
-                  { label: "Quill on GitHub", href: REPO, icon: <GitHubIcon className="size-4" /> },
-                ]}
-                copyright="© 2026 Quill"
-                status={null}
-                // Dark navy dots (#0F1B2D); light gray on the dark theme, where navy can't be seen.
-                accent="var(--footer-dots)"
-                markColor="var(--footer-mark)"
-              />
+              <SiteFooter />
             </div>
             <Toaster />
           </SolanaWalletProvider>
