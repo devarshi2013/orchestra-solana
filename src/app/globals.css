@@ -101,7 +101,7 @@
  * Light (the default): white #FFFFFF page, off-white #FAFAFA cards and
  * sections, near-black #0A0A0A text and headings, gray #6B7280 secondary
  * text, light gray #E5E7EB borders, dark navy #0F1B2D accent (hover #1C2B44).
- * The navbar and footer are navy with white text (`.theme-navy` below).
+ * The navbar is navy with white text (`.theme-navy` below).
  *
  * Contrast (WCAG AA, checked): text 19.8:1 on white; navy 17.3:1 (links,
  * focus rings); white on navy 17.3:1 (buttons), 14.2:1 on hover; gray text
@@ -156,7 +156,9 @@
   --warning: #374151;
   --neutral: var(--gray);
   --border: var(--gray-light);
-  --input: #d1d5db;
+  --input: var(--gray-light);
+  /* The footer's dot field. */
+  --footer-dots: var(--navy);
   --ring: var(--navy);
   /* Shadows are navy-tinted and soft. */
   --shadow-color: 216 50% 12%;
@@ -220,6 +222,7 @@
   --neutral: #a1a1aa;
   --border: #2a2a2a;
   --input: #3a3a3a;
+  --footer-dots: #d1d5db;
   --ring: #f9fafb;
   --shadow-color: 0 0% 0%;
   --chart-1: #2a2a2a;
@@ -243,7 +246,7 @@
 }
 
 /*
- * The navbar and footer: a dark navy band with white text, in both themes.
+ * The navbar: a dark navy band with white text, in both themes.
  * The tokens are re-pointed inside it, so buttons, links and the logo invert
  * (white buttons with navy text, white links, a white nib).
  */
