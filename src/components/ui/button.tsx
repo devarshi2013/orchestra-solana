@@ -9,15 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        /** Burgundy with cream text; darkens, lifts 2px and gains a soft shadow on hover. */
+        /** Navy with white text; lightens, lifts 2px and gains a soft shadow on hover. */
         default:
           "bg-primary text-primary-foreground shadow-soft hover:bg-primary-hover hover:shadow-hover motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0",
-        /** Secondary: cream with a burgundy border and text; fills burgundy on hover. */
+        /** Secondary: white with a navy border and text; fills navy on hover. */
         outline:
           "border-primary bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground hover:shadow-hover motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 aria-expanded:bg-primary aria-expanded:text-primary-foreground",
         secondary:
           "border-primary bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground hover:shadow-hover motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 aria-expanded:bg-primary aria-expanded:text-primary-foreground",
-        /** Icon and toolbar buttons: burgundy, filling burgundy on hover (no lift). */
+        /** Icon and toolbar buttons: navy, filling navy on hover (no lift). */
         ghost:
           "text-primary-text hover:bg-primary hover:text-primary-foreground aria-expanded:bg-primary aria-expanded:text-primary-foreground",
         destructive:

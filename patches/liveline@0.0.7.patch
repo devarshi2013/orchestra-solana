@@ -1,0 +1,142 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index 4709730f1d6608dee4ffb3a386d1732f776c5f5c..8020e02cabc71b64052bad7dba53ceb4e274266b 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -57,11 +57,14 @@ function resolveTheme(color, mode) {
+     gridLine: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)",
+     gridLabel: isDark ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.35)",
+     // Dot — always semantic
+-    dotUp: "#22c55e",
+-    dotDown: "#ef4444",
++    dotUp: isDark ? "#f9fafb" : "#0f1b2d",
++    dotDown: "#6b7280",
+     dotFlat: color,
+-    glowUp: "rgba(34, 197, 94, 0.18)",
+-    glowDown: "rgba(239, 68, 68, 0.18)",
++    glowUp: isDark ? "rgba(249, 250, 251, 0.18)" : "rgba(15, 27, 45, 0.18)",
++    glowDown: "rgba(107, 114, 128, 0.18)",
++    // Candles: rising and falling, monochrome (Quill patch)
++    candleUp: isDark ? "#f9fafb" : "#0f1b2d",
++    candleDown: "#6b7280",
+     glowFlat: rgba(r, g, b, 0.12),
+     // Badge
+     badgeOuterBg: isDark ? "rgba(40, 40, 40, 0.95)" : "rgba(255, 255, 255, 0.95)",
+@@ -1116,10 +1119,10 @@ function drawParticles(ctx, state, dt) {
+ }
+ 
+ // src/draw/candlestick.ts
+-var BULL = "#22c55e";
+-var BEAR = "#ef4444";
+-var BULL_RGB = [34, 197, 94];
+-var BEAR_RGB = [239, 68, 68];
++var BULL = "#0f1b2d";
++var BEAR = "#6b7280";
++var BULL_RGB = [15, 27, 45];
++var BEAR_RGB = [107, 114, 128];
+ function blendColor2(t) {
+   const r = Math.round(BEAR_RGB[0] + (BULL_RGB[0] - BEAR_RGB[0]) * t);
+   const g = Math.round(BEAR_RGB[1] + (BULL_RGB[1] - BEAR_RGB[1]) * t);
+@@ -1714,6 +1717,12 @@ function drawMultiFrame(ctx, layout, opts) {
+   }
+ }
+ function drawCandleFrame(ctx, layout, palette, opts) {
++  if (palette.candleUp) {
++    BULL = palette.candleUp;
++    BEAR = palette.candleDown;
++    BULL_RGB = parseColorRgb(BULL);
++    BEAR_RGB = parseColorRgb(BEAR);
++  }
+   const { w, h, pad, chartW, chartH } = layout;
+   const reveal = opts.chartReveal;
+   const fullLineMode = opts.lineModeProg >= 0.99;
+@@ -1988,8 +1997,8 @@ var WINDOW_BUFFER = 0.05;
+ var WINDOW_BUFFER_NO_BADGE = 0.015;
+ var VALUE_SNAP_THRESHOLD = 1e-3;
+ var ADAPTIVE_SPEED_BOOST = 0.2;
+-var MOMENTUM_GREEN = [34, 197, 94];
+-var MOMENTUM_RED = [239, 68, 68];
++var MOMENTUM_GREEN = [15, 27, 45];
++var MOMENTUM_RED = [107, 114, 128];
+ var CHART_REVEAL_SPEED = 0.14;
+ var CHART_REVEAL_SPEED_FWD = 0.09;
+ var PAUSE_PROGRESS_SPEED = 0.12;
+@@ -3490,7 +3499,7 @@ function useLivelineEngine(canvasRef, containerRef, config) {
+         const displayVal = cfg.valueMomentumColor ? Math.abs(smoothValue) : smoothValue;
+         valEl.textContent = cfg.formatValue(displayVal);
+         if (cfg.valueMomentumColor) {
+-          const mc = momentum === "up" ? "#22c55e" : momentum === "down" ? "#ef4444" : "";
++          const mc = momentum === "up" ? "#0f1b2d" : momentum === "down" ? "#6b7280" : "";
+           if (mc) valEl.style.color = mc;
+           else valEl.style.removeProperty("color");
+         }
+diff --git a/dist/index.js b/dist/index.js
+index fd0506272e9a54432a0882c3a389ee74302e4718..c29f00aeabc280a954f30ef673eb638be693a6db 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -30,11 +30,14 @@ function resolveTheme(color, mode) {
+     gridLine: isDark ? "rgba(255, 255, 255, 0.06)" : "rgba(0, 0, 0, 0.06)",
+     gridLabel: isDark ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 0, 0, 0.35)",
+     // Dot — always semantic
+-    dotUp: "#22c55e",
+-    dotDown: "#ef4444",
++    dotUp: isDark ? "#f9fafb" : "#0f1b2d",
++    dotDown: "#6b7280",
+     dotFlat: color,
+-    glowUp: "rgba(34, 197, 94, 0.18)",
+-    glowDown: "rgba(239, 68, 68, 0.18)",
++    glowUp: isDark ? "rgba(249, 250, 251, 0.18)" : "rgba(15, 27, 45, 0.18)",
++    glowDown: "rgba(107, 114, 128, 0.18)",
++    // Candles: rising and falling, monochrome (Quill patch)
++    candleUp: isDark ? "#f9fafb" : "#0f1b2d",
++    candleDown: "#6b7280",
+     glowFlat: rgba(r, g, b, 0.12),
+     // Badge
+     badgeOuterBg: isDark ? "rgba(40, 40, 40, 0.95)" : "rgba(255, 255, 255, 0.95)",
+@@ -1089,10 +1092,10 @@ function drawParticles(ctx, state, dt) {
+ }
+ 
+ // src/draw/candlestick.ts
+-var BULL = "#22c55e";
+-var BEAR = "#ef4444";
+-var BULL_RGB = [34, 197, 94];
+-var BEAR_RGB = [239, 68, 68];
++var BULL = "#0f1b2d";
++var BEAR = "#6b7280";
++var BULL_RGB = [15, 27, 45];
++var BEAR_RGB = [107, 114, 128];
+ function blendColor2(t) {
+   const r = Math.round(BEAR_RGB[0] + (BULL_RGB[0] - BEAR_RGB[0]) * t);
+   const g = Math.round(BEAR_RGB[1] + (BULL_RGB[1] - BEAR_RGB[1]) * t);
+@@ -1687,6 +1690,12 @@ function drawMultiFrame(ctx, layout, opts) {
+   }
+ }
+ function drawCandleFrame(ctx, layout, palette, opts) {
++  if (palette.candleUp) {
++    BULL = palette.candleUp;
++    BEAR = palette.candleDown;
++    BULL_RGB = parseColorRgb(BULL);
++    BEAR_RGB = parseColorRgb(BEAR);
++  }
+   const { w, h, pad, chartW, chartH } = layout;
+   const reveal = opts.chartReveal;
+   const fullLineMode = opts.lineModeProg >= 0.99;
+@@ -1961,8 +1970,8 @@ var WINDOW_BUFFER = 0.05;
+ var WINDOW_BUFFER_NO_BADGE = 0.015;
+ var VALUE_SNAP_THRESHOLD = 1e-3;
+ var ADAPTIVE_SPEED_BOOST = 0.2;
+-var MOMENTUM_GREEN = [34, 197, 94];
+-var MOMENTUM_RED = [239, 68, 68];
++var MOMENTUM_GREEN = [15, 27, 45];
++var MOMENTUM_RED = [107, 114, 128];
+ var CHART_REVEAL_SPEED = 0.14;
+ var CHART_REVEAL_SPEED_FWD = 0.09;
+ var PAUSE_PROGRESS_SPEED = 0.12;
+@@ -3463,7 +3472,7 @@ function useLivelineEngine(canvasRef, containerRef, config) {
+         const displayVal = cfg.valueMomentumColor ? Math.abs(smoothValue) : smoothValue;
+         valEl.textContent = cfg.formatValue(displayVal);
+         if (cfg.valueMomentumColor) {
+-          const mc = momentum === "up" ? "#22c55e" : momentum === "down" ? "#ef4444" : "";
++          const mc = momentum === "up" ? "#0f1b2d" : momentum === "down" ? "#6b7280" : "";
+           if (mc) valEl.style.color = mc;
+           else valEl.style.removeProperty("color");
+         }

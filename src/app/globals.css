@@ -93,144 +93,189 @@
 }
 
 /*
- * Quill design tokens: a warm cream-and-burgundy theme. Every colour lives
- * here as a CSS variable (Tailwind reads them through @theme above), so the
- * theme is adjusted in one place.
+ * Quill design tokens: white, near-black, grays and one dark navy accent.
+ * No other colours anywhere. Every colour lives here as a CSS variable
+ * (Tailwind reads them through @theme above), so the theme is adjusted in one
+ * place.
  *
- * Light (the default): cream #F5EFE6 background, lighter cream #FBF8F3 for
- * cards and sections, burgundy #7A1F2B accent (hover #5C1620, soft tint
- * #E8D5D7 for highlights), warm brown-charcoal #2B2422 text, burgundy headings,
- * beige #E3D8C8 borders.
+ * Light (the default): white #FFFFFF page, off-white #FAFAFA cards and
+ * sections, near-black #0A0A0A text and headings, gray #6B7280 secondary
+ * text, light gray #E5E7EB borders, dark navy #0F1B2D accent (hover #1C2B44).
+ * The navbar and footer are navy with white text (`.theme-navy` below).
  *
- * Contrast (WCAG AA, checked): text 13.3:1 on cream; burgundy 8.9:1 (headings,
- * links, focus rings); cream on burgundy 9.6:1 (buttons), 12.5:1 on hover;
- * muted text #736350 5.1:1. Burgundy vs body text is only 1.5:1, so links in
- * running text always keep an underline (colour alone isn't enough). Muted
- * text never sits on the tint (4.1:1); the tint carries burgundy or body text.
- * Price changes use green #117235 / red #C81E1E (5.3:1 / 5.0:1), always with a
- * +/− sign or arrow, so burgundy never reads as "down".
+ * Contrast (WCAG AA, checked): text 19.8:1 on white; navy 17.3:1 (links,
+ * focus rings); white on navy 17.3:1 (buttons), 14.2:1 on hover; gray text
+ * 4.8:1 on white, 4.6:1 on off-white. Navy vs body text is only 1.15:1, so
+ * links in running text always keep an underline (colour alone isn't enough).
+ * Without red and green, price changes are told apart by their ▲/▼ arrow and
+ * +/− sign (never by colour alone): rises in navy, falls in near-black.
  */
 :root {
-  --cream: #f5efe6;
-  --cream-light: #fbf8f3;
-  --ink: #2b2422;
-  --burgundy: #7a1f2b;
-  --burgundy-dark: #5c1620;
-  --burgundy-tint: #e8d5d7;
-  --beige: #e3d8c8;
-  --gold: #d9a441;
+  --white: #ffffff;
+  --off-white: #fafafa;
+  --ink: #0a0a0a;
+  --gray: #6b7280;
+  /* Darker gray for small labels on tinted backgrounds (7.6:1 on white). */
+  --gray-dark: #4b5563;
+  --gray-light: #e5e7eb;
+  --navy: #0f1b2d;
+  --navy-hover: #1c2b44;
+  /* A very light navy-gray for hovered and selected rows. */
+  --navy-tint: #e8ecf2;
 
   /* Light theme (the default). */
-  --background: var(--cream);
+  --background: var(--white);
   --foreground: var(--ink);
-  --heading: var(--burgundy);
-  --card: var(--cream-light);
+  --heading: var(--ink);
+  --card: var(--off-white);
   --card-foreground: var(--ink);
-  --surface: var(--cream-light);
-  --surface-raised: #ffffff;
-  --popover: var(--cream-light);
+  --surface: var(--off-white);
+  --surface-raised: var(--white);
+  --popover: var(--white);
   --popover-foreground: var(--ink);
-  --primary: var(--burgundy);
-  --primary-hover: var(--burgundy-dark);
-  --primary-foreground: var(--cream-light);
-  --primary-to: var(--burgundy-dark);
-  --primary-text: var(--burgundy);
-  --primary-text-to: var(--burgundy-dark);
-  --primary-tint: var(--burgundy-tint);
-  --gold-fill: var(--gold);
-  --gold-text: #8a6416;
-  --secondary: var(--cream-light);
-  --secondary-foreground: var(--burgundy);
-  --muted: #efe6da;
-  --muted-foreground: #736350;
-  /* Hover and selected rows in menus: the soft burgundy tint. */
-  --accent: var(--burgundy-tint);
+  --primary: var(--navy);
+  --primary-hover: var(--navy-hover);
+  --primary-foreground: var(--white);
+  --primary-to: var(--navy-hover);
+  --primary-text: var(--navy);
+  --primary-text-to: var(--navy-hover);
+  --primary-tint: var(--navy-tint);
+  --gold-fill: var(--white);
+  --gold-text: var(--navy);
+  --secondary: var(--white);
+  --secondary-foreground: var(--navy);
+  /* Light enough that gray text on it still passes AA (4.5:1). */
+  --muted: #f6f7f8;
+  --muted-foreground: var(--gray);
+  /* Hover and selected rows in menus: the light navy-gray. */
+  --accent: var(--navy-tint);
   --accent-foreground: var(--ink);
-  --destructive: #c81e1e;
-  --success: #117235;
-  --warning: #8a6416;
-  --neutral: #736350;
-  --border: var(--beige);
-  --input: #d8cab5;
-  --ring: var(--burgundy);
-  /* Shadows are burgundy-tinted and soft. */
-  --shadow-color: 352 60% 20%;
-  --chart-1: var(--beige);
-  --chart-2: #b8a894;
-  --chart-3: #7a6a55;
-  --chart-4: #4f4136;
-  --chart-5: var(--ink);
-  --series-1: #2a78d6;
-  --series-2: #8a6416;
+  /* Status colours are monochrome too: icons and wording carry the meaning. */
+  --destructive: var(--ink);
+  --success: var(--navy);
+  --warning: #374151;
+  --neutral: var(--gray);
+  --border: var(--gray-light);
+  --input: #d1d5db;
+  --ring: var(--navy);
+  /* Shadows are navy-tinted and soft. */
+  --shadow-color: 216 50% 12%;
+  --chart-1: var(--gray-light);
+  --chart-2: #9ca3af;
+  --chart-3: var(--gray);
+  --chart-4: #374151;
+  --chart-5: var(--navy);
+  --series-1: var(--navy);
+  --series-2: var(--gray);
   --radius: 0.5rem;
-  --sidebar: var(--cream);
+  --sidebar: var(--off-white);
   --sidebar-foreground: var(--ink);
-  --sidebar-primary: var(--burgundy);
-  --sidebar-primary-foreground: var(--cream-light);
-  --sidebar-accent: var(--burgundy-tint);
+  --sidebar-primary: var(--navy);
+  --sidebar-primary-foreground: var(--white);
+  --sidebar-accent: var(--navy-tint);
   --sidebar-accent-foreground: var(--ink);
-  --sidebar-border: var(--beige);
-  --sidebar-ring: var(--burgundy);
-  /* The logo's nib: burgundy on light backgrounds. */
-  --logo-nib: var(--burgundy);
-  --logo-slit: var(--cream-light);
-  /* Hover lift for cards and buttons: a faint burgundy-tinted shadow. */
+  --sidebar-border: var(--gray-light);
+  --sidebar-ring: var(--navy);
+  /* The logo's nib: navy on light backgrounds, with white cut-outs. */
+  --logo-nib: var(--navy);
+  --logo-slit: var(--white);
+  /* Hover lift for cards and buttons: a faint navy-tinted shadow. */
   --shadow-hover-value: 0 10px 24px -12px hsl(var(--shadow-color) / 0.35);
   /* Motion: quick and calm. */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/*
+ * Dark: near-black page, gray surfaces, white text. Navy can't carry text on
+ * black (1.15:1), so the accent becomes white with navy text on it.
+ */
 .dark {
-  --background: #1a1012;
-  --foreground: var(--cream);
-  --card: #241719;
-  --card-foreground: var(--cream);
-  --surface: #241719;
-  --surface-raised: #2e1e21;
-  --popover: #2e1e21;
-  --popover-foreground: var(--cream);
-  --primary: #c25a6e;
-  --primary-hover: #d46f82;
-  --primary-foreground: #120a0c;
-  --primary-to: #d46f82;
-  --primary-text: #d46f82;
-  --primary-text-to: #e08a9a;
-  --primary-tint: #3a2329;
-  --heading: #f6efe4;
-  --gold-fill: #e0b457;
-  --gold-text: #e0b457;
-  --secondary: #2e1e21;
-  --secondary-foreground: var(--cream);
-  --muted: #2e1e21;
-  --muted-foreground: #b8a894;
-  --accent: #33222a;
-  --accent-foreground: var(--cream);
-  --destructive: #f87171;
-  --success: #4ade80;
-  --warning: #e0b457;
-  --neutral: #b8a894;
-  --border: #3d2a2e;
-  --input: #4a3539;
-  --ring: #d46f82;
-  --shadow-color: 345 40% 3%;
-  --chart-1: #4a3539;
-  --chart-2: #6b5559;
-  --chart-3: #8f7b74;
-  --chart-4: #b8a894;
-  --chart-5: var(--cream);
-  --series-1: #5aa0ec;
-  --series-2: #e0b457;
-  --sidebar: #1a1012;
-  --sidebar-foreground: var(--cream);
-  --sidebar-primary: #c25a6e;
-  --sidebar-primary-foreground: #120a0c;
-  --sidebar-accent: #2e1e21;
-  --sidebar-accent-foreground: var(--cream);
-  --sidebar-border: #3d2a2e;
-  --sidebar-ring: #d46f82;
-  /* Lighter nib on dark backgrounds. */
-  --logo-nib: #c25a6e;
-  --logo-slit: var(--cream);
+  --background: var(--ink);
+  --foreground: #f9fafb;
+  --card: #141414;
+  --card-foreground: #f9fafb;
+  --surface: #141414;
+  --surface-raised: #1c1c1c;
+  --popover: #1c1c1c;
+  --popover-foreground: #f9fafb;
+  --primary: #f9fafb;
+  --primary-hover: var(--gray-light);
+  --primary-foreground: var(--navy);
+  --primary-to: var(--gray-light);
+  --primary-text: #f9fafb;
+  --primary-text-to: var(--gray-light);
+  --primary-tint: var(--navy);
+  --heading: #f9fafb;
+  --gold-fill: var(--ink);
+  --gold-text: #f9fafb;
+  --secondary: #141414;
+  --secondary-foreground: #f9fafb;
+  --muted: #1c1c1c;
+  --muted-foreground: #a1a1aa;
+  --accent: var(--navy);
+  --accent-foreground: #f9fafb;
+  --destructive: #f9fafb;
+  --success: #f9fafb;
+  --warning: #d1d5db;
+  --neutral: #a1a1aa;
+  --border: #2a2a2a;
+  --input: #3a3a3a;
+  --ring: #f9fafb;
+  --shadow-color: 0 0% 0%;
+  --chart-1: #2a2a2a;
+  --chart-2: #4b5563;
+  --chart-3: #9ca3af;
+  --chart-4: #d1d5db;
+  --chart-5: #f9fafb;
+  --series-1: #f9fafb;
+  --series-2: #9ca3af;
+  --sidebar: #111111;
+  --sidebar-foreground: #f9fafb;
+  --sidebar-primary: #f9fafb;
+  --sidebar-primary-foreground: var(--navy);
+  --sidebar-accent: var(--navy);
+  --sidebar-accent-foreground: #f9fafb;
+  --sidebar-border: #2a2a2a;
+  --sidebar-ring: #f9fafb;
+  /* White nib on dark backgrounds. */
+  --logo-nib: #f9fafb;
+  --logo-slit: var(--ink);
+}
+
+/*
+ * The navbar and footer: a dark navy band with white text, in both themes.
+ * The tokens are re-pointed inside it, so buttons, links and the logo invert
+ * (white buttons with navy text, white links, a white nib).
+ */
+.theme-navy {
+  --background: var(--navy);
+  --foreground: var(--white);
+  --heading: var(--white);
+  --card: var(--navy-hover);
+  --card-foreground: var(--white);
+  --surface: var(--navy-hover);
+  --surface-raised: var(--navy-hover);
+  --primary: var(--white);
+  --primary-hover: var(--gray-light);
+  --primary-foreground: var(--navy);
+  --primary-text: var(--white);
+  --primary-text-to: var(--gray-light);
+  --secondary: var(--navy);
+  --secondary-foreground: var(--white);
+  --muted: var(--navy-hover);
+  /* Gray-300 on navy: 11.7:1. */
+  --muted-foreground: #d1d5db;
+  --accent: var(--navy-hover);
+  --accent-foreground: var(--white);
+  --border: rgb(255 255 255 / 0.14);
+  --input: rgb(255 255 255 / 0.24);
+  --ring: var(--white);
+  --logo-nib: var(--white);
+  --logo-slit: var(--navy);
+  --gold-fill: var(--navy);
+  --shadow-color: 0 0% 0%;
+  background-color: var(--navy);
+  color: var(--white);
 }
 
 @layer base {
@@ -250,10 +295,6 @@
     @apply bg-background text-sm leading-6 text-foreground;
     /* Inter: single-storey a off, open digits, tabular figures where it matters. */
     font-feature-settings: "cv11", "ss01";
-  }
-  /* A faint paper grain on cream (about 2.5% opacity); none in dark mode. */
-  html:not(.dark) body {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.1 0 0 0 0 0.12 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.025'/%3E%3C/svg%3E");
   }
   h1,
   h2,
@@ -312,7 +353,7 @@
 @utility bg-brand {
   background-image: linear-gradient(135deg, var(--primary), var(--primary-to));
 }
-/* Gradient text uses the AA-safe text oranges (darker in light mode). */
+/* Gradient text in the accent (navy in light mode, white in dark). */
 @utility text-brand {
   background-image: linear-gradient(135deg, var(--primary-text), var(--primary-text-to));
   background-clip: text;
@@ -335,7 +376,7 @@ html .wallet-adapter-button {
     box-shadow 300ms ease,
     transform 300ms ease;
 }
-/* Select Wallet / the connected address: a burgundy button like our primary actions. */
+/* Select Wallet / the connected address: a navy button like our primary actions. */
 html .wallet-adapter-button-trigger {
   background: var(--primary);
   color: var(--primary-foreground);
@@ -363,7 +404,7 @@ html .wallet-adapter-button:not([disabled]):active {
   transform: none;
 }
 
-/* The wallet picker modal, in our surfaces and type instead of the library's navy. */
+/* The wallet picker modal, in our surfaces and type instead of the library's own. */
 html .wallet-adapter-modal-fade-wrapper,
 html .wallet-adapter-modal {
   font-family: var(--font-sans);
@@ -448,11 +489,14 @@ body:has([data-chat-shell]) [data-site-chrome] {
 
 /*
  * Liveline's window and mode buttons are styled inline at 22-25% opacity, which
- * is below AA on cream; give them the theme's muted text (5.1:1), ink for the
- * active one, our UI font, and the gold focus ring.
+ * is below AA on white; they sit on a faint gray pill, so give them the darker
+ * gray (7:1 there), ink for the active one, our UI font, and the navy focus ring.
  */
 .liveline-controls button {
   font-family: var(--font-sans) !important;
+  color: var(--gray-dark) !important;
+}
+.dark .liveline-controls button {
   color: var(--muted-foreground) !important;
 }
 .liveline-controls button[style*="font-weight:600"],
@@ -465,10 +509,10 @@ body:has([data-chat-shell]) [data-site-chrome] {
 }
 
 /*
- * Links: a burgundy underline that grows from left to right on hover.
+ * Links: a navy underline that grows from left to right on hover.
  * `link-grow` for links that stand apart (navigation, footer); `link-inline`
  * for links inside running text, which also keep a faint underline at rest,
- * since burgundy alone isn't distinct enough from body text (1.5:1).
+ * since navy alone isn't distinct enough from body text (1.15:1).
  */
 @utility link-grow {
   color: var(--primary-text);
@@ -501,7 +545,7 @@ body:has([data-chat-shell]) [data-site-chrome] {
   }
 }
 
-/* Cards: lift slightly on hover with a faint burgundy-tinted shadow. */
+/* Cards: lift slightly on hover with a faint navy-tinted shadow. */
 @utility card-lift {
   transition:
     transform 300ms ease,
@@ -518,7 +562,7 @@ body:has([data-chat-shell]) [data-site-chrome] {
   }
 }
 
-/* An indeterminate burgundy progress bar (a still, full bar under reduced motion). */
+/* An indeterminate navy progress bar (a still, full bar under reduced motion). */
 @keyframes progress-slide {
   from {
     transform: translateX(-100%);

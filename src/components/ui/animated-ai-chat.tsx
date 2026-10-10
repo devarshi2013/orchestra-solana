@@ -60,7 +60,7 @@ export function ChatGlow({ className }: { className?: string }) {
       )}
     >
       <div className="absolute top-0 left-1/4 size-96 animate-pulse rounded-full bg-primary/8 blur-[128px]" />
-      <div className="absolute right-1/4 bottom-0 size-96 animate-pulse rounded-full bg-gold/10 blur-[128px] delay-700" />
+      <div className="absolute right-1/4 bottom-0 size-96 animate-pulse rounded-full bg-primary/5 blur-[128px] delay-700" />
       <div className="absolute top-1/4 right-1/3 size-64 animate-pulse rounded-full bg-primary/5 blur-[96px] delay-1000" />
     </div>
   );
@@ -80,7 +80,7 @@ export function ChatHero({ title, subtitle }: { title: string; subtitle?: string
           {title}
         </h2>
         <motion.div
-          className="h-px bg-linear-to-r from-transparent via-gold/50 to-transparent"
+          className="h-px bg-linear-to-r from-transparent via-primary/30 to-transparent"
           initial={{ width: 0, opacity: 0 }}
           animate={{ width: "100%", opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.8 }}
@@ -342,7 +342,7 @@ export function AnimatedChatInput({
       {focused && !reduceMotion && (
         <motion.div
           aria-hidden
-          className="pointer-events-none fixed top-0 left-0 -z-10 size-[50rem] rounded-full bg-linear-to-r from-primary via-gold to-primary opacity-[0.04] blur-[96px]"
+          className="pointer-events-none fixed top-0 left-0 -z-10 size-[50rem] rounded-full bg-linear-to-r from-primary via-muted-foreground to-primary opacity-[0.04] blur-[96px]"
           style={{ x: glowX, y: glowY }}
         />
       )}

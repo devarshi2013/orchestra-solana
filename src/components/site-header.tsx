@@ -7,10 +7,7 @@ import { WalletButton } from "@/components/wallet/wallet-button";
 /** Logo (home), theme toggle and wallet connect. The way into the chat is the home page's one button. */
 export function SiteHeader() {
   return (
-    <header
-      data-site-chrome
-      className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md"
-    >
+    <header data-site-chrome className="theme-navy sticky top-0 z-40 border-b">
       <a
         href="#main"
         className="sr-only rounded-md bg-surface px-3 py-2 text-sm font-medium focus:not-sr-only focus:absolute focus:top-3 focus:left-4 focus:z-50 focus:ring-2 focus:ring-ring"

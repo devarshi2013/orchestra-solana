@@ -162,6 +162,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  liveline@0.0.7: 83fe3943569d6ce3bdc54aeecc7cb2a49ad8bec89403e392d87b5a04a681d9e4
+
 importers:
 
   .:
@@ -195,7 +198,7 @@ importers:
         version: 14.0.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       liveline:
         specifier: 0.0.7
-        version: 0.0.7(react@19.3.0)
+        version: 0.0.7(patch_hash=83fe3943569d6ce3bdc54aeecc7cb2a49ad8bec89403e392d87b5a04a681d9e4)(react@19.3.0)
       lucide-react:
         specifier: ^1.52.0
         version: 1.52.0(@types/react@19.3.0)(react@19.3.0)
@@ -10324,7 +10327,7 @@ snapshots:
       lightningcss-win32-arm64-msvc: 1.33.0
       lightningcss-win32-x64-msvc: 1.33.0
 
-  liveline@0.0.7(react@19.3.0):
+  liveline@0.0.7(patch_hash=83fe3943569d6ce3bdc54aeecc7cb2a49ad8bec89403e392d87b5a04a681d9e4)(react@19.3.0):
     dependencies:
       react: 19.3.0
 

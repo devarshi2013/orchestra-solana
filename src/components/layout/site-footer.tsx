@@ -44,7 +44,7 @@ const linkClass =
 /** Brand and tagline, link columns, then the credits and the not-advice line. */
 export function SiteFooter() {
   return (
-    <footer data-site-chrome className="mt-16 border-t bg-surface-raised/30">
+    <footer data-site-chrome className="theme-navy mt-16">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
         <Reveal className="grid gap-10 py-12 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
           <div className="space-y-4">

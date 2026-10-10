@@ -161,7 +161,7 @@ export function Reveal({
   );
 }
 
-/** A thin burgundy bar that moves while something loads. */
+/** A thin navy bar that moves while something loads. */
 export function ProgressBar({ label, className }: { label: string; className?: string }) {
   return (
     <div

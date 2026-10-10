@@ -11,8 +11,10 @@ tokens and tokenized stocks, with **one** button into the chat.
   1H / 24H / 7D / 30D), and stats: market cap, 24h volume, liquidity, holders.
   For tokenized stocks the market cap is labelled "on-chain" (tokens on Solana
   × price), because it is not the company's market cap.
-  The line is green or red with the 24h move (never the burgundy brand colour,
-  so it can't read as "down"), and changes always carry a ▲/▼ and a +/− sign.
+  The site is monochrome: the line is navy when the 24h move is up and gray
+  when it's down, and changes always carry a ▲/▼ and a +/− sign, so colour is
+  never the only cue. Liveline's own green/red (candles, momentum) is patched
+  to navy and gray (`patches/liveline@0.0.7.patch`).
 - **Market grid** (`src/components/market/market-grid.tsx`): a card per token
   with logo, price, 24h change and a 24h sparkline; tabs Crypto / Stocks / Top
   movers (largest absolute 24h change). Clicking a card shows it in the hero.

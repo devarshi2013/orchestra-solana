@@ -5,7 +5,7 @@ import { HOLE, LOGO_COLORS, NIB_PATH, SLIT } from "@/components/brand/logo";
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
-/** The home-screen icon: the burgundy nib on cream, with room for iOS's rounded corners. */
+/** The home-screen icon: the navy nib on white, with room for iOS's rounded corners. */
 export default function AppleIcon() {
   const c = LOGO_COLORS.light;
   return new ImageResponse(
@@ -16,7 +16,7 @@ export default function AppleIcon() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#F6EFE4",
+        background: "#FFFFFF",
       }}
     >
       <svg width="128" height="128" viewBox="0 0 32 32">

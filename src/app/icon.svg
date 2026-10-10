@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <style>
-    .nib { fill: #6B1E2E } .slit { stroke: #FBF7F0 } .hole { fill: #D9A441 }
-    @media (prefers-color-scheme: dark) { .nib { fill: #C25A6E } .slit { stroke: #F6EFE4 } .hole { fill: #E0B457 } }
+    .nib { fill: #0F1B2D } .slit { stroke: #FFFFFF } .hole { fill: #FFFFFF }
+    @media (prefers-color-scheme: dark) { .nib { fill: #F9FAFB } .slit { stroke: #0A0A0A } .hole { fill: #0A0A0A } }
   </style>
   <path class="nib" d="M16 2.5C19.6 7.6 25.5 13.2 25.5 19L21.6 29.5H10.4L6.5 19C6.5 13.2 12.4 7.6 16 2.5Z"/>
   <line class="slit" x1="16" y1="6" x2="16" y2="16.5" stroke-width="1.6" stroke-linecap="round"/>

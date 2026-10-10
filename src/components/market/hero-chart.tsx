@@ -166,7 +166,7 @@ export function HeroChart({ mint, onSelect }: { mint: string; onSelect: (mint: s
           data={points}
           value={price ?? 0}
           theme={theme}
-          // The line follows the 24h move (green/red), never the burgundy brand colour.
+          // The line follows the 24h move: navy when up, gray when down.
           color={changeColor(change, theme)}
           window={window.secs}
           windows={WINDOW_OPTIONS}
@@ -182,7 +182,9 @@ export function HeroChart({ mint, onSelect }: { mint: string; onSelect: (mint: s
           lineData={points}
           lineValue={price ?? undefined}
           onModeChange={candles.length > 0 ? setChartMode : undefined}
-          momentum
+          // Monochrome: no green/red momentum tint; the price label is white/black, not coloured.
+          momentum={false}
+          badgeVariant="minimal"
           pulse
           exaggerate
           degen={false}

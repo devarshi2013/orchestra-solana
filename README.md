@@ -32,16 +32,17 @@ See [docs/assistant.md](docs/assistant.md).
 ## Brand
 
 - **Name and line:** Quill. "Write what you want. Own what you choose." (`src/lib/brand.ts`).
-- **Mark:** an upward-pointing fountain-pen nib (it doubles as an "up" arrow): burgundy, with a cream slit and a gold breather hole; flat, no gradients. The shapes live in `src/components/brand/logo.tsx` and are shared by the favicon (`src/app/icon.svg`, which switches to the dark version with the OS theme), the apple-touch icon and OG image (generated in `src/app`), and the files in `public/brand/`: icon and horizontal wordmark (nib + "quill" in Fraunces, font embedded) for light and dark backgrounds, plus 512px and 192px PNG app icons.
-- **Colours** (all CSS variables in `src/app/globals.css`, exposed as Tailwind colours, so the theme is adjusted in one place):
-  - Light (the default): cream `#F5EFE6` background, lighter cream `#FBF8F3` for cards and sections, burgundy `#7A1F2B` accent (hover `#5C1620`, soft tint `#E8D5D7` for highlights), warm brown-charcoal `#2B2422` text, burgundy headings, beige `#E3D8C8` borders. Gold `#D9A441` only in the logo's dot.
-  - Dark: `#1A1012` background, `#241719` / `#2E1E21` surfaces, cream text, a lighter burgundy `#C25A6E` (links `#D46F82`).
-  - Data colours stay apart from the brand: positive green, negative red, always with a +/− sign or ▲/▼, so burgundy never reads as "down".
-  - WCAG AA checked for every text/background pair (notes at the top of `globals.css`). Links inside text keep an underline, since burgundy and body text are too close to tell apart by colour alone.
-- **Buttons:** burgundy with cream text, 8–12px corners; hover darkens to `#5C1620`, lifts 2px and adds a soft shadow. Secondary buttons are cream with a burgundy border and text, filling burgundy on hover. 0.3s ease transitions.
-- **Motion** (200–600ms, burgundy accents): sections fade and slide up as they scroll into view (`Reveal` in `src/components/motion.tsx`), link underlines grow from the left (`link-grow` / `link-inline`), cards lift with a burgundy-tinted shadow (`card-lift`), and a burgundy progress bar shows while a reply is written. All movement is off under `prefers-reduced-motion`.
+- **Mark:** an upward-pointing fountain-pen nib (it doubles as an "up" arrow): navy with a white slit and breather hole on light backgrounds, white with black cut-outs on dark ones; flat, no gradients. The shapes live in `src/components/brand/logo.tsx` and are shared by the favicon (`src/app/icon.svg`, which switches with the OS theme), the apple-touch icon and OG image (generated in `src/app`), and the files in `public/brand/`: icon and horizontal wordmark (nib + "quill" in Fraunces, font embedded) for light and dark backgrounds, plus 512px and 192px PNG app icons.
+- **Colours:** white, near-black, grays and one dark navy accent; nothing else. All are CSS variables in `src/app/globals.css`, exposed as Tailwind colours, so the theme is adjusted in one place.
+  - Light (the default): white `#FFFFFF` page, off-white `#FAFAFA` cards and sections, near-black `#0A0A0A` text and headings, gray `#6B7280` secondary text, light gray `#E5E7EB` borders, dark navy `#0F1B2D` accent (hover `#1C2B44`).
+  - The navbar and footer are a navy band with white text in both themes (`.theme-navy`).
+  - Dark: near-black page, gray surfaces, white text; the accent becomes white with navy text, since navy can't be read on black.
+  - No red or green: price changes always carry a ▲/▼ and a +/− sign. Rises are navy (white in dark mode), falls gray or near-black. Liveline's candle and momentum colours are patched to match (`patches/liveline@0.0.7.patch`). Token and company logos are the projects' own images.
+  - WCAG AA checked for every text/background pair (notes at the top of `globals.css`). Links inside text keep an underline, since navy and body text are too close to tell apart by colour alone.
+- **Buttons:** navy with white text, 8–12px corners; hover lightens to `#1C2B44`, lifts 2px and adds a soft shadow. Secondary buttons are white with a navy border and text, filling navy on hover. 0.3s ease transitions.
+- **Motion** (200–600ms, navy and gray only): sections fade and slide up as they scroll into view (`Reveal` in `src/components/motion.tsx`), link underlines grow from the left (`link-grow` / `link-inline`), cards lift with a soft navy-tinted shadow (`card-lift`), and a navy progress bar shows while a reply is written. All movement is off under `prefers-reduced-motion`.
 - **Type:** Fraunces (a literary serif) for headings and the wordmark, Inter for text, JetBrains Mono with tabular figures for prices and amounts (all via `next/font`).
-- **Surfaces:** 1px borders, 8px controls and 14px cards, very soft warm shadows, and a faint paper grain on cream (off in dark mode). Your messages are burgundy bubbles; the AI's are surface cards.
+- **Surfaces:** 1px borders, 8px controls and 14px cards, very soft shadows. Your messages are navy bubbles; the AI's are off-white cards.
 
 ## Stack
 

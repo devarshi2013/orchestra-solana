@@ -10,7 +10,7 @@ export const alt = `Quill: ${TAGLINE} An AI that researches tokenized US stocks 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-/** The link preview: the wordmark on cream, the tagline, and the three facts that matter. */
+/** The link preview: the wordmark on white, the tagline, and the three facts that matter. */
 export default async function OpengraphImage() {
   // Fraunces SemiBold (SIL Open Font License), the display serif, bundled for ImageResponse.
   const fraunces = await readFile(join(process.cwd(), "src/app/_fonts/Fraunces-SemiBold.woff"));
@@ -25,8 +25,8 @@ export default async function OpengraphImage() {
         flexDirection: "column",
         justifyContent: "space-between",
         padding: "72px 80px",
-        background: "#F6EFE4",
-        color: "#2A1A1E",
+        background: "#FFFFFF",
+        color: "#0A0A0A",
         fontFamily: "Fraunces",
       }}
     >
@@ -48,7 +48,7 @@ export default async function OpengraphImage() {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ fontSize: 76, lineHeight: 1.05, letterSpacing: -2 }}>{`${first}.`}</div>
-        <div style={{ fontSize: 76, lineHeight: 1.05, letterSpacing: -2, color: "#6B1E2E" }}>
+        <div style={{ fontSize: 76, lineHeight: 1.05, letterSpacing: -2, color: "#0F1B2D" }}>
           {second}
         </div>
       </div>
@@ -57,15 +57,15 @@ export default async function OpengraphImage() {
           display: "flex",
           gap: 24,
           fontSize: 26,
-          color: "#736350",
-          borderTop: "2px solid #E2D6C3",
+          color: "#6B7280",
+          borderTop: "2px solid #E5E7EB",
           paddingTop: 28,
         }}
       >
         <span>Tokenized US stocks on Solana</span>
-        <span style={{ color: "#D9A441" }}>•</span>
+        <span style={{ color: "#6B7280" }}>•</span>
         <span>Live Jupiter quotes</span>
-        <span style={{ color: "#D9A441" }}>•</span>
+        <span style={{ color: "#6B7280" }}>•</span>
         <span>You approve every buy</span>
       </div>
     </div>,
