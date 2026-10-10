@@ -30,8 +30,8 @@ const QUESTIONS = [
 /** Frequently asked questions, as native disclosure widgets (keyboard and screen-reader friendly). */
 export function Faq() {
   return (
-    <section id="faq" aria-labelledby="faq-heading" className="scroll-mt-20">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-16">
+    <section id="faq" aria-labelledby="faq-heading" className="scroll-mt-20 section-y">
+      <div className="mx-auto grid max-w-6xl gap-[var(--section-head-gap)] px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-16">
         <Reveal>
           <h2
             id="faq-heading"

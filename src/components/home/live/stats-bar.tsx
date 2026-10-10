@@ -28,7 +28,7 @@ export function StatsBar() {
   }
 
   return (
-    <section aria-label="Quill in numbers" className="px-4 pt-10 sm:px-6">
+    <section aria-label="Quill in numbers" className="px-4 section-y sm:px-6">
       <Reveal className="mx-auto max-w-6xl">
         <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border bg-border lg:grid-cols-4">
           {stats.map((s) => (

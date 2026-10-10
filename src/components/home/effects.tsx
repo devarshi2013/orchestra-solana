@@ -81,24 +81,3 @@ export function GradientCard({
     </div>
   );
 }
-
-/** Shared SVG gradient definitions for the home graphics (navy, blue, silver). */
-export function HomeGradients({ id }: { id: string }) {
-  return (
-    <defs>
-      <linearGradient id={`${id}-silver`} x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#E6EAF0" />
-        <stop offset="0.5" stopColor="#C9D0D7" stopOpacity="0.7" />
-        <stop offset="1" stopColor="#3B5BDB" stopOpacity="0.9" />
-      </linearGradient>
-      <linearGradient id={`${id}-blue`} x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#3B5BDB" />
-        <stop offset="1" stopColor="#0F1B2D" />
-      </linearGradient>
-      <radialGradient id={`${id}-glow`}>
-        <stop offset="0" stopColor="#3B5BDB" stopOpacity="0.55" />
-        <stop offset="1" stopColor="#1E3A8A" stopOpacity="0" />
-      </radialGradient>
-    </defs>
-  );
-}

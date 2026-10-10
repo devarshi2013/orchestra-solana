@@ -7,7 +7,8 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { GridOverlay, HomeGradients, Orbs } from "./effects";
+import { GridOverlay, Orbs } from "./effects";
+import { HeroVisual } from "./hero-visual";
 import { Accent, HoverWords, PauseOffscreen } from "./hover-text";
 
 const STEPS = ["Search", "Research", "Approve", "Trade"];
@@ -17,7 +18,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 /**
  * Pill label, two-line headline ("Quill" in a silver-to-blue gradient italic),
  * subtext, a word that slides vertically through Search → Research → Approve →
- * Trade, two buttons, and a large glowing ring-and-feather graphic below.
+ * Trade, two buttons, and the live chart visual below (HeroVisual).
  * Orbs drift behind; under reduced motion nothing moves or cycles.
  */
 export function Hero() {
@@ -121,93 +122,15 @@ export function Hero() {
         </motion.div>
       </div>
 
-      {/* The hero graphic, below the text: glowing rings with a feather curve sweeping through. */}
+      {/* The hero visual, below the text: a live chart with a question and a real quote floating over it. */}
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.9, ease: EASE, delay: 0.3 }}
-        className="relative mx-auto mt-6 w-full max-w-5xl px-4 sm:mt-2"
+        className="relative mx-auto mt-10 w-full max-w-5xl px-4 sm:mt-14 sm:px-6"
       >
-        <PauseOffscreen>
-          <RingsAndFeather />
-        </PauseOffscreen>
+        <HeroVisual />
       </motion.div>
     </section>
-  );
-}
-
-/** Feather barbs: short strokes off one side of the curve, generated along a cubic Bézier. */
-function barbs() {
-  const p0 = [210, 400] as const;
-  const p1 = [330, 310] as const;
-  const p2 = [480, 210] as const;
-  const p3 = [640, 130] as const;
-  const at = (t: number, i: 0 | 1) =>
-    (1 - t) ** 3 * p0[i] +
-    3 * (1 - t) ** 2 * t * p1[i] +
-    3 * (1 - t) * t ** 2 * p2[i] +
-    t ** 3 * p3[i];
-  const lines: string[] = [];
-  for (let k = 0; k <= 26; k++) {
-    const t = 0.12 + (k / 26) * 0.8;
-    const len = 46 * Math.sin(Math.PI * ((t - 0.12) / 0.8)) + 8;
-    lines.push(
-      `M${at(t, 0).toFixed(1)} ${at(t, 1).toFixed(1)} l${(-len * 0.35).toFixed(1)} ${(-len).toFixed(1)}`,
-    );
-  }
-  return lines.join(" ");
-}
-const BARBS = barbs();
-
-function RingsAndFeather() {
-  return (
-    <svg aria-hidden viewBox="0 0 800 460" className="h-auto w-full">
-      <HomeGradients id="hero" />
-      <ellipse cx="400" cy="270" rx="300" ry="190" fill="url(#hero-glow)" />
-      {/* The rings turn very slowly around the centre. */}
-      <g className="origin-[400px_270px] will-change-transform motion-safe:animate-spin-slow">
-        {[70, 120, 170, 220].map((r, i) => (
-          <circle
-            key={r}
-            cx="400"
-            cy="270"
-            r={r}
-            fill="none"
-            stroke="url(#hero-silver)"
-            strokeOpacity={0.55 - i * 0.1}
-            strokeWidth={i === 1 ? 1.5 : 1}
-            strokeDasharray={i === 2 ? "2 7" : undefined}
-          />
-        ))}
-        <circle cx="400" cy="50" r="5" fill="#C9D0D7" />
-        <circle cx="570" cy="270" r="4" fill="#8FA4FF" />
-        <circle cx="281" cy="380" r="3.5" fill="#C9D0D7" fillOpacity="0.7" />
-      </g>
-      {/* The feather: a sweeping shaft with barbs, over a soft glow (the glow is skipped on phones). */}
-      <g className="hidden sm:block" opacity="0.5" filter="blur(10px)">
-        <path
-          d="M210 400 C 330 310, 480 210, 640 130"
-          stroke="#3B5BDB"
-          strokeWidth="10"
-          fill="none"
-        />
-      </g>
-      <path
-        d={BARBS}
-        stroke="url(#hero-silver)"
-        strokeOpacity="0.45"
-        strokeWidth="1.2"
-        fill="none"
-      />
-      <path
-        d="M190 416 C 330 310, 480 210, 640 130"
-        stroke="url(#hero-silver)"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <circle cx="400" cy="270" r="9" fill="#F5F7FA" />
-      <circle cx="400" cy="270" r="22" fill="none" stroke="#8FA4FF" strokeOpacity="0.5" />
-    </svg>
   );
 }

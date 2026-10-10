@@ -65,7 +65,7 @@ export function InvestorBento() {
   const both = Boolean(gaps && audUsd);
 
   return (
-    <ul ref={root} className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+    <ul ref={root} className="section-head grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
       <Reveal as="li" className="sm:col-span-2 lg:col-span-4 lg:row-span-2">
         <HoursDial />
       </Reveal>

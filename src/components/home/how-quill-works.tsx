@@ -10,8 +10,8 @@ import { ScrollStory } from "./story/scroll-story";
  */
 export function HowQuillWorks() {
   return (
-    <section id="how-it-works" aria-labelledby="how-heading" className="scroll-mt-20">
-      <div className="mx-auto max-w-6xl px-4 pb-28 sm:px-6 sm:pb-40">
+    <section id="how-it-works" aria-labelledby="how-heading" className="scroll-mt-20 section-y">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal>
           <h2
             id="how-heading"

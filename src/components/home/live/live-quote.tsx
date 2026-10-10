@@ -1,55 +1,23 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
-import { useEffect, useState } from "react";
-
 import { LogoMark } from "@/components/brand/logo";
 import { Reveal } from "@/components/motion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getJson } from "@/hooks/use-markets";
-import type { ExampleQuote } from "@/lib/markets/types";
 
 import { GradientCard } from "../effects";
 import { LiveStamp } from "./home-market";
-
-const REFRESH_MS = 30_000;
+import { useExampleQuote } from "./use-example-quote";
 
 /**
  * An example question answered with a REAL Jupiter /order quote (10 USDC of
- * NVDA, no taker: pricing only, nothing that could be signed), refreshed
- * every 30 s while the tab is visible. Clearly labelled as a quote, not a trade.
+ * NVDA; see useExampleQuote). Clearly labelled as a quote, not a trade.
  */
 export function LiveQuote() {
-  const [quote, setQuote] = useState<ExampleQuote | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    const abort = new AbortController();
-    const load = () => {
-      if (document.visibilityState !== "visible") return;
-      getJson<ExampleQuote>("/api/markets/example-quote", abort.signal)
-        .then((q) => {
-          setQuote(q);
-          setFailed(false);
-        })
-        .catch((e: unknown) => {
-          if (abort.signal.aborted) return;
-          console.error("[home] example quote failed", e);
-          setFailed(true);
-        });
-    };
-    load();
-    const id = window.setInterval(load, REFRESH_MS);
-    document.addEventListener("visibilitychange", load);
-    return () => {
-      window.clearInterval(id);
-      document.removeEventListener("visibilitychange", load);
-      abort.abort();
-    };
-  }, []);
+  const { quote, failed } = useExampleQuote();
 
   return (
-    <section aria-labelledby="live-quote-heading" className="px-4 pt-16 sm:px-6 sm:pt-20">
+    <section aria-labelledby="live-quote-heading" className="px-4 section-y sm:px-6">
       <Reveal className="mx-auto max-w-3xl">
         <GradientCard innerClassName="p-5 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -59,7 +27,7 @@ export function LiveQuote() {
             >
               Live quote, not a trade
             </h2>
-            <LiveStamp at={quote ? Date.parse(quote.asOf) : null} failed={failed && !quote} />
+            <LiveStamp at={quote ? Date.parse(quote.asOf) : null} failed={failed} />
           </div>
           <div className="mt-5 space-y-3">
             <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-surface-raised px-4 py-2.5 text-sm">
@@ -68,7 +36,7 @@ export function LiveQuote() {
             <div className="flex gap-3">
               <LogoMark className="mt-1 size-7" />
               <div className="min-h-16 flex-1 rounded-2xl rounded-tl-md border px-4 py-3">
-                {failed && !quote ? (
+                {failed ? (
                   <p className="text-sm text-muted-foreground">Data unavailable</p>
                 ) : !quote ? (
                   <div className="space-y-2">

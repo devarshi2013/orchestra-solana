@@ -38,7 +38,7 @@ export function SectorHeatmap() {
   };
 
   return (
-    <section aria-labelledby="sectors-heading" className="px-4 pb-24 sm:px-6 sm:pb-32">
+    <section aria-labelledby="sectors-heading" className="px-4 section-y sm:px-6">
       <Reveal className="mx-auto max-w-6xl space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-1.5">

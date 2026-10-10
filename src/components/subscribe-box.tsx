@@ -37,8 +37,8 @@ export function SubscribeBox() {
   };
 
   return (
-    <section aria-labelledby={`${id}-heading`}>
-      <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6">
+    <section aria-labelledby={`${id}-heading`} className="section-y">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
         <div className="mx-auto flex max-w-3xl flex-col gap-6 rounded-2xl border bg-card p-6 sm:p-8 md:flex-row md:items-center md:justify-between">
           <div className="space-y-2 md:max-w-xs">
             <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground">

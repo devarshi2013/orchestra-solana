@@ -12,7 +12,6 @@ import { LiveQuote } from "@/components/home/live/live-quote";
 import { SectorHeatmap } from "@/components/home/live/sector-heatmap";
 import { StatsBar } from "@/components/home/live/stats-bar";
 import { TickerTape } from "@/components/home/live/ticker-tape";
-import { Trust } from "@/components/home/live/trust";
 import { HowQuillWorks } from "@/components/home/how-quill-works";
 import { Statement } from "@/components/home/statement";
 import { SiteNavbar } from "@/components/layout/site-navbar";
@@ -23,7 +22,7 @@ import { SubscribeBox } from "@/components/subscribe-box";
  * under the bar; the layout's copy is hidden: data-home-page, globals.css), hero, statement,
  * how Quill works (four steps), the three product rows, the bento grid, FAQ, email signup and a closing
  * call to action, plus the live sections (ticker tape, live quote, stats,
- * markets table, sector heatmap, trust), which read real data from our /api
+ * markets table, sector heatmap), which read real data from our /api
  * routes; see docs/home.md.
  */
 export default function Home() {
@@ -49,15 +48,11 @@ export default function Home() {
           <BentoGrid />
           <HomeMarkets />
           <SectorHeatmap />
-          <Trust />
           <AssetDrawer />
         </HomeMarketProvider>
         <Faq />
         <SubscribeBox />
         <FinalCta />
-        <p className="mx-auto w-full max-w-6xl px-4 pb-10 text-center text-xs text-muted-foreground sm:px-6">
-          Research only. Not financial advice.
-        </p>
       </main>
     </div>
   );

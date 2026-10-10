@@ -10,13 +10,17 @@ import { InvestorBento } from "./investors/investor-bento";
  */
 export function BentoGrid() {
   return (
-    <section id="product" aria-labelledby="bento-heading" className="relative scroll-mt-20">
+    <section
+      id="product"
+      aria-labelledby="bento-heading"
+      className="relative scroll-mt-20 section-y"
+    >
       {/* The band: a soft blue tint that fades into the page above and below. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent,rgb(59_91_219/0.09)_18%,rgb(59_91_219/0.09)_82%,transparent)]"
       />
-      <div className="relative mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal>
           <h2
             id="bento-heading"

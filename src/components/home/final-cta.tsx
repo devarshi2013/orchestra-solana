@@ -9,7 +9,7 @@ import { PauseOffscreen } from "./hover-text";
 /** The closing panel: navy-to-black gradient with a glowing orb in a corner, away from the text. */
 export function FinalCta() {
   return (
-    <section aria-labelledby="cta-heading" className="px-4 pb-24 sm:px-6 sm:pb-32">
+    <section aria-labelledby="cta-heading" className="px-4 section-y sm:px-6">
       <Reveal className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl border border-[rgb(255_255_255/0.06)] bg-[linear-gradient(135deg,#0F1B2D_0%,#0A1220_45%,#07090D_100%)] px-6 py-16 text-center sm:px-12 sm:py-24">
         <PauseOffscreen className="pointer-events-none absolute inset-0">
           <div
@@ -27,7 +27,7 @@ export function FinalCta() {
         >
           Search it. Approve it. Own it.
         </h2>
-        <div className="relative mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <div className="relative section-head flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button asChild size="lg" className="w-full sm:w-auto">
             <Link href="/markets">
               Start trading

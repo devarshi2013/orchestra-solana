@@ -38,12 +38,15 @@ type Tip = { left: number; top: number; time: string; price: string } | null;
  * A stock's price chart (lightweight-charts, TradingView's open-source charts):
  * an area line coloured by the period's move, 1H to 1Y timeframes, a
  * crosshair and a hover tooltip. History comes from /api/markets/history.
+ * With `fixedWindow` it is just the plot for that one timeframe, filling its
+ * parent (no card, no timeframe tabs): the home page's hero uses it that way.
  */
-export function PriceChart({ ticker }: { ticker: string }) {
+export function PriceChart({ ticker, fixedWindow }: { ticker: string; fixedWindow?: WindowId }) {
   const container = useRef<HTMLDivElement>(null);
   const chart = useRef<IChartApi | null>(null);
   const series = useRef<ISeriesApi<"Area"> | null>(null);
-  const [windowId, setWindowId] = useState<WindowId>("24h");
+  const [picked, setWindowId] = useState<WindowId>("24h");
+  const windowId = fixedWindow ?? picked;
   // The last load's outcome, tagged with what it was for: anything else is still loading.
   const [loaded, setLoaded] = useState<{ key: string; error: string | null } | null>(null);
   const key = `${ticker}:${windowId}`;
@@ -73,7 +76,8 @@ export function PriceChart({ ticker }: { ticker: string }) {
     const s = c.addSeries(AreaSeries, {
       lineWidth: 2,
       priceLineVisible: false,
-      lastValueVisible: true,
+      // The hero shows the live price beside the chart, so no second (candle) price label there.
+      lastValueVisible: !fixedWindow,
       priceFormat: { type: "custom", formatter: (p: number) => formatPrice(p), minMove: 0.0001 },
     });
     c.subscribeCrosshairMove((param) => {
@@ -99,7 +103,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
       chart.current = null;
       series.current = null;
     };
-  }, []);
+  }, [fixedWindow]);
 
   // Load the timeframe's history and draw it.
   useEffect(() => {
@@ -136,6 +140,28 @@ export function PriceChart({ ticker }: { ticker: string }) {
     return () => abort.abort();
   }, [ticker, windowId, key]);
 
+  const plot = (
+    <>
+      <div ref={container} className="absolute inset-0" aria-label={`${ticker} price chart`} />
+      {status === "loading" && <Skeleton className="absolute inset-0 rounded-xl opacity-60" />}
+      {status === "error" && (
+        <p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-muted-foreground">
+          {loaded?.error}
+        </p>
+      )}
+      {tip && (
+        <div
+          className="pointer-events-none absolute z-10 rounded-lg border bg-popover px-2.5 py-1.5 text-xs shadow-lift"
+          style={{ left: tip.left, top: tip.top }}
+        >
+          <p className="font-mono font-medium text-foreground tabular-nums">{tip.price}</p>
+          <p className="text-muted-foreground">{tip.time}</p>
+        </div>
+      )}
+    </>
+  );
+  if (fixedWindow) return <div className="relative size-full">{plot}</div>;
+
   return (
     <div className="rounded-2xl border bg-card p-4 sm:p-5">
       <div role="tablist" aria-label="Timeframe" className="mb-3 flex gap-1">
@@ -158,22 +184,7 @@ export function PriceChart({ ticker }: { ticker: string }) {
         ))}
       </div>
       <div className="relative h-72 sm:h-96" data-lenis-prevent>
-        <div ref={container} className="absolute inset-0" aria-label={`${ticker} price chart`} />
-        {status === "loading" && <Skeleton className="absolute inset-0 rounded-xl opacity-60" />}
-        {status === "error" && (
-          <p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-muted-foreground">
-            {loaded?.error}
-          </p>
-        )}
-        {tip && (
-          <div
-            className="pointer-events-none absolute z-10 rounded-lg border bg-popover px-2.5 py-1.5 text-xs shadow-lift"
-            style={{ left: tip.left, top: tip.top }}
-          >
-            <p className="font-mono font-medium text-foreground tabular-nums">{tip.price}</p>
-            <p className="text-muted-foreground">{tip.time}</p>
-          </div>
-        )}
+        {plot}
       </div>
     </div>
   );

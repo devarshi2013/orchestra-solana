@@ -12,23 +12,29 @@ and headline accents, never behind body text.
 
 Each section is its own component in `src/components/home/`:
 
-| Section                                                                                                                                                                                                                                                                                                                                           | Component                                 |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| Announcement bar, with a blue gradient line under it                                                                                                                                                                                                                                                                                              | `announcement-bar.tsx`                    |
-| Navbar (the site-wide one): Q mark + "Quill", Markets, Research, Product / How it works / FAQ, "Launch app"                                                                                                                                                                                                                                       | `src/components/layout/site-navbar.tsx`   |
-| Hero: pill label, two-line headline with "_Quill_" in a silver-to-blue gradient, subtext, a step word that slides vertically (Search → Research → Approve → Trade), "Start trading" (→ `/markets`) and "Research with Quill" (→ `/chat`), and slowly turning rings with a feather curve below the text; drifting orbs and a faded dot grid behind | `hero.tsx`                                |
-| Statement: "Clarity is the best edge."                                                                                                                                                                                                                                                                                                            | `statement.tsx`                           |
-| How Quill works (`#how-it-works`): "From question to trade", a scroll-driven walkthrough of one trade (see below)                                                                                                                                                                                                                                 | `how-quill-works.tsx`, `story/`           |
-| Feature rows (`#features`): Research, Search, Trade, each with a blue label and a gradient graphic, swapping sides                                                                                                                                                                                                                                | `feature-rows.tsx`, `feature-visuals.tsx` |
-| "Built for investors" (`#product`): a tinted band with a bento of live tiles (see below)                                                                                                                                                                                                                                                          | `bento-grid.tsx`, `investors/`            |
-| FAQ (`#faq`)                                                                                                                                                                                                                                                                                                                                      | `faq.tsx`                                 |
-| Email signup (Resend, `/api/subscribe`)                                                                                                                                                                                                                                                                                                           | `src/components/subscribe-box.tsx`        |
-| Final call to action: navy-to-black panel with a glowing orb in a corner                                                                                                                                                                                                                                                                          | `final-cta.tsx`                           |
+| Section                                                                                                                                                                                                                                                                                                                                                                                                                                 | Component                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Announcement bar, with a blue gradient line under it                                                                                                                                                                                                                                                                                                                                                                                    | `announcement-bar.tsx`                    |
+| Navbar (the site-wide one): Q mark + "Quill", Markets, Research, Product / How it works / FAQ, "Launch app"                                                                                                                                                                                                                                                                                                                             | `src/components/layout/site-navbar.tsx`   |
+| Hero: pill label, two-line headline with "_Quill_" in a silver-to-blue gradient, subtext, a step word that slides vertically (Search → Research → Approve → Trade), "Start trading" (→ `/markets`) and "Research with Quill" (→ `/chat`), and below the text a live NVDA chart (`hero-visual.tsx`: price, 24h change, last 7 days, a floating question and a real Jupiter quote for 10 USDC); drifting orbs and a faded dot grid behind | `hero.tsx`                                |
+| Statement: "Clarity is the best edge."                                                                                                                                                                                                                                                                                                                                                                                                  | `statement.tsx`                           |
+| How Quill works (`#how-it-works`): "From question to trade", a scroll-driven walkthrough of one trade (see below)                                                                                                                                                                                                                                                                                                                       | `how-quill-works.tsx`, `story/`           |
+| Feature rows (`#features`): Research, Search, Trade, each with a blue label and a gradient graphic, swapping sides                                                                                                                                                                                                                                                                                                                      | `feature-rows.tsx`, `feature-visuals.tsx` |
+| "Built for investors" (`#product`): a tinted band with a bento of live tiles (see below)                                                                                                                                                                                                                                                                                                                                                | `bento-grid.tsx`, `investors/`            |
+| FAQ (`#faq`)                                                                                                                                                                                                                                                                                                                                                                                                                            | `faq.tsx`                                 |
+| Email signup (Resend, `/api/subscribe`)                                                                                                                                                                                                                                                                                                                                                                                                 | `src/components/subscribe-box.tsx`        |
+| Final call to action: navy-to-black panel with a glowing orb in a corner                                                                                                                                                                                                                                                                                                                                                                | `final-cta.tsx`                           |
 
 Shared effects (orbs, faded grid, gradient-bordered card with a hover glow,
-grain, SVG gradients) are in `effects.tsx`. Then a gray "Research only. Not
-financial advice." line and the site-wide `DitheredFooter`, here in dark with
-blue (`#3B5BDB`) dots.
+grain) are in `effects.tsx`. Then the site-wide `DitheredFooter`: logo and
+tagline, three links (Ask Quill, Browse stocks, GitHub), the blue (`#3B5BDB`)
+dot band, and the "Research only. Not financial advice." line (with links to
+the risk disclosure and terms) beside the copyright.
+
+**Spacing:** every section carries `section-y` (globals.css), which pads it by
+half of `--section-gap` above and below, so neighbours are always one gap
+apart: 48px on phones, 64px from 640px, 88px from 1024px. `section-head`
+(24px, 32px from 640px) is the space from a section's heading to its content.
 
 ## "From question to trade" walkthrough
 
@@ -99,7 +105,7 @@ work from the keyboard, and results are announced with `aria-live="polite"`.
 
 Slotted between the existing sections (nothing existing moved): the ticker
 tape, live quote and stats bar follow the hero; the markets table, sector
-heatmap and trust section follow the bento grid. They live in
+heatmap follow the bento grid. They live in
 `src/components/home/live/` and share one provider (`home-market.tsx`).
 
 | Section                    | Component            | What it shows                                                                                                                                                                                                                                                                                                  |
@@ -109,7 +115,6 @@ heatmap and trust section follow the bento grid. They live in
 | Stats bar                  | `stats-bar.tsx`      | Verified stocks, sectors, issuers, combined 24h volume.                                                                                                                                                                                                                                                        |
 | Markets table (`#markets`) | `home-markets.tsx`   | Tabs Stocks / ETFs / Crypto / Top gainers / Top losers; Asset, Price, 24h %, 24h volume, Market cap, 7-day sparkline; sortable; 10 rows; "View all" → `/markets`; a row opens a drawer with its details and a link to its stock page. The US market hours badge (`market-hours-badge.tsx`) sits in its header. |
 | Sector heatmap             | `sector-heatmap.tsx` | A tile per sector coloured by the average 24h change; clicking one filters the table.                                                                                                                                                                                                                          |
-| Trust                      | `trust.tsx`          | The verified-stock count, a link to `/registry` (every mint with a Solscan link, issuer and last-verified date), and notes on custody and sourcing.                                                                                                                                                            |
 
 **Every number and its source**
 
@@ -131,10 +136,10 @@ overview is re-read every 60 s and prices every 12 s, both paused while the tab
 is hidden. No user counts, testimonials or invented stats. The page's existing
 buttons are unchanged and the live sections add no chat buttons.
 
-**Motion:** orbs drift, the hero rings turn (90 s a turn), the step word
+**Motion:** orbs drift, the hero overlays bob slowly, the step word
 slides every 2.2 s, sections fade in on scroll, cards lift and glow on hover.
-Under `prefers-reduced-motion` none of it moves. On phones the second orb and
-the feather's glow are left out.
+Under `prefers-reduced-motion` none of it moves. On phones the second orb is
+left out.
 
 **Logo:** the Q mark (`src/components/brand/quill-mark.tsx`), used across the whole site (see the README).
 
@@ -154,8 +159,10 @@ the feather's glow are left out.
   (`PauseOffscreen`); scroll-in animations run once (IntersectionObserver via
   `Reveal`); the grain is left out on phones.
 - **Hover effects (mouse only, `hover-text.tsx` + `globals.css`):** headline
-  words lift and brighten; gradient accents sweep; the statement spreads and
-  glows; row labels turn silver with an arrow and headlines get a growing
+  words lift and brighten; gradient accents sweep; the punch line lights up
+  on hover, keyboard focus or a tap (a brand gradient sweeps across it, a glow
+  fades in, and "edge" lifts over a highlighter underline; a plain colour
+  change under reduced motion); row labels turn silver with an arrow and headlines get a growing
   underline; steps grow and light the line
-  up to them; nav links get a centre-out underline; footer links lift; buttons
+  up to them; nav links get a centre-out underline; footer links brighten with an underline that slides in from the left; buttons
   get a light sweep. Movement is dropped under reduced motion.

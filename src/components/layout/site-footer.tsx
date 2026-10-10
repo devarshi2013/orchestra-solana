@@ -1,42 +1,45 @@
-import { GitHubIcon, XIcon } from "@/components/brand/social-icons";
-import { DitheredFooter, type FooterColumn } from "@/components/ui/dithered-footer";
+import Link from "next/link";
+
+import { Wordmark } from "@/components/brand/logo";
+import { GitHubIcon } from "@/components/brand/social-icons";
+import { DitheredFooter } from "@/components/ui/dithered-footer";
 
 const REPO = "https://github.com/devarshi2013/orchestra-solana";
-/** No X account yet: the X icon shares Quill instead of linking a profile. */
-const SHARE_ON_X = `https://x.com/intent/post?text=${encodeURIComponent(
-  "Quill: an AI that researches tokenized US stocks on Solana, and only buys after you approve.",
-)}`;
-/** Only pages that exist: there's no FAQ, About, Contact or Privacy page (yet). */
-const FOOTER_COLUMNS: FooterColumn[] = [
-  { title: "Product", links: [{ label: "How it works", href: "/#how-it-works" }] },
-  {
-    title: "Resources",
-    links: [
-      { label: "Docs", href: `${REPO}/tree/main/docs` },
-      { label: "Stock registry", href: "/registry" },
-      { label: "Risk disclosure", href: "/risk" },
-    ],
-  },
-];
+const inline =
+  "df-link rounded-sm text-foreground/80 hover:text-foreground focus-visible:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--df-accent)]";
 
 /**
- * The site footer: DitheredFooter with Quill's links. No signup form here: the
- * email signup lives on the home page (SubscribeBox).
+ * The site footer: the logo and tagline, three links (ask, browse, GitHub),
+ * the dot band, then the "not financial advice" line (which carries the links
+ * to the risk disclosure and the terms) and the copyright.
  */
 export function SiteFooter() {
   return (
     <DitheredFooter
+      logo={<Wordmark markClassName="size-7" />}
       tagline="Ask an AI about tokenized US stocks. Approve every trade in your own wallet."
-      columns={FOOTER_COLUMNS}
-      legal={[{ label: "Terms", href: "/terms" }]}
-      socials={[
-        { label: "Share Quill on X", href: SHARE_ON_X, icon: <XIcon className="size-4" /> },
-        { label: "Quill on GitHub", href: REPO, icon: <GitHubIcon className="size-4" /> },
+      links={[
+        { label: "Ask Quill", href: "/chat" },
+        { label: "Browse stocks", href: "/markets" },
+        { label: "GitHub", href: REPO, icon: <GitHubIcon className="size-4" /> },
       ]}
-      copyright="© 2026 Quill. All rights reserved."
+      disclaimer={
+        <>
+          Research only. Not financial advice. Tokenized stocks carry risk, and the AI can be wrong:
+          read the{" "}
+          <Link href="/risk" className={inline}>
+            risk disclosure
+          </Link>{" "}
+          and the{" "}
+          <Link href="/terms" className={inline}>
+            terms
+          </Link>{" "}
+          before you trade.
+        </>
+      }
+      copyright="© 2026 Quill"
       // No link yet: pass `href` (portfolio, GitHub or X) to make the name clickable.
       credit={{ name: "Devarshi" }}
-      status={null}
       // Dark navy dots (#0F1B2D); light gray on the dark theme, where navy can't be seen.
       accent="var(--footer-dots)"
     />

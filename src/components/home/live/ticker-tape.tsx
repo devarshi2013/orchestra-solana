@@ -19,7 +19,7 @@ export function TickerTape() {
   const rows = tapeRows(stocks, crypto);
 
   return (
-    <section aria-label="Live prices" className="relative">
+    <section aria-label="Live prices" className="relative pt-6 sm:pt-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 sm:flex-row sm:items-center sm:gap-4 sm:px-6">
         <LiveStamp className="shrink-0" />
         <div className="group relative min-w-0 flex-1 overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_6%,#000_94%,transparent)] motion-reduce:overflow-x-auto motion-reduce:[mask-image:none]">

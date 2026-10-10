@@ -52,7 +52,7 @@ export function HomeMarkets() {
     <section
       id="markets"
       aria-labelledby="home-markets-heading"
-      className="scroll-mt-20 px-4 pb-24 sm:px-6 sm:pb-32"
+      className="scroll-mt-20 px-4 section-y sm:px-6"
     >
       <Reveal className="mx-auto max-w-6xl space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-4">

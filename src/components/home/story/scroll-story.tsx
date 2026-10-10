@@ -97,7 +97,7 @@ function LiveStory({
 
   return (
     // Tall on purpose: five steps of ~70vh each, plus the sticky area itself.
-    <div ref={track} className="relative mt-12 h-[calc(350vh+100vh-7rem)] sm:mt-16">
+    <div ref={track} className="relative section-head h-[calc(350vh+100vh-7rem)]">
       <div
         ref={sticky}
         onPointerEnter={() => (hovered.current = true)}
@@ -235,7 +235,7 @@ function StaticStory({ data }: { data: StoryData }) {
     <ol
       tabIndex={0}
       aria-label="The five steps"
-      className="mt-12 flex snap-x gap-4 overflow-x-auto rounded-xl pb-3 outline-none focus-visible:ring-2 focus-visible:ring-ring sm:mt-16"
+      className="section-head flex snap-x gap-4 overflow-x-auto rounded-xl pb-3 outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {STEPS.map((s, i) => (
         <li key={s.title} className="w-[19rem] shrink-0 snap-start space-y-3 sm:w-[22rem]">

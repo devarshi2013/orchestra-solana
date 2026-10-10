@@ -33,8 +33,8 @@ const ROWS: { label: string; title: string; text: string; visual: ReactNode }[] 
 /** Research, Search and Trade: a blue label, headline and text beside a gradient graphic, swapping sides. */
 export function FeatureRows() {
   return (
-    <section id="features" aria-label="Quill features" className="scroll-mt-20">
-      <div className="mx-auto max-w-6xl space-y-24 px-4 pb-24 sm:space-y-32 sm:px-6 sm:pb-32">
+    <section id="features" aria-label="Quill features" className="scroll-mt-20 section-y">
+      <div className="mx-auto max-w-6xl space-y-[var(--section-gap)] px-4 sm:px-6">
         {ROWS.map((row, i) => (
           // Hovering a row turns its label silver (with an arrow) and underlines its headline.
           <div

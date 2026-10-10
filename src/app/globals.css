@@ -472,8 +472,14 @@ body:has([data-home-page]) [data-site-header] {
 @utility animate-orb {
   animation: orb-drift 22s ease-in-out infinite;
 }
-@utility animate-spin-slow {
-  animation: spin 90s linear infinite;
+/* Hero overlays: a slow, small bob. */
+@keyframes float {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@utility animate-float {
+  animation: float 7s ease-in-out infinite;
 }
 /* Headline accents: silver to soft electric blue, as text. */
 @utility text-gradient-silver {
@@ -502,10 +508,6 @@ body:has([data-home-page]) [data-site-header] {
   html {
     scroll-behavior: smooth;
   }
-}
-/* No line between a page and the footer. */
-[data-site-footer] footer {
-  border-top-color: transparent;
 }
 /* Looping animations stop while their section is off screen (PauseOffscreen). */
 [data-paused] *,
@@ -541,16 +543,6 @@ body:has([data-home-page]) [data-site-header] {
   /* A gradient word that also lifts keeps its gradient (no white fill). */
   .accent-sweep.hover-word:hover {
     color: transparent;
-  }
-  /* The big statement: letters spread a touch and a blue glow fades in behind. */
-  .statement-hover {
-    transition: letter-spacing 400ms ease-out;
-  }
-  .statement-hover .statement-glow {
-    transition: opacity 400ms ease-out;
-  }
-  .statement-hover:hover .statement-glow {
-    opacity: 1;
   }
   /* Feature row headlines: a blue gradient underline grows from the left. */
   .underline-grow {
@@ -612,23 +604,141 @@ body:has([data-home-page]) [data-site-header] {
   [data-slot="button"]:hover::after {
     transform: translateX(130%);
   }
-  /* Footer links on the home page: grey to white with a tiny lift. */
-  [data-site-footer] footer a {
-    transition:
-      color 250ms ease-out,
-      transform 250ms ease-out;
-  }
   @media (prefers-reduced-motion: no-preference) {
     .hover-word:hover {
       transform: translateY(-3px);
     }
-    .statement-hover:hover {
-      letter-spacing: -0.012em;
-    }
-    [data-site-footer] footer a:hover {
-      transform: translateY(-1px);
-    }
   }
+}
+
+/*
+ * The punch line ("Clarity is the best edge."). Lit by hover (mouse), keyboard
+ * focus, or a tap (which sets data-lit): a brand gradient sweeps across the
+ * letters, they spread a touch, a glow fades in behind, and "edge" lifts with
+ * a highlighter underline. Under reduced motion it is a plain colour change.
+ */
+.punch {
+  cursor: default;
+  outline: none;
+  transition: letter-spacing 400ms ease-out;
+}
+.punch:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 12px;
+  border-radius: 1rem;
+}
+.punch-glow {
+  transition: opacity 400ms ease-out;
+}
+.punch-text {
+  transition: color 300ms ease-out;
+}
+.punch-edge {
+  position: relative;
+  display: inline-block;
+  /* Its own layer, so the underline sits behind the letters. */
+  isolation: isolate;
+}
+.punch-edge::after {
+  content: "";
+  position: absolute;
+  inset-inline: -0.04em;
+  bottom: 0.08em;
+  height: 0.28em;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3b5bdb, #8fa4ff);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 300ms ease-out;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* White at rest (the gradient's first 40%); the lit state slides the colours in. */
+  .punch-text {
+    background-image: linear-gradient(
+      100deg,
+      #f5f7fa 0%,
+      #f5f7fa 40%,
+      #c9d0d7 56%,
+      #8fa4ff 72%,
+      #3b5bdb 88%,
+      #8fa4ff 100%
+    );
+    background-size: 250% 100%;
+    background-position: 0% 50%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    transition: background-position 400ms ease-out;
+  }
+  .punch-edge {
+    transition: transform 350ms var(--ease-out-soft);
+  }
+  .punch-edge::after {
+    opacity: 0.55;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 350ms var(--ease-out-soft) 80ms;
+  }
+}
+.punch[data-lit] .punch-glow,
+.punch:focus-visible .punch-glow {
+  opacity: 1;
+}
+.punch[data-lit] .punch-edge::after,
+.punch:focus-visible .punch-edge::after {
+  opacity: 0.55;
+}
+@media (prefers-reduced-motion: reduce) {
+  .punch[data-lit] .punch-text,
+  .punch:focus-visible .punch-text {
+    color: #8fa4ff;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .punch[data-lit],
+  .punch:focus-visible {
+    letter-spacing: -0.012em;
+  }
+  .punch[data-lit] .punch-text,
+  .punch:focus-visible .punch-text {
+    background-position: 100% 50%;
+  }
+  .punch[data-lit] .punch-edge,
+  .punch:focus-visible .punch-edge {
+    transform: translateY(-0.04em) rotate(-2deg);
+  }
+  .punch[data-lit] .punch-edge::after,
+  .punch:focus-visible .punch-edge::after {
+    transform: scaleX(1);
+  }
+}
+
+/*
+ * Home page rhythm. Every section pads itself by half the gap above and below
+ * (`section-y`), so two neighbours are always one gap apart: 48px on phones,
+ * 64px on tablets, 88px on desktop. `section-head` is the space from a
+ * section's heading to its content (24px, 32px from tablets up).
+ */
+:root {
+  --section-gap: 3rem;
+  --section-head-gap: 1.5rem;
+}
+@media (min-width: 40rem) {
+  :root {
+    --section-gap: 4rem;
+    --section-head-gap: 2rem;
+  }
+}
+@media (min-width: 64rem) {
+  :root {
+    --section-gap: 5.5rem;
+  }
+}
+@utility section-y {
+  padding-block: calc(var(--section-gap) / 2);
+}
+@utility section-head {
+  margin-top: var(--section-head-gap);
 }
 
 /* The home ticker tape: two copies of the list slide left by one copy's width, forever. */
