@@ -7,7 +7,9 @@ import { FinalCta } from "@/components/home/final-cta";
 import { Hero } from "@/components/home/hero";
 import { HowQuillWorks } from "@/components/home/how-quill-works";
 import { HomeNavbar } from "@/components/home/home-navbar";
+import { SmoothScroll } from "@/components/home/smooth-scroll";
 import { Statement } from "@/components/home/statement";
+import { homeFontVariables } from "@/components/home/fonts";
 import { SubscribeBox } from "@/components/subscribe-box";
 
 /**
@@ -19,7 +21,12 @@ import { SubscribeBox } from "@/components/subscribe-box";
  */
 export default function Home() {
   return (
-    <div data-home-page className="home-dark relative flex flex-1 flex-col">
+    // Sideways overflow is clipped here (not per section), so glows can cross section edges.
+    <div
+      data-home-page
+      className={`${homeFontVariables} home-dark relative flex flex-1 flex-col overflow-x-clip`}
+    >
+      <SmoothScroll />
       <Grain />
       <AnnouncementBar />
       <HomeNavbar />

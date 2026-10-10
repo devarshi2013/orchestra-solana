@@ -16,8 +16,9 @@ export function Orbs({ className }: { className?: string }) {
       aria-hidden
       className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)}
     >
-      <div className="absolute -top-40 left-[8%] size-[26rem] rounded-full bg-[radial-gradient(circle,rgb(30_58_138/0.55),rgb(15_27_45/0)_70%)] blur-3xl motion-safe:animate-orb sm:size-[40rem]" />
-      <div className="absolute top-24 right-[4%] hidden size-[34rem] rounded-full bg-[radial-gradient(circle,rgb(59_91_219/0.28),rgb(15_27_45/0)_70%)] blur-3xl [animation-delay:-9s] motion-safe:animate-orb sm:block" />
+      {/* The blur is fixed; only transform moves (animate-orb), so drifting stays cheap. */}
+      <div className="absolute -top-40 left-[8%] size-[26rem] rounded-full bg-[radial-gradient(circle,rgb(30_58_138/0.55),rgb(15_27_45/0)_70%)] blur-3xl will-change-transform motion-safe:animate-orb sm:size-[40rem]" />
+      <div className="absolute top-24 right-[4%] hidden size-[34rem] rounded-full bg-[radial-gradient(circle,rgb(59_91_219/0.28),rgb(15_27_45/0)_70%)] blur-3xl will-change-transform [animation-delay:-9s] motion-safe:animate-orb sm:block" />
     </div>
   );
 }
@@ -35,10 +36,13 @@ export function GridOverlay({ className }: { className?: string }) {
   );
 }
 
-/** A very faint film grain over the whole page (about 3.5% opacity). */
+/** A very faint film grain over the whole page (about 3.5% opacity); left out on phones to keep scrolling light. */
 export function Grain() {
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 z-0 bg-grain opacity-[0.035]" />
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-0 z-0 hidden bg-grain opacity-[0.035] sm:block"
+    />
   );
 }
 

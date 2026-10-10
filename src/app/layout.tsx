@@ -13,12 +13,7 @@ import { TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
 /** Geist for all text; Geist Mono for prices, tickers and addresses (tabular figures). */
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  // Italic for the accent words in the home page headings.
-  style: ["normal", "italic"],
-});
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL

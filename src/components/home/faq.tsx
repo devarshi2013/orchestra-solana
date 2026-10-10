@@ -2,6 +2,8 @@ import { Plus } from "lucide-react";
 
 import { Reveal } from "@/components/motion";
 
+import { Accent } from "./hover-text";
+
 const QUESTIONS = [
   {
     q: "Does Quill hold my money?",
@@ -28,15 +30,14 @@ const QUESTIONS = [
 /** Frequently asked questions, as native disclosure widgets (keyboard and screen-reader friendly). */
 export function Faq() {
   return (
-    <section id="faq" aria-labelledby="faq-heading" className="scroll-mt-20 border-t">
+    <section id="faq" aria-labelledby="faq-heading" className="scroll-mt-20">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] lg:gap-16">
         <Reveal>
           <h2
             id="faq-heading"
             className="text-4xl leading-[1.08] font-semibold tracking-tight sm:text-5xl"
           >
-            Questions,{" "}
-            <em className="text-gradient-silver pr-[0.06em] font-semibold italic">answered</em>
+            Questions, <Accent>answered</Accent>
           </h2>
         </Reveal>
         <Reveal delay={0.06}>

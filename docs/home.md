@@ -46,3 +46,27 @@ feather inside it, and the Q's tail as a pen nib. White in the home navbar; on
 navy as the favicon (`src/app/icon.svg`), Apple touch icon and install icons
 (`public/brand/quill-icon-*.png`, `public/brand/quill-q-icon.svg`). The rest of
 the site still uses the nib wordmark.
+
+## Fonts, scrolling and hover effects
+
+- **Fonts (home only, `src/components/home/fonts.ts`):** Sora 600/700 for
+  headings, Instrument Serif Italic for the accent words, Manrope 400–600 for
+  text, buttons, nav and cards, and Geist Mono 500 for small labels and step
+  numbers. They load only on this page; the rest of the site keeps Geist.
+- **No dividers:** sections share the `#07090D` background and are separated
+  by spacing; glows cross section edges (the page wrapper clips sideways
+  overflow). The navbar's border shows only once scrolled; the footer's top
+  border is hidden on this page.
+- **Smooth scrolling:** Lenis (`smooth-scroll.tsx`, home only, about 1.1 s,
+  anchor links glide to their section). Off under reduced motion, where native
+  scrolling (with `scroll-behavior: smooth` as a fallback) applies.
+- **Performance:** only transform and opacity animate on scroll; orbs keep a
+  fixed blur and drift with transform; looping animations pause off screen
+  (`PauseOffscreen`); scroll-in animations run once (IntersectionObserver via
+  `Reveal`); the grain is left out on phones.
+- **Hover effects (mouse only, `hover-text.tsx` + `globals.css`):** headline
+  words lift and brighten; gradient accents sweep; the statement spreads and
+  glows; row labels turn silver with an arrow and headlines get a growing
+  underline; bento titles brighten and icons tilt; steps grow and light the line
+  up to them; nav links get a centre-out underline; footer links lift; buttons
+  get a light sweep. Movement is dropped under reduced motion.

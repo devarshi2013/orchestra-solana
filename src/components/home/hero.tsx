@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import { GridOverlay, HomeGradients, Orbs } from "./effects";
+import { Accent, HoverWords, PauseOffscreen } from "./hover-text";
 
 const STEPS = ["Search", "Research", "Approve", "Trade"];
 const STEP_MS = 2200;
@@ -30,8 +31,11 @@ export function Hero() {
   }, [reduce]);
 
   return (
-    <section aria-labelledby="hero-heading" className="relative isolate overflow-hidden">
-      <Orbs />
+    // No overflow clipping here: the orbs spill into the next section (the page wrapper clips sideways).
+    <section aria-labelledby="hero-heading" className="relative isolate">
+      <PauseOffscreen className="pointer-events-none absolute inset-0 -bottom-40">
+        <Orbs />
+      </PauseOffscreen>
       <GridOverlay className="[mask-image:radial-gradient(ellipse_at_top,#000_10%,transparent_65%)]" />
 
       <div className="relative mx-auto max-w-6xl px-4 pt-16 text-center sm:px-6 sm:pt-24">
@@ -52,10 +56,9 @@ export function Hero() {
           transition={{ duration: 0.6, ease: EASE, delay: 0.05 }}
           className="mx-auto mt-7 max-w-4xl text-[2.6rem] leading-[1.04] font-semibold tracking-tight text-foreground sm:text-6xl md:text-7xl"
         >
-          Think before you trade.
+          <HoverWords text="Think before you trade." />
           <span className="block">
-            <em className="text-gradient-silver pr-[0.06em] font-semibold italic">Quill</em> does
-            the research.
+            <Accent className="hover-word">Quill</Accent> <HoverWords text="does the research." />
           </span>
         </motion.h1>
 
@@ -74,7 +77,7 @@ export function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.18 }}
-          className="mt-8 flex items-center justify-center gap-3 font-mono text-sm"
+          className="mt-8 flex items-center justify-center gap-3 font-mono text-sm font-medium"
         >
           <span className="sr-only">Search, then research, then approve, then trade.</span>
           <span aria-hidden className="text-muted-foreground tabular-nums">
@@ -125,7 +128,9 @@ export function Hero() {
         transition={{ duration: 0.9, ease: EASE, delay: 0.3 }}
         className="relative mx-auto mt-6 w-full max-w-5xl px-4 sm:mt-2"
       >
-        <RingsAndFeather />
+        <PauseOffscreen>
+          <RingsAndFeather />
+        </PauseOffscreen>
       </motion.div>
     </section>
   );
@@ -160,7 +165,7 @@ function RingsAndFeather() {
       <HomeGradients id="hero" />
       <ellipse cx="400" cy="270" rx="300" ry="190" fill="url(#hero-glow)" />
       {/* The rings turn very slowly around the centre. */}
-      <g className="origin-[400px_270px] motion-safe:animate-spin-slow">
+      <g className="origin-[400px_270px] will-change-transform motion-safe:animate-spin-slow">
         {[70, 120, 170, 220].map((r, i) => (
           <circle
             key={r}

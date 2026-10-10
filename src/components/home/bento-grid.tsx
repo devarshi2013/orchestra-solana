@@ -4,6 +4,7 @@ import { Reveal } from "@/components/motion";
 import { cn } from "@/lib/utils";
 
 import { GradientCard, HomeGradients } from "./effects";
+import { Accent } from "./hover-text";
 
 // A wide card across the top, then three below (on tablets the last one spans both columns).
 const CARDS: { title: string; text: string; icon: LucideIcon; wide?: boolean; span?: string }[] = [
@@ -30,19 +31,14 @@ const CARDS: { title: string; text: string; icon: LucideIcon; wide?: boolean; sp
 /** "Built for investors who think first": four gradient-bordered cards, the first one wide with a graphic. */
 export function BentoGrid() {
   return (
-    <section
-      id="product"
-      aria-labelledby="bento-heading"
-      className="relative scroll-mt-20 border-t"
-    >
+    <section id="product" aria-labelledby="bento-heading" className="relative scroll-mt-20">
       <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
         <Reveal>
           <h2
             id="bento-heading"
             className="mx-auto max-w-2xl text-center text-4xl leading-[1.06] font-semibold tracking-tight sm:text-5xl"
           >
-            Built for investors who{" "}
-            <em className="text-gradient-silver pr-[0.06em] font-semibold italic">think first</em>
+            Built for investors who <Accent>think first</Accent>
           </h2>
         </Reveal>
         <ul className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -59,9 +55,14 @@ export function BentoGrid() {
               >
                 <div className="relative z-10 flex flex-1 flex-col gap-3 p-6 sm:p-7">
                   <span className="flex size-10 items-center justify-center rounded-full border border-[rgb(143_164_255/0.35)] bg-[radial-gradient(circle,rgb(59_91_219/0.35),rgb(15_27_45/0.6))] shadow-[0_0_24px_-4px_rgb(59_91_219/0.6)]">
-                    <card.icon className="size-4.5 text-foreground" aria-hidden />
+                    <card.icon
+                      className="size-4.5 text-foreground transition-transform duration-300 ease-out motion-safe:group-hover:rotate-[-8deg]"
+                      aria-hidden
+                    />
                   </span>
-                  <h3 className="mt-2 text-lg font-semibold tracking-tight">{card.title}</h3>
+                  <h3 className="mt-2 text-lg font-semibold tracking-tight transition-colors duration-300 ease-out group-hover:text-white">
+                    {card.title}
+                  </h3>
                   <p className="text-sm leading-6 text-muted-foreground">{card.text}</p>
                 </div>
                 {card.wide && (

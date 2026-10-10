@@ -4,15 +4,19 @@ import Link from "next/link";
 import { Reveal } from "@/components/motion";
 import { Button } from "@/components/ui/button";
 
+import { PauseOffscreen } from "./hover-text";
+
 /** The closing panel: navy-to-black gradient with a glowing orb in a corner, away from the text. */
 export function FinalCta() {
   return (
     <section aria-labelledby="cta-heading" className="px-4 pb-24 sm:px-6 sm:pb-32">
-      <Reveal className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl border bg-[linear-gradient(135deg,#0F1B2D_0%,#0A1220_45%,#07090D_100%)] px-6 py-16 text-center sm:px-12 sm:py-24">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-32 -right-24 size-96 rounded-full bg-[radial-gradient(circle,rgb(59_91_219/0.45),rgb(30_58_138/0)_70%)] blur-2xl motion-safe:animate-orb"
-        />
+      <Reveal className="relative mx-auto max-w-6xl overflow-hidden rounded-3xl border border-[rgb(255_255_255/0.06)] bg-[linear-gradient(135deg,#0F1B2D_0%,#0A1220_45%,#07090D_100%)] px-6 py-16 text-center sm:px-12 sm:py-24">
+        <PauseOffscreen className="pointer-events-none absolute inset-0">
+          <div
+            aria-hidden
+            className="absolute -top-32 -right-24 size-96 rounded-full bg-[radial-gradient(circle,rgb(59_91_219/0.45),rgb(30_58_138/0)_70%)] blur-2xl will-change-transform motion-safe:animate-orb"
+          />
+        </PauseOffscreen>
         <div
           aria-hidden
           className="pointer-events-none absolute -bottom-40 -left-24 hidden size-96 rounded-full bg-[radial-gradient(circle,rgb(30_58_138/0.4),rgb(15_27_45/0)_70%)] blur-2xl sm:block"
