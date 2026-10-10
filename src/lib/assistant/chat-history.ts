@@ -82,7 +82,7 @@ export function reopened(turns: ChatTurn[]): ChatTurn[] {
     const buy = turn.buy && {
       ...turn.buy,
       items: turn.buy.items.map((item) =>
-        item.step === "quoting" || item.step === "signing"
+        item.step === "quoting" || item.step === "retrying" || item.step === "signing"
           ? { ...item, step: "failed" as const, error: "Interrupted before it was signed." }
           : item.step === "sending"
             ? {

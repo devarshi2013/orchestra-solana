@@ -101,14 +101,20 @@ describe("itemWarnings", () => {
 
   it("blocks items without a buildable quote", () => {
     expect(itemWarnings({ kind: "stock", usdcAmount: 50 }, quoted(null), OPEN)).toEqual([
-      { kind: "quote", severity: "block", message: "No quote: No route" },
+      {
+        kind: "quote",
+        severity: "block",
+        message: "This stock can't be traded right now. Try a smaller amount or try again later.",
+      },
     ]);
     const unbuildable = itemWarnings(
       { kind: "stock", usdcAmount: 50 },
       quoted(swapQuote({ warning: "Insufficient balance: …" })),
       OPEN,
     );
-    expect(unbuildable[0]).toMatchObject({ severity: "block" });
+    expect(unbuildable).toEqual([
+      { kind: "quote", severity: "block", message: "Not enough USDC for this trade." },
+    ]);
   });
 });
 

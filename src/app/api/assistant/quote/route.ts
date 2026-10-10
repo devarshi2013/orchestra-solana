@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 
 import { quoteRequestSchema } from "@/lib/assistant/schemas";
+import { friendlyError } from "@/lib/friendly-error";
 import { quoteItem } from "@/server/agent/quote";
 import { errorResponse, validationErrorResponse } from "@/server/http";
 
@@ -13,6 +14,6 @@ export async function POST(request: NextRequest) {
     return Response.json(await quoteItem(wallet, item));
   } catch (error) {
     console.error("[quote] failed", error);
-    return errorResponse(503, "Couldn't get a quote right now; try again shortly");
+    return errorResponse(503, friendlyError(error));
   }
 }

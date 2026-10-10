@@ -70,7 +70,7 @@ export function validatePlan(
         `"${item.ticker}" is ${item.usdcAmount} USDC, below the ${minOrder} USDC minimum order size.`,
       );
     }
-    // A token symbol pins that issuer; a company ticker lets the buy pick the cheapest issuer.
+    // A token symbol pins that issuer; a company ticker lets the buy pick the issuer.
     const pinned =
       found.candidates.length === 1 &&
       found.candidates[0]!.symbol.toUpperCase() === item.ticker.replace(/^\$/, "").toUpperCase();

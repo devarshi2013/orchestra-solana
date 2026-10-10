@@ -54,7 +54,7 @@
 ## Plan validation (`src/lib/agent/plan.ts`)
 
 - **Format:** the plan is `{ items: [{ kind: "stock", ticker, usdcAmount, reason }], totalUsdc, rankingMethod }`.
-- **Each item** resolves to a registry company. A ticker (NVDA) leaves the issuer to the buy, which quotes every issuer and takes the cheapest route; a token symbol (NVDAx) pins that issuer.
+- **Each item** resolves to a registry company. A ticker (NVDA) leaves the issuer to the buy, which quotes the issuers' tokens one at a time (most liquid first) and takes the first Jupiter can build; a token symbol (NVDAx) pins that issuer.
 - **No duplicates** (the same company twice, even via different issuers), and every item is at least $10 (`MIN_ORDER_USD`).
 - **The total** equals the items' sum and fits the wallet's live USDC.
 
@@ -65,8 +65,22 @@ Failures go back to the model as an error result. After three, it's told to stop
 The plan card (`src/components/assistant/plan-card.tsx`) shows each stock with:
 
 - **its amount**, editable or removable;
-- **a fresh Jupiter quote** from the cheapest issuer (shown with its liquidity badge): tokens out, price impact and fees, from `POST /api/assistant/quote` and server-paced to fit the Jupiter rate limit;
+- **a fresh Jupiter quote** (shown with its issuer and liquidity badge): tokens out, price impact and fees, from `POST /api/assistant/quote`, server-paced, cached 10 s and asked for 500 ms after typing stops;
 - **warnings** (`src/lib/assistant/review.ts`): high price impact, low or thin liquidity, outside US market hours (not for pre-IPO tokens), or no buildable quote.
+
+**Errors people see** (`src/lib/friendly-error.ts`): one short line per item, red with a warning icon, never Jupiter's raw message, a request ID, JSON or an error code. The full error (status, request ID, body) is logged to the server or browser console instead.
+
+| Failure                                        | Message                                                                        |
+| ---------------------------------------------- | ------------------------------------------------------------------------------ |
+| Rate limit (429), after retries                | Prices are busy right now. Retrying in a moment…                               |
+| No route / no quote / market maker unavailable | This stock can't be traded right now. Try a smaller amount or try again later. |
+| Network error or timeout                       | Connection issue. Check your internet and try again.                           |
+| Not enough USDC                                | Not enough USDC for this trade.                                                |
+| Not enough SOL for fees                        | Not enough SOL for network fees.                                               |
+| Declined in the wallet                         | Transaction cancelled in your wallet.                                          |
+| Anything else                                  | Something went wrong. Please try again.                                        |
+
+A company's tokens (BACon, BACx) give one message together. **Rate limits:** the server retries a 429 three times (1 s, 2 s, 4 s) in `jupiterFetch`; for quotes and buy orders the browser does the retrying instead, so the item can show "Retrying…", and a quote still rate-limited is tried again by itself every 15 s (three times). "Refresh quotes" clears the errors and quotes again.
 
 **Pre-flight checks:**
 

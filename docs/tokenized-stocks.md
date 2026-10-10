@@ -97,9 +97,10 @@ sector, industry, mint, issuer, liquidityTier }` plus the token symbol,
   unreachable, it keeps the committed registry. `SYNC_STOCKS=skip` skips it.
 
 **Same company, several issuers.** All issuers' tokens are kept (NVDAx,
-NVDAon). A plan item names the company ticker; at purchase time every issuer's
-token is quoted for the same USDC amount, and the route with the lowest total
-cost (|price impact| + Jupiter fee) is bought (`src/lib/stocks/best.ts`). Token
+NVDAon). A plan item names the company ticker; at purchase time the issuers'
+tokens are quoted one after another for the same USDC amount, most liquid first,
+and the first one Jupiter can build a swap for is bought (to stay within the
+rate limit). If none can be built, the best-priced quote is shown with why. Token
 amounts and per-token prices aren't compared, because each issuer's token can
 represent a different fraction of a share. A token symbol (NVDAx) pins that
 issuer.

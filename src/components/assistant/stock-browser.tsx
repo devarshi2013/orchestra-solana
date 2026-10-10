@@ -14,6 +14,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { friendlyError } from "@/lib/friendly-error";
 import { assistantApi, type StockCompany } from "@/lib/api-client";
 import {
   activeFilterCount,
@@ -151,7 +152,9 @@ export function StockBrowser({
         setSearchText(fromUrl.search);
       })
       .catch((e: unknown) => {
-        if (!controller.signal.aborted) setError(e instanceof Error ? e.message : String(e));
+        if (controller.signal.aborted) return;
+        console.error("[stocks] list failed", e);
+        setError(friendlyError(e));
       });
     fetch("/api/stocks/metrics", { signal: controller.signal })
       .then((r) => (r.ok ? (r.json() as Promise<Metrics>) : null))

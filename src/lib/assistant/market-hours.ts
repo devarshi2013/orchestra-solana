@@ -60,12 +60,7 @@ export function usMarketSession(now: Date): UsMarketSession {
   return { open: true };
 }
 
-export function describeClosedMarket(reason: Exclude<UsMarketSession, { open: true }>["reason"]) {
-  const when = {
-    weekend: "it's the weekend",
-    holiday: "it's a US market holiday",
-    "pre-market": "it's before 9:30 ET",
-    "after-hours": "it's after 16:00 ET",
-  }[reason];
-  return `US market closed (${when}): the token still trades, but its price can drift from the stock and spreads are wider`;
+/** The short notice shown on stock items outside US market hours (whatever the reason). */
+export function describeClosedMarket(): string {
+  return "US market is closed. Prices may differ from the stock and spreads are wider.";
 }

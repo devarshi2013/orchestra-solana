@@ -70,7 +70,7 @@ export const AGENT_TOOLS: Tool[] = [
   {
     name: "getSwapQuote",
     description:
-      "A live Jupiter quote for spending `usdcAmount` USDC from the user's wallet on one stock. A ticker quotes every issuer's token and returns the cheapest (issuersCompared lists them all); a token symbol (e.g. NVDAx) quotes only that issuer. Returns tokens out, price impact %, fees, liquidity tier, and a warning if the wallet can't make the trade. Only quotes; never trades.",
+      "A live Jupiter quote for spending `usdcAmount` USDC from the user's wallet on one stock. A ticker quotes the issuers' tokens one at a time, most liquid first, and returns the first Jupiter can build (issuersCompared lists those tried); a token symbol (e.g. NVDAx) quotes only that issuer. Returns tokens out, price impact %, fees, liquidity tier, and a warning if the wallet can't make the trade. Only quotes; never trades.",
     strict: true,
     input_schema: {
       type: "object",

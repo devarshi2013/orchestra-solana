@@ -2,7 +2,13 @@ import "server-only";
 
 import { z } from "zod";
 
-import { base58AddressSchema } from "@/lib/jupiter/schemas";
+import {
+  combineKinds,
+  FRIENDLY_MESSAGES,
+  friendlyKind,
+  type FriendlyKind,
+} from "@/lib/friendly-error";
+import { base58AddressSchema, type OrderResponse } from "@/lib/jupiter/schemas";
 import { classifyOrderError } from "@/lib/swap/errors";
 import { SOL_MINT, USDC_MINT } from "@/lib/tokens";
 import { toBaseUnits, toUnits, USDC_DECIMALS } from "@/lib/units";
@@ -36,9 +42,17 @@ import { ISSUER_NAMES, SECTORS, type StockEntry } from "./types";
  * quotes and balances are always live. See docs/market-tools.md.
  */
 
-export type ToolResult<T> = { data: T; reason: null } | { data: null; reason: string };
+export type ToolResult<T> =
+  | { data: T; reason: null }
+  | {
+      data: null;
+      reason: string;
+      /** For quote failures: which friendly message `reason` is (e.g. to retry a rate limit). */
+      kind?: FriendlyKind;
+    };
 const ok = <T>(data: T): ToolResult<T> => ({ data, reason: null });
-const fail = <T>(reason: string): ToolResult<T> => ({ data: null, reason });
+const fail = <T>(reason: string, kind?: FriendlyKind): ToolResult<T> =>
+  kind ? { data: null, reason, kind } : { data: null, reason };
 
 /** Field → why it is null. */
 export type Missing = Record<string, string>;
@@ -304,7 +318,7 @@ export const swapQuoteInput = z
 export type SwapQuote = {
   ticker: string;
   companyName: string;
-  /** The token chosen: the issuer with the lowest total cost for this buy. */
+  /** The token chosen: the most liquid issuer's token that Jupiter could quote. */
   symbol: string;
   issuer: string;
   liquidityTier: string;
@@ -324,7 +338,7 @@ export type SwapQuote = {
   router: string;
   /** Set when Jupiter priced it but couldn't build it for this wallet (e.g. too little USDC). */
   warning: string | null;
-  /** Every issuer's token that was quoted, cheapest first (total cost = impact + fee). */
+  /** The issuers' tokens that were quoted (in order until one worked), cheapest first. */
   issuersCompared: {
     symbol: string;
     issuer: string;
@@ -340,16 +354,44 @@ export type SwapQuote = {
 export type BestQuote = { entry: StockEntry; quote: SwapQuote };
 
 const MAX_CANDIDATES = 4;
+/** A successful quote is reused for this long, so the same quote isn't asked for twice. */
+const QUOTE_TTL_MS = 10_000;
+const quoteCache = new Map<string, { at: number; result: Promise<ToolResult<BestQuote>> }>();
+
+const TIER_ORDER = { high: 0, medium: 1, low: 2 } as const;
 
 /**
  * Live Jupiter /order quotes for spending `usdcAmount` USDC on a company from
- * `wallet`: every issuer's token for it (or just the token symbol given), the
- * cheapest chosen. Never signs, sends or returns a transaction.
+ * `wallet`. The issuers' tokens (e.g. BACon, BACx) are tried one after another,
+ * most liquid first, stopping at the first one Jupiter can build a swap for.
+ * Failures come back as one plain reason (`kind` says which), never Jupiter's
+ * raw errors; the details are logged on the server. Successful quotes are
+ * cached for 10 s. Never signs, sends or returns a transaction.
  */
-export async function quoteBestIssuer(
+export function quoteBestIssuer(
   ticker: string,
   usdcAmount: number,
   wallet: string,
+  options: { retryRateLimit?: boolean } = {},
+): Promise<ToolResult<BestQuote>> {
+  const key = `${ticker.toUpperCase()}|${usdcAmount}|${wallet}`;
+  const hit = quoteCache.get(key);
+  if (hit && Date.now() - hit.at < QUOTE_TTL_MS) return hit.result;
+  const result = quoteFresh(ticker, usdcAmount, wallet, options);
+  quoteCache.set(key, { at: Date.now(), result });
+  // Only successes are reused: a failure is asked again next time.
+  void result.then((r) => {
+    if (!r.data) quoteCache.delete(key);
+    for (const [k, v] of quoteCache) if (Date.now() - v.at >= QUOTE_TTL_MS) quoteCache.delete(k);
+  });
+  return result;
+}
+
+async function quoteFresh(
+  ticker: string,
+  usdcAmount: number,
+  wallet: string,
+  options: { retryRateLimit?: boolean },
 ): Promise<ToolResult<BestQuote>> {
   const found = resolveTicker(ticker);
   if (!found.ok) return fail(found.reason);
@@ -358,27 +400,47 @@ export async function quoteBestIssuer(
     .then((balances) => toUnits(balances[USDC_MINT]?.amount ?? "0", USDC_DECIMALS))
     .catch(() => null);
 
-  const candidates = found.candidates.slice(0, MAX_CANDIDATES);
-  const quoted = [];
+  const candidates = [...found.candidates]
+    .sort((a, b) => TIER_ORDER[a.liquidityTier] - TIER_ORDER[b.liquidityTier])
+    .slice(0, MAX_CANDIDATES);
+  const quoted: {
+    entry: StockEntry;
+    order: OrderResponse | null;
+    kind: FriendlyKind | null;
+  }[] = [];
   for (const entry of candidates) {
     try {
-      // Paced: one company can mean several quotes, within Jupiter's rate limit.
+      // One at a time (paced within Jupiter's rate limit), stopping at the first that works.
       const order = await paced(() =>
-        getOrder({
-          inputMint: USDC_MINT,
-          outputMint: entry.mint,
-          amount: toBaseUnits(usdcAmount, USDC_DECIMALS).toString(),
-          taker: wallet,
-        }),
+        getOrder(
+          {
+            inputMint: USDC_MINT,
+            outputMint: entry.mint,
+            amount: toBaseUnits(usdcAmount, USDC_DECIMALS).toString(),
+            taker: wallet,
+          },
+          undefined,
+          options,
+        ),
       );
-      quoted.push({ entry, order, error: null as string | null });
+      const unbuildable = order.transaction === "" ? classifyOrderError(order) : null;
+      if (unbuildable) {
+        console.error(
+          `[quote] ${entry.symbol} unbuildable: router=${order.router} code=${order.errorCode} ${order.errorMessage ?? ""}`,
+        );
+      }
+      const kind = unbuildable ? friendlyKind(unbuildable) : null;
+      quoted.push({ entry, order, kind });
+      if (!kind && order.outAmount && order.outAmount !== "0") break;
     } catch (error) {
-      quoted.push({ entry, order: null, error: message(error) });
+      // JupiterApiError details are already logged by jupiterFetch.
+      if (!(error instanceof JupiterApiError))
+        console.error(`[quote] ${entry.symbol} failed`, error);
+      quoted.push({ entry, order: null, kind: friendlyKind(error) });
     }
   }
   const held = await usdcHeld;
-  const views = quoted.map(({ entry, order, error }) => {
-    const unbuildable = order && order.transaction === "" ? classifyOrderError(order) : null;
+  const views = quoted.map(({ entry, order, kind }) => {
     const impact =
       order?.priceImpact === null || order?.priceImpact === undefined
         ? null
@@ -387,11 +449,8 @@ export async function quoteBestIssuer(
       entry,
       order,
       impact,
-      note: error
-        ? `No quote: ${error}`
-        : unbuildable
-          ? `${unbuildable.title}: ${unbuildable.message}`
-          : null,
+      kind,
+      note: kind ? FRIENDLY_MESSAGES[kind] : null,
       candidate: {
         symbol: entry.symbol,
         liquidityTier: entry.liquidityTier,
@@ -407,9 +466,9 @@ export async function quoteBestIssuer(
   const pool = buildableNow.length > 0 ? buildableNow : views;
   const bestIndex = pickBest(pool.map((v) => v.candidate));
   if (bestIndex === -1) {
-    return fail(
-      `Jupiter couldn't quote ${found.ticker}: ${views.map((v) => `${v.entry.symbol} (${v.note ?? "no route"})`).join(", ")}`,
-    );
+    // One reason for the company, however many of its tokens failed.
+    const kind = combineKinds(views.map((v) => v.kind ?? "no_route"));
+    return fail(FRIENDLY_MESSAGES[kind], kind);
   }
   const best = pool[bestIndex]!;
   const order = best.order!;
@@ -451,9 +510,7 @@ export async function quoteBestIssuer(
       router: order.router,
       warning:
         best.note ??
-        (held !== null && held < usdcAmount
-          ? `The wallet holds ${held} USDC, less than the ${usdcAmount} USDC quoted`
-          : null),
+        (held !== null && held < usdcAmount ? FRIENDLY_MESSAGES.insufficient_usdc : null),
       issuersCompared,
       executed: false,
       quotedAt: new Date().toISOString(),
@@ -496,7 +553,9 @@ export async function getWalletBalances(input: unknown): Promise<ToolResult<Wall
       readAt: new Date().toISOString(),
     });
   } catch (error) {
-    return fail(`Couldn't read the wallet: ${message(error)}`);
+    console.error("[wallet] balance read failed", error);
+    const kind = friendlyKind(error);
+    return fail(FRIENDLY_MESSAGES[kind === "unknown" ? "network" : kind], kind);
   }
 }
 
@@ -516,7 +575,7 @@ export const STOCK_TOOLS = {
   },
   getSwapQuote: {
     description:
-      "A live Jupiter quote for spending USDC on a company: every issuer's token compared, the cheapest chosen. Never executes.",
+      "A live Jupiter quote for spending USDC on a company: the issuers' tokens tried one at a time, most liquid first, until one works. Never executes.",
     input: swapQuoteInput,
     run: getSwapQuote,
   },

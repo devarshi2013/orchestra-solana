@@ -29,6 +29,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-danger: var(--danger);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -92,7 +93,7 @@
 
 /*
  * Quill design tokens: white, near-black, grays and one dark navy accent.
- * No other colours anywhere. Every colour lives here as a CSS variable
+ * No other colours, except red (--danger) for quote and swap errors. Every colour lives here as a CSS variable
  * (Tailwind reads them through @theme above), so the theme is adjusted in one
  * place.
  *
@@ -151,6 +152,11 @@
   /* Status colours are monochrome too: icons and wording carry the meaning. */
   --destructive: var(--ink);
   --success: var(--navy);
+  /*
+   * The one colour outside the palette: red for quote and swap errors only
+   * (one short line with a warning icon). 6.5:1 on white, 6.2:1 on off-white.
+   */
+  --danger: #b91c1c;
   --warning: #374151;
   --neutral: var(--gray);
   --border: var(--gray-light);
@@ -218,6 +224,8 @@
   --accent-foreground: #f9fafb;
   --destructive: #f9fafb;
   --success: #f9fafb;
+  /* 6.9:1 on the dark cards. */
+  --danger: #f87171;
   --warning: #d1d5db;
   --neutral: #a1a1aa;
   --border: #2a2a2a;

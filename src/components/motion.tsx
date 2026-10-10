@@ -96,13 +96,18 @@ const STATUS: Record<BuyStep, { label: string; tone: string; icon: ReactNode }> 
       </motion.span>
     ),
   },
+  retrying: {
+    label: "Retrying…",
+    tone: "text-muted-foreground",
+    icon: <Loader2 className="size-3.5 animate-spin" />,
+  },
   sending: {
     label: "Confirming",
     tone: "text-warning",
     icon: <Loader2 className="size-3.5 animate-spin" />,
   },
   bought: { label: "Bought", tone: "text-success", icon: <DrawnCheck /> },
-  failed: { label: "Failed", tone: "text-destructive", icon: <XCircle className="size-3.5" /> },
+  failed: { label: "Failed", tone: "text-danger", icon: <XCircle className="size-3.5" /> },
 };
 
 /** One swap's status, cross-fading as it moves pending → signing → confirmed. */

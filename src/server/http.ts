@@ -42,27 +42,21 @@ export function upstreamErrorResponse(error: unknown): Response {
     } catch {
       // non-JSON body; fall through with defaults
     }
-    const requestId = error.requestId ?? undefined;
-    console.error(
-      `[jupiter] ${error.status} request=${requestId} body=${error.body.slice(0, 500)}`,
-    );
-
-    if (error.status === 429) {
-      return errorResponse(429, "Jupiter rate limit reached", { requestId });
-    }
+    // jupiterFetch already logged the status, request ID and body (server only).
+    // The browser gets a status, Jupiter's code (used to classify the failure)
+    // and the signature; it shows people a friendly line, never this message.
+    if (error.status === 429) return errorResponse(429, "Jupiter rate limit reached");
     if (error.status === 401 || error.status === 403) {
-      return errorResponse(502, "Jupiter rejected the server's API key", { requestId });
+      return errorResponse(502, "Jupiter rejected the server's API key");
     }
     if (error.status >= 500) {
       return errorResponse(502, parsed.error ?? "Jupiter is unavailable", {
-        requestId,
         signature: parsed.signature,
       });
     }
     return errorResponse(400, parsed.error ?? `Jupiter returned ${error.status}`, {
       code: parsed.code,
       signature: parsed.signature,
-      requestId,
     });
   }
   if (error instanceof z.ZodError) {

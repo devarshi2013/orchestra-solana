@@ -42,6 +42,8 @@ describe("usMarketSession", () => {
   });
 
   it("explains why it's closed", () => {
-    expect(describeClosedMarket("weekend")).toMatch(/^US market closed \(it's the weekend\)/);
+    expect(describeClosedMarket()).toBe(
+      "US market is closed. Prices may differ from the stock and spreads are wider.",
+    );
   });
 });

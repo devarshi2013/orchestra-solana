@@ -5,6 +5,8 @@ import {
   CheckCircle2,
   Circle,
   ExternalLink,
+  Info,
+  Loader2,
   RefreshCw,
   RotateCcw,
   ShoppingCart,
@@ -139,7 +141,7 @@ function LivePlanCard({ plan, saved, onBuyChange }: PlanCardProps) {
       draft.map((d) => ({ symbol: d.symbol, kind: d.kind, usdcAmount: parseAmount(d.amountText) })),
     [draft],
   );
-  const { quotes, quoting, refresh } = usePlanQuotes(items, wallet, reviewing);
+  const { quotes, quoting, retrying, refresh } = usePlanQuotes(items, wallet, reviewing);
   const { funds, error: fundsError, reload: reloadFunds } = useWalletFunds(wallet);
   const now = new Date(useNow());
   const total = Math.round(items.reduce((sum, i) => sum + i.usdcAmount, 0) * 100) / 100;
@@ -151,7 +153,7 @@ function LivePlanCard({ plan, saved, onBuyChange }: PlanCardProps) {
     quoting,
     now,
   });
-  // The token to buy (the cheapest issuer, with its mint) comes from the
+  // The token to buy (the issuer the quote chose, with its mint) comes from the
   // server's quote, which reads it from the stock registry: never from the model.
   const tokenOf = (symbol: string) => quotes.get(symbol)?.token ?? null;
   const ready = checks.every((c) => c.ok === true) && draft.every((d) => tokenOf(d.symbol));
@@ -204,11 +206,7 @@ function LivePlanCard({ plan, saved, onBuyChange }: PlanCardProps) {
         {buy.items ? (
           <div className="space-y-3">
             <PurchaseList items={buy.items} />
-            {buy.stopped && (
-              <p className="flex items-start gap-1.5 text-sm text-destructive">
-                <TriangleAlert className="mt-0.5 size-4 shrink-0" /> {buy.stopped}
-              </p>
-            )}
+            {buy.stopped && <ErrorLine className="text-sm">{buy.stopped}</ErrorLine>}
             {!buy.running && (
               <div
                 className={cn(
@@ -249,6 +247,7 @@ function LivePlanCard({ plan, saved, onBuyChange }: PlanCardProps) {
                     quote={quote}
                     warnings={itemWarnings({ kind: item.kind, usdcAmount: amount }, quote, now)}
                     loading={!quote && amount > 0 && wallet !== null}
+                    retrying={retrying.has(item.symbol)}
                     onAmount={(text) => setAmount(item.symbol, text)}
                     onRemove={() => remove(item.symbol)}
                     canRemove={draft.length > 1}
@@ -272,15 +271,13 @@ function LivePlanCard({ plan, saved, onBuyChange }: PlanCardProps) {
                     ) : check.ok ? (
                       <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success" />
                     ) : (
-                      <XCircle className="mt-0.5 size-3.5 shrink-0 text-destructive" />
+                      <XCircle className="mt-0.5 size-3.5 shrink-0 text-danger" />
                     )}
-                    <span className={cn(check.ok === false && "text-destructive")}>
-                      {check.label}
-                    </span>
+                    <span className={cn(check.ok === false && "text-danger")}>{check.label}</span>
                   </li>
                 ))}
               </ul>
-              {fundsError && <p className="text-xs text-destructive">{fundsError}</p>}
+              {fundsError && <ErrorLine>{fundsError}</ErrorLine>}
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -317,7 +314,7 @@ function PurchaseList({ items }: { items: BuyItem[] }) {
             <span className="text-xs text-muted-foreground">
               {item.name} · {formatUsd(item.usdcAmount)}
             </span>
-            {item.error && <p className="mt-1 text-xs text-destructive">{item.error}</p>}
+            {item.error && <ErrorLine className="mt-1">{item.error}</ErrorLine>}
           </div>
           <div className="text-right text-xs">
             <SwapStatus step={item.step} />
@@ -348,6 +345,7 @@ function PlanRow({
   quote,
   warnings,
   loading,
+  retrying,
   onAmount,
   onRemove,
   canRemove,
@@ -356,6 +354,7 @@ function PlanRow({
   quote: ItemQuote | undefined;
   warnings: ItemWarning[];
   loading: boolean;
+  retrying: boolean;
   onAmount: (text: string) => void;
   onRemove: () => void;
   canRemove: boolean;
@@ -402,7 +401,11 @@ function PlanRow({
       </div>
 
       <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground tabular-nums">
-        {loading ? (
+        {retrying ? (
+          <span className="flex items-center gap-1.5" role="status">
+            <Loader2 className="size-3 animate-spin" aria-hidden /> Retrying…
+          </span>
+        ) : loading ? (
           <span
             className="flex w-full items-center gap-3"
             role="status"
@@ -438,21 +441,32 @@ function PlanRow({
         ) : null}
       </div>
 
-      {warnings.length > 0 && (
+      {!retrying && warnings.length > 0 && (
         <ul className="space-y-0.5">
-          {warnings.map((w) => (
-            <li
-              key={w.kind + w.message}
-              className={cn(
-                "flex items-start gap-1 text-xs",
-                w.severity === "block" ? "text-destructive" : "text-warning",
-              )}
-            >
-              <TriangleAlert className="mt-0.5 size-3 shrink-0" /> {w.message}
-            </li>
-          ))}
+          {warnings.map((w) =>
+            w.severity === "block" ? (
+              // The one error line for this item: red, with a single warning icon.
+              <li key={w.kind}>
+                <ErrorLine>{w.message}</ErrorLine>
+              </li>
+            ) : (
+              <li key={w.kind} className="flex items-start gap-1 text-xs text-muted-foreground">
+                <Info className="mt-0.5 size-3 shrink-0" aria-hidden /> {w.message}
+              </li>
+            ),
+          )}
         </ul>
       )}
     </li>
+  );
+}
+
+/** One short error line: red, with a single warning icon. Friendly text only. */
+function ErrorLine({ children, className }: { children: string; className?: string }) {
+  return (
+    <p role="alert" className={cn("flex items-start gap-1.5 text-xs text-danger", className)}>
+      <TriangleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+      <span>{children}</span>
+    </p>
   );
 }

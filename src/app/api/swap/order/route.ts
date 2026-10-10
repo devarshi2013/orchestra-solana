@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
   if (!parsed.success) return validationErrorResponse(parsed.error);
 
   try {
-    return Response.json(await getOrder(parsed.data, request.signal));
+    // The browser's buy flow retries 429s itself (showing "Retrying…"), so no retry here.
+    return Response.json(await getOrder(parsed.data, request.signal, { retryRateLimit: false }));
   } catch (error) {
     return upstreamErrorResponse(error);
   }

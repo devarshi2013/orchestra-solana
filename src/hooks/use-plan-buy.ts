@@ -5,6 +5,12 @@ import { VersionedTransaction } from "@solana/web3.js";
 import { useCallback, useRef, useState } from "react";
 
 import { ApiError, executeSwap, fetchOrder } from "@/lib/api-client";
+import {
+  friendlyError,
+  friendlyKind,
+  MAX_RATE_LIMIT_RETRIES,
+  retryDelayMs,
+} from "@/lib/friendly-error";
 import { base64ToBytes, bytesToBase64 } from "@/lib/solana";
 import {
   classifyApiError,
@@ -19,7 +25,8 @@ import { toBaseUnits, USDC_DECIMALS } from "@/lib/units";
 /** Fresh orders per item when a quote expires before it lands. */
 const MAX_ATTEMPTS = 3;
 
-export type BuyStep = "waiting" | "quoting" | "signing" | "sending" | "bought" | "failed";
+export type BuyStep =
+  "waiting" | "quoting" | "retrying" | "signing" | "sending" | "bought" | "failed";
 
 export type BuyItem = {
   symbol: string;
@@ -33,20 +40,21 @@ export type BuyItem = {
   signature: string | null;
   /** Tokens received, base units. */
   outAmount: string | null;
+  /** One friendly sentence (lib/friendly-error.ts); never a raw API error. */
   error: string | null;
 };
 
-const message = (error: unknown) =>
-  (error instanceof ApiError
-    ? classifyApiError(error)
-    : classifyApiError({
-        status: 500,
-        message: error instanceof Error ? error.message : String(error),
-      })
-  ).message;
+/**
+ * Logs the technical details (dev console only) and returns the friendly line;
+ * `classified` is what to explain it by when it was already classified.
+ */
+const fail = (symbol: string, stage: string, error: unknown, classified?: unknown) => {
+  console.error(`[buy] ${symbol} ${stage} failed`, error);
+  return friendlyError(classified ?? (error instanceof ApiError ? classifyApiError(error) : error));
+};
 
 /**
- * Buys a plan's items one at a time with the same flow as /swap: a fresh
+ * Buys a plan's items one at a time: a fresh
  * Jupiter order for this wallet → the wallet signs (never sends) → re-quote if
  * the quote expired while the prompt was open → our /api/swap/execute lands
  * it. Every buy is its own wallet prompt; nothing is signed automatically. A
@@ -86,20 +94,32 @@ export function usePlanBuy(saved?: { items: BuyItem[]; stopped: string | null })
           for (let attempt = 1; attempt <= MAX_ATTEMPTS && !done; attempt++) {
             update(index, { step: "quoting", error: null });
             let order;
-            try {
-              order = await fetchOrder({
-                inputMint: USDC_MINT,
-                outputMint: item.mint,
-                amount: toBaseUnits(item.usdcAmount, USDC_DECIMALS).toString(),
-                taker: publicKey.toBase58(),
-              });
-            } catch (error) {
-              update(index, { step: "failed", error: message(error) });
-              break;
+            // A rate limit is retried up to 3 times (1 s, 2 s, 4 s), showing "Retrying…".
+            for (let retry = 0; ; retry++) {
+              try {
+                order = await fetchOrder({
+                  inputMint: USDC_MINT,
+                  outputMint: item.mint,
+                  amount: toBaseUnits(item.usdcAmount, USDC_DECIMALS).toString(),
+                  taker: publicKey.toBase58(),
+                });
+                break;
+              } catch (error) {
+                if (friendlyKind(error) !== "rate_limited" || retry >= MAX_RATE_LIMIT_RETRIES) {
+                  update(index, { step: "failed", error: fail(item.symbol, "order", error) });
+                  break;
+                }
+                console.error(`[buy] ${item.symbol} order rate-limited, retrying`, error);
+                update(index, { step: "retrying" });
+                await new Promise((resolve) => setTimeout(resolve, retryDelayMs(retry + 1)));
+              }
             }
+            if (!order) break;
             if (!order.transaction) {
-              const reason = classifyOrderError(order);
-              update(index, { step: "failed", error: `${reason.title}: ${reason.message}` });
+              update(index, {
+                step: "failed",
+                error: fail(item.symbol, "build", order, classifyOrderError(order)),
+              });
               break;
             }
 
@@ -110,9 +130,9 @@ export function usePlanBuy(saved?: { items: BuyItem[]; stopped: string | null })
                 VersionedTransaction.deserialize(base64ToBytes(order.transaction)),
               );
             } catch (error) {
-              const reason = classifyWalletError(error);
-              update(index, { step: "failed", error: reason.message });
-              setStopped(`${reason.message} ${item.symbol} and anything after it weren't bought.`);
+              const friendly = fail(item.symbol, "sign", error, classifyWalletError(error));
+              update(index, { step: "failed", error: friendly });
+              setStopped(friendly);
               return;
             }
             // The wallet prompt may have outlived the quote: get a fresh one.
@@ -136,23 +156,24 @@ export function usePlanBuy(saved?: { items: BuyItem[]; stopped: string | null })
               }
               const reason = classifyExecuteResult(result);
               if (reason.kind === "expired") continue;
+              console.error(`[buy] ${item.symbol} execute failed`, result);
               update(index, {
                 step: "failed",
                 signature: result.signature ?? null,
-                error: `${reason.title}: ${reason.message}`,
+                error: friendlyError(reason),
               });
               break;
             } catch (error) {
               const reason = error instanceof ApiError ? classifyApiError(error) : null;
               if (reason?.kind === "expired") continue;
-              update(index, { step: "failed", error: message(error) });
+              update(index, { step: "failed", error: fail(item.symbol, "execute", error) });
               break;
             }
           }
           if (!done && current[index]!.step !== "failed") {
             update(index, {
               step: "failed",
-              error: "The quote kept expiring before it could be sent. Retry and approve promptly.",
+              error: "The quote expired before it was sent. Please try again.",
             });
           }
         }

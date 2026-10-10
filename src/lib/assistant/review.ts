@@ -1,3 +1,4 @@
+import { FRIENDLY_MESSAGES, friendlyError, type FriendlyKind } from "@/lib/friendly-error";
 import { TIER_LIMITS } from "@/lib/stocks/sync-core";
 import type { SwapQuote } from "@/lib/stocks/tools";
 import { MIN_ORDER_USD } from "@/lib/units";
@@ -13,7 +14,7 @@ import { describeClosedMarket, usMarketSession } from "./market-hours";
 
 export type ItemKind = "stock";
 
-/** The registry token a quote chose (the cheapest issuer); its mint is what gets bought. */
+/** The registry token a quote chose (the most liquid one that quoted); its mint is what gets bought. */
 export type ChosenToken = {
   symbol: string;
   issuer: string;
@@ -29,8 +30,10 @@ export type ItemQuote = {
   /** What the plan asked for: a company ticker (best issuer) or a token symbol. */
   symbol: string;
   quote: SwapQuote | null;
-  /** Why there's no quote. */
+  /** Why there's no quote: one friendly sentence (lib/friendly-error.ts). */
   reason: string | null;
+  /** Which friendly message `reason` is; "rate_limited" is retried by the browser. */
+  errorKind?: FriendlyKind | null;
   token: ChosenToken | null;
 };
 
@@ -55,14 +58,9 @@ export function itemWarnings(
 ): ItemWarning[] {
   const warnings: ItemWarning[] = [];
   const quote = quoted?.quote;
-  if (quoted && !quote) {
-    warnings.push({
-      kind: "quote",
-      severity: "block",
-      message: `No quote: ${quoted.reason ?? "Jupiter couldn't price this"}`,
-    });
-  }
-  if (quote?.warning) warnings.push({ kind: "quote", severity: "block", message: quote.warning });
+  // At most one blocking line per item, always a friendly sentence.
+  const blocker = quoteProblem(quoted);
+  if (blocker) warnings.push({ kind: "quote", severity: "block", message: blocker });
 
   const impact = quote?.priceImpactPct ?? null;
   if (impact !== null && impact >= HIGH_IMPACT_PCT) {
@@ -95,11 +93,22 @@ export function itemWarnings(
       warnings.push({
         kind: "market-hours",
         severity: "warn",
-        message: describeClosedMarket(session.reason),
+        message: describeClosedMarket(),
       });
     }
   }
   return warnings;
+}
+
+/** Why an item can't be bought as quoted (one friendly sentence), or null. */
+export function quoteProblem(quoted: ItemQuote | undefined): string | null {
+  if (!quoted) return null;
+  if (!quoted.quote) {
+    return friendlyError(
+      quoted.errorKind ? { kind: quoted.errorKind } : (quoted.reason ?? FRIENDLY_MESSAGES.no_route),
+    );
+  }
+  return quoted.quote.warning ? friendlyError(quoted.quote.warning) : null;
 }
 
 export type PreflightCheck = {
@@ -184,7 +193,21 @@ export function preflight(input: {
           ? "Getting fresh quotes…"
           : blocked.length === 0
             ? "Every item has a fresh quote"
-            : `Can't buy ${blocked.map((i) => i.symbol).join(", ")} as planned: see the item's warning`,
+            : cantBuy(
+                blocked.map((i) => ({
+                  symbol: i.symbol,
+                  problem: quoteProblem(quotes.get(i.symbol)),
+                })),
+              ),
     },
   ];
+}
+
+/** "Can't buy BAC right now: <reason>", with one reason when they share it. */
+function cantBuy(items: { symbol: string; problem: string | null }[]): string {
+  const symbols = items.map((i) => i.symbol).join(", ");
+  const reasons = [...new Set(items.map((i) => i.problem).filter(Boolean))];
+  return reasons.length === 1
+    ? `Can't buy ${symbols} right now: ${reasons[0]}`
+    : `Can't buy ${symbols} right now`;
 }

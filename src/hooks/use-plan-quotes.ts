@@ -4,23 +4,44 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { assistantApi } from "@/lib/api-client";
 import type { ItemQuote } from "@/lib/assistant/review";
+import {
+  friendlyError,
+  friendlyKind,
+  MAX_RATE_LIMIT_RETRIES,
+  retryDelayMs,
+} from "@/lib/friendly-error";
 
-const DEBOUNCE_MS = 600;
+/** Wait this long after typing stops before asking for a quote. */
+const DEBOUNCE_MS = 500;
+/** After rate-limit retries run out, try again on our own this often (a few times). */
+const AUTO_RETRY_MS = 15_000;
+const MAX_AUTO_RETRIES = 3;
 
 type Wanted = { symbol: string; usdcAmount: number };
 const keyOf = (item: Wanted) => `${item.symbol}:${item.usdcAmount}`;
 
+const wait = (ms: number, signal: AbortSignal) =>
+  new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => clearTimeout(timer), { once: true });
+  });
+
 /**
  * Fresh Jupiter quotes for a plan's items. Only items whose amount changed are
- * re-quoted (after a short pause in typing); `refresh()` re-quotes them all.
- * The server paces Jupiter calls, so quotes arrive one by one.
+ * re-quoted (500 ms after typing stops); `refresh()` clears errors and re-quotes
+ * them all. Items are quoted one after another. A rate limit is retried up to 3
+ * times (1 s, 2 s, 4 s) while the item shows "Retrying…"; only then is the
+ * friendly error shown. Failures are logged to the console, never shown raw.
  */
 export function usePlanQuotes(items: Wanted[], wallet: string | null, enabled: boolean) {
   const [quoted, setQuoted] = useState<Record<string, { key: string; quote: ItemQuote }>>({});
+  const [retrying, setRetrying] = useState<ReadonlySet<string>>(new Set());
   const [inFlight, setInFlight] = useState(0);
   const [refreshes, setRefreshes] = useState(0);
   const latest = useRef<Record<string, { key: string; quote: ItemQuote }>>({});
   const handled = useRef(0);
+  const autoRetries = useRef(0);
+  const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const key = items.map(keyOf).join("|");
 
   useEffect(() => {
@@ -32,6 +53,14 @@ export function usePlanQuotes(items: Wanted[], wallet: string | null, enabled: b
         })
       : [];
     const abort = new AbortController();
+    const markRetrying = (symbol: string, on: boolean) =>
+      setRetrying((current) => {
+        const next = new Set(current);
+        if (on) next.add(symbol);
+        else next.delete(symbol);
+        return next;
+      });
+
     const timer = setTimeout(async () => {
       const force = handled.current !== refreshes;
       handled.current = refreshes;
@@ -41,33 +70,57 @@ export function usePlanQuotes(items: Wanted[], wallet: string | null, enabled: b
       );
       if (stale.length === 0) return;
       setInFlight((n) => n + 1);
+      let rateLimited = false;
       try {
         for (const item of stale) {
-          let quote: ItemQuote;
-          try {
-            quote = await assistantApi.quote({ ...item, wallet }, abort.signal);
-          } catch (error) {
+          let quote: ItemQuote | null = null;
+          for (let attempt = 0; ; attempt++) {
+            try {
+              quote = await assistantApi.quote({ ...item, wallet }, abort.signal);
+            } catch (error) {
+              if (abort.signal.aborted) return;
+              console.error(`[quote] ${item.symbol} failed`, error);
+              quote = {
+                symbol: item.symbol,
+                quote: null,
+                reason: friendlyError(error),
+                errorKind: friendlyKind(error),
+                token: null,
+              };
+            }
+            if (quote.errorKind !== "rate_limited" || attempt >= MAX_RATE_LIMIT_RETRIES) break;
+            markRetrying(item.symbol, true);
+            await wait(retryDelayMs(attempt + 1), abort.signal);
             if (abort.signal.aborted) return;
-            quote = {
-              symbol: item.symbol,
-              quote: null,
-              reason: error instanceof Error ? error.message : "Couldn't get a quote",
-              token: null,
-            };
           }
+          markRetrying(item.symbol, false);
           if (abort.signal.aborted) return;
+          if (quote.errorKind === "rate_limited") rateLimited = true;
           latest.current = { ...latest.current, [item.symbol]: { key: keyOf(item), quote } };
           setQuoted(latest.current);
         }
       } finally {
         setInFlight((n) => n - 1);
       }
+      // Still rate-limited after the retries: try again by ourselves a few times.
+      if (rateLimited && autoRetries.current < MAX_AUTO_RETRIES) {
+        autoRetries.current += 1;
+        autoTimer.current = setTimeout(() => setRefreshes((n) => n + 1), AUTO_RETRY_MS);
+      }
     }, DEBOUNCE_MS);
     return () => {
       clearTimeout(timer);
       abort.abort();
+      setRetrying(new Set());
     };
   }, [key, enabled, refreshes, wallet]);
+
+  useEffect(
+    () => () => {
+      if (autoTimer.current) clearTimeout(autoTimer.current);
+    },
+    [],
+  );
 
   /** Only quotes for the amounts currently entered. */
   const quotes = useMemo(() => {
@@ -79,8 +132,17 @@ export function usePlanQuotes(items: Wanted[], wallet: string | null, enabled: b
     return current;
   }, [items, quoted]);
 
-  const refresh = useCallback(() => setRefreshes((n) => n + 1), []);
-  return { quotes, quoting: inFlight > 0 || quotes.size < items.length, refresh };
+  /** "Refresh quotes": clears the errors (the items show as loading) and quotes again. */
+  const refresh = useCallback(() => {
+    if (autoTimer.current) clearTimeout(autoTimer.current);
+    autoRetries.current = 0;
+    latest.current = Object.fromEntries(
+      Object.entries(latest.current).filter(([, entry]) => entry.quote.quote !== null),
+    );
+    setQuoted(latest.current);
+    setRefreshes((n) => n + 1);
+  }, []);
+  return { quotes, quoting: inFlight > 0 || quotes.size < items.length, retrying, refresh };
 }
 
 /** The wallet's USDC and SOL for the pre-flight checks; `reload()` after buying. */
@@ -96,14 +158,17 @@ export function useWalletFunds(wallet: string | null) {
       .balances(wallet, abort.signal)
       .then((result) => {
         if (result.usdc === null || result.sol === null) {
-          setError(result.reason ?? "Couldn't read your wallet");
+          // The server sends a friendly reason; anything else gets the generic line.
+          setError(friendlyError(result.reason ?? "network error"));
         } else {
           setFunds({ usdc: result.usdc, sol: result.sol });
           setError(null);
         }
       })
       .catch((e: unknown) => {
-        if (!abort.signal.aborted) setError(e instanceof Error ? e.message : String(e));
+        if (abort.signal.aborted) return;
+        console.error("[wallet] balances failed", e);
+        setError(friendlyError(e));
       });
     return () => abort.abort();
   }, [wallet, loads]);

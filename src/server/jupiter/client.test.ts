@@ -50,10 +50,35 @@ describe("jupiterFetch", () => {
       ),
     );
 
-    const error = await jupiterFetch("tokens/v2/search", { query: { query: "SOL" } }).catch(
-      (e: unknown) => e,
-    );
+    const error = await jupiterFetch("tokens/v2/search", {
+      query: { query: "SOL" },
+      retryRateLimit: false,
+    }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(JupiterApiError);
     expect(error).toMatchObject({ status: 429, requestId: "req-123" });
+  });
+
+  it("retries a 429 after 1 s, 2 s and 4 s, then gives up", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const limited = () => new Response("Too many requests", { status: 429 });
+    const fetchMock = vi.fn().mockImplementation(async () => limited());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const pending = jupiterFetch("swap/v2/order").catch((e: unknown) => e);
+    for (const ms of [1000, 2000, 4000]) await vi.advanceTimersByTimeAsync(ms);
+    expect(await pending).toMatchObject({ status: 429 });
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+
+    // A 429 that clears on the second try succeeds.
+    fetchMock.mockReset();
+    fetchMock
+      .mockImplementationOnce(async () => limited())
+      .mockImplementationOnce(async () => new Response("{}", { status: 200 }));
+    const retried = jupiterFetch("swap/v2/order");
+    await vi.advanceTimersByTimeAsync(1000);
+    expect((await retried).ok).toBe(true);
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 });

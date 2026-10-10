@@ -18,9 +18,17 @@ export type OrderParams = {
   taker?: string;
 };
 
-/** GET /swap/v2/order with no optional routing params, so all routers compete ("ultra" mode). */
-export async function getOrder(params: OrderParams, signal?: AbortSignal): Promise<OrderResponse> {
-  const response = await jupiterFetch("swap/v2/order", { query: params, signal });
+/**
+ * GET /swap/v2/order with no optional routing params, so all routers compete
+ * ("ultra" mode). 429s are retried here unless `retryRateLimit: false` (the
+ * browser's buy flow retries itself, showing "Retrying…").
+ */
+export async function getOrder(
+  params: OrderParams,
+  signal?: AbortSignal,
+  options: { retryRateLimit?: boolean } = {},
+): Promise<OrderResponse> {
+  const response = await jupiterFetch("swap/v2/order", { query: params, signal, ...options });
   return orderResponseSchema.parse(await response.json());
 }
 
