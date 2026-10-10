@@ -7,6 +7,7 @@ import { MARKET_TOKENS, WINDOWS, type WindowId } from "@/lib/market/config";
 import type { Candle, Point } from "@/lib/market/series";
 import type {
   ExampleQuote,
+  InvestorExtras,
   MarketCategory,
   MarketOverview,
   MarketRow,
@@ -22,7 +23,7 @@ import { jupiterFetch } from "@/server/jupiter/client";
 import { paced } from "@/server/jupiter/pace";
 import { getOrder } from "@/server/jupiter/swap";
 import { bestToken, sparklinePoints } from "@/server/market/compare";
-import { fetchRatiosTtm, fmpConfigured } from "@/server/market/fmp";
+import { fetchBatchPrices, fetchFxRate, fetchRatiosTtm, fmpConfigured } from "@/server/market/fmp";
 import { getHistory, loadCandles, primePools } from "@/server/market/history";
 import { fundamentals } from "@/server/stocks/metrics";
 
@@ -321,6 +322,10 @@ export function marketOverview(): Promise<MarketOverview> {
         issuers: new Set(STOCKS.map((s) => s.issuer)).size,
         volume24h: volumes.length > 0 ? volumes.reduce((sum, v) => sum + v, 0) : null,
         volumeTokens: volumes.length,
+        hours: STOCKS.reduce<Record<string, number>>((counts, entry) => {
+          counts[entry.hours] = (counts[entry.hours] ?? 0) + 1;
+          return counts;
+        }, {}),
       },
       verifiedAt: REGISTRY.syncedAt,
       asOf: new Date().toISOString(),
@@ -425,4 +430,49 @@ export function researchTop(): Promise<ResearchTop> {
     );
     return { rows, basis: company ? "company" : "on-chain", asOf: new Date().toISOString() };
   });
+}
+
+const GAP_TICKERS = ["NVDA", "TSLA", "AAPL", "MSFT"];
+const EXTRAS_TTL_MS = 15 * 60_000;
+
+/** Real stock prices and the AUD/USD rate from FMP (cached 15 min); each null when unavailable. */
+const fundamentalsExtras = () =>
+  cached("markets:extras:fmp", EXTRAS_TTL_MS, async () => {
+    if (!fmpConfigured()) return { stocks: null, audUsd: null };
+    const [stocks, audUsd] = await Promise.all([
+      fetchBatchPrices(GAP_TICKERS)
+        .then((rows) =>
+          Object.fromEntries(rows.flatMap((r) => (r.price ? [[r.symbol, r.price]] : []))),
+        )
+        .catch(() => null),
+      fetchFxRate("AUDUSD").catch(() => null),
+    ]);
+    return { stocks: stocks && Object.keys(stocks).length > 0 ? stocks : null, audUsd };
+  });
+
+/**
+ * What the "gap" and currency tiles need: the token's live price against the
+ * real stock's last price, and US dollars per Australian dollar. Both come
+ * from FMP; without a key (or a plan that includes them) they're null and the
+ * tiles hide. Nothing is estimated.
+ */
+export async function investorExtras(): Promise<InvestorExtras> {
+  const fmp = await fundamentalsExtras().catch(() => ({ stocks: null, audUsd: null }));
+  const stocks: Record<string, number> | null = fmp.stocks;
+  let gaps: InvestorExtras["gaps"] = null;
+  if (stocks) {
+    const tokens = await livePricesForTickers(GAP_TICKERS).catch(
+      () => ({}) as Record<string, LivePrice>,
+    );
+    const rows = GAP_TICKERS.flatMap((ticker) => {
+      const tokenPrice = tokens[ticker]?.price;
+      const stockPrice = stocks[ticker];
+      const symbol = companyTokens(ticker)?.chart.symbol;
+      return tokenPrice && stockPrice && symbol
+        ? [{ ticker, symbol, tokenPrice, stockPrice, gapPct: (tokenPrice / stockPrice - 1) * 100 }]
+        : [];
+    });
+    gaps = rows.length > 0 ? rows : null;
+  }
+  return { gaps, audUsd: fmp.audUsd, asOf: new Date().toISOString() };
 }

@@ -20,7 +20,7 @@ Each section is its own component in `src/components/home/`:
 | Statement: "Clarity is the best edge."                                                                                                                                                                                                                                                                                                            | `statement.tsx`                           |
 | How Quill works (`#how-it-works`): "From question to trade", a scroll-driven walkthrough of one trade (see below)                                                                                                                                                                                                                                 | `how-quill-works.tsx`, `story/`           |
 | Feature rows (`#features`): Research, Search, Trade, each with a blue label and a gradient graphic, swapping sides                                                                                                                                                                                                                                | `feature-rows.tsx`, `feature-visuals.tsx` |
-| Bento grid (`#product`): a wide card with its own graphic, then three; gradient borders, glowing icon circles                                                                                                                                                                                                                                     | `bento-grid.tsx`                          |
+| "Built for investors" (`#product`): a tinted band with a bento of live tiles (see below)                                                                                                                                                                                                                                                          | `bento-grid.tsx`, `investors/`            |
 | FAQ (`#faq`)                                                                                                                                                                                                                                                                                                                                      | `faq.tsx`                                 |
 | Email signup (Resend, `/api/subscribe`)                                                                                                                                                                                                                                                                                                           | `src/components/subscribe-box.tsx`        |
 | Final call to action: navy-to-black panel with a glowing orb in a corner                                                                                                                                                                                                                                                                          | `final-cta.tsx`                           |
@@ -72,6 +72,28 @@ off screen, and show their final state under reduced motion.
 
 The cards register their tickers with the page's one price poll (`useWatch`);
 none of them polls prices itself.
+
+## "Built for investors" bento
+
+`bento-grid.tsx` holds the heading and the tinted band; `investors/investor-bento.tsx`
+lays out the tiles and `investors/tiles.tsx` draws them. Desktop: the dial is the
+large tile with two tiles stacked beside it; tablets: two columns; phones: one
+column, dial first. Every number is live and carries a "Live · as of" stamp.
+
+| Tile                                | Numbers                                                         | Source                                                                                                                            |
+| ----------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Open when Wall Street isn't (large) | New York time, session arc, time to the next open or close      | The visitor's clock through `usMarketClock` (`src/lib/assistant/market-hours.ts`; weekends only, no holiday calendar)             |
+|                                     | "421 of 430 listed tokens trade 24/5"                           | `totals.hours` and `totals.tokens` from `/api/markets/overview` (the trading hours recorded for each token in the stock registry) |
+| Start with $10 (medium)             | Fraction of NVDA, TSLA and AAPL an amount buys, and each price  | The home price poll (Jupiter Price v3); the $10 floor is `MIN_ORDER_USD`                                                          |
+| Settles in seconds (small)          | Transactions per second now, and the last 20 one-minute samples | `/api/network` (Solana RPC `getRecentPerformanceSamples`, cached 30 s)                                                            |
+| See the gap before you buy (medium) | Token price against the stock's last US price                   | `/api/markets/extras` (Jupiter price against FMP)                                                                                 |
+| Your money, your currency (small)   | AUD to USDC and what it buys                                    | `/api/markets/extras` (FMP AUD/USD rate) and the price poll                                                                       |
+
+The last two need `MARKET_DATA_API_KEY`. Without it (or when the source fails)
+`/api/markets/extras` returns nulls and those tiles are left out; nothing is
+faked. The throughput counter counts up once; under reduced motion it shows the
+value straight away. The slider and the converter are plain inputs, so they
+work from the keyboard, and results are announced with `aria-live="polite"`.
 
 ## Live sections
 
@@ -134,6 +156,6 @@ the feather's glow are left out.
 - **Hover effects (mouse only, `hover-text.tsx` + `globals.css`):** headline
   words lift and brighten; gradient accents sweep; the statement spreads and
   glows; row labels turn silver with an arrow and headlines get a growing
-  underline; bento titles brighten and icons tilt; steps grow and light the line
+  underline; steps grow and light the line
   up to them; nav links get a centre-out underline; footer links lift; buttons
   get a light sweep. Movement is dropped under reduced motion.

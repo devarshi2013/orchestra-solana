@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { describeClosedMarket, usMarketSession } from "./market-hours";
+import { describeClosedMarket, usMarketClock, usMarketSession } from "./market-hours";
 
 /** New York wall-clock time → Date (EDT is UTC−4 in summer, EST UTC−5 in winter). */
 const ny = (iso: string, offset: "-04:00" | "-05:00") => new Date(`${iso}${offset}`);
@@ -45,5 +45,30 @@ describe("usMarketSession", () => {
     expect(describeClosedMarket()).toBe(
       "US market is closed. Prices may differ from the stock and spreads are wider.",
     );
+  });
+});
+
+describe("usMarketClock", () => {
+  it("counts down to the close while open and to the next open while closed", () => {
+    // Wed 14 Oct 2026, 11:00 New York (15:00 UTC): open, closes in 5 h.
+    expect(usMarketClock(new Date("2026-10-14T15:00:00Z"))).toMatchObject({
+      session: { open: true },
+      minuteOfDay: 660,
+      minutesToChange: 300,
+      weekday: true,
+    });
+    // Wed 18:00 New York: after hours, opens Thursday 9:30 (15 h 30 m).
+    expect(usMarketClock(new Date("2026-10-14T22:00:00Z"))).toMatchObject({
+      session: { open: false, reason: "after-hours" },
+      minutesToChange: 930,
+    });
+    // Sat 10 Oct 2026, 12:00 New York: opens Monday 9:30 (45 h 30 m).
+    expect(usMarketClock(new Date("2026-10-10T16:00:00Z"))).toMatchObject({
+      session: { open: false, reason: "weekend" },
+      minutesToChange: 2730,
+      weekday: false,
+    });
+    // Wed 25 Nov 2026 17:00 New York: Thursday is Thanksgiving, so it opens Friday.
+    expect(usMarketClock(new Date("2026-11-25T22:00:00Z")).minutesToChange).toBe(2430);
   });
 });

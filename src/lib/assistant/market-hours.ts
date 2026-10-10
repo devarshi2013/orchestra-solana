@@ -64,3 +64,53 @@ export function usMarketSession(now: Date): UsMarketSession {
 export function describeClosedMarket(): string {
   return "US market is closed. Prices may differ from the stock and spreads are wider.";
 }
+
+export type UsMarketClock = {
+  session: UsMarketSession;
+  /** Minutes since midnight in New York. */
+  minuteOfDay: number;
+  /** Minutes until the regular session next opens (when closed) or closes (when open). */
+  minutesToChange: number;
+  /** The regular session, as minutes since midnight in New York. */
+  openMinute: number;
+  closeMinute: number;
+  /** Monday to Friday in New York: the days 24/5 tokens trade around the clock. */
+  weekday: boolean;
+};
+
+/**
+ * Where the US trading day stands at `now`, for a clock face: the New York
+ * time, the regular session's bounds, and how long until it next opens or
+ * closes. Days are assumed to be 24 hours long, so the countdown can be an
+ * hour out across a daylight-saving change.
+ */
+export function usMarketClock(now: Date): UsMarketClock {
+  const session = usMarketSession(now);
+  const parts = (d: Date) =>
+    Object.fromEntries(newYork.formatToParts(d).map((p) => [p.type, p.value]));
+  const today = parts(now);
+  const minuteOfDay = Number(today.hour) * 60 + Number(today.minute);
+  const weekday = today.weekday !== "Sat" && today.weekday !== "Sun";
+  let minutesToChange = CLOSE_MINUTE - minuteOfDay;
+  if (!session.open) {
+    minutesToChange = 0;
+    for (let day = 0; day < 10; day++) {
+      const p = parts(new Date(now.getTime() + day * 86_400_000));
+      const trading =
+        p.weekday !== "Sat" &&
+        p.weekday !== "Sun" &&
+        !HOLIDAYS.has(`${p.year}-${p.month}-${p.day}`);
+      if (!trading || (day === 0 && minuteOfDay >= OPEN_MINUTE)) continue;
+      minutesToChange = day * 1440 + OPEN_MINUTE - minuteOfDay;
+      break;
+    }
+  }
+  return {
+    session,
+    minuteOfDay,
+    minutesToChange,
+    openMinute: OPEN_MINUTE,
+    closeMinute: CLOSE_MINUTE,
+    weekday,
+  };
+}

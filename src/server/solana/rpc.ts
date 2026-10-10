@@ -104,3 +104,15 @@ export async function getMintDecimals(mint: string): Promise<number> {
   decimalsCache.set(mint, decimals);
   return decimals;
 }
+
+/**
+ * Recent Solana throughput: transactions per second for each of the last
+ * `count` sample periods (about a minute each), oldest first.
+ */
+export async function getRecentTps(count = 20): Promise<number[]> {
+  const samples = await rpc().getRecentPerformanceSamples(count);
+  return samples
+    .filter((s) => s.samplePeriodSecs > 0)
+    .map((s) => s.numTransactions / s.samplePeriodSecs)
+    .reverse();
+}

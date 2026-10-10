@@ -43,7 +43,23 @@ export type MarketTotals = {
   volume24h: number | null;
   /** How many tokens that sum covers. */
   volumeTokens: number;
+  /** How many tokens trade on each schedule ("24/5", "24/7", "Market hours"), from the registry. */
+  hours: Record<string, number>;
 };
+
+/** Data for the investor tiles that needs a fundamentals source; each part is null without one. */
+export type InvestorExtras = {
+  /** Token price against the real stock's last price, for a few popular stocks. */
+  gaps:
+    | { ticker: string; symbol: string; tokenPrice: number; stockPrice: number; gapPct: number }[]
+    | null;
+  /** US dollars per Australian dollar. */
+  audUsd: number | null;
+  asOf: string;
+};
+
+/** Recent Solana throughput (GET /api/network). */
+export type NetworkStats = { tps: number[]; latest: number; asOf: string };
 
 /** Everything the home page's live sections start from (GET /api/markets/overview). */
 export type MarketOverview = {

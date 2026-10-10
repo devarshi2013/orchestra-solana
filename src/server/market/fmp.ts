@@ -84,3 +84,13 @@ export async function fetchBatchQuotes(symbols: string[]) {
 export async function fetchBatchPriceChange(symbols: string[]) {
   return priceChangeSchema.parse(await fmpGet("stock-price-change", { symbol: symbols.join(",") }));
 }
+
+/** Last prices for many stock symbols in one call. Not on every FMP plan. */
+export const priceQuoteSchema = z.array(z.object({ symbol: z.string(), price: num }));
+export async function fetchBatchPrices(symbols: string[]) {
+  return priceQuoteSchema.parse(await fmpGet("batch-quote", { symbols: symbols.join(",") }));
+}
+/** A currency pair's rate, e.g. "AUDUSD" → US dollars per Australian dollar. Not on every FMP plan. */
+export async function fetchFxRate(pair: string): Promise<number | null> {
+  return priceQuoteSchema.parse(await fmpGet("quote", { symbol: pair }))[0]?.price ?? null;
+}
