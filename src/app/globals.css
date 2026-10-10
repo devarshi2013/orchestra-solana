@@ -7,9 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* Geist for all text, Geist Mono for figures (variables set on <body> by next/font in layout.tsx). */
-  --font-sans: var(--font-geist-sans);
+  /* Manrope for text, Sora for headings, Geist Mono for prices and numbers (next/font, layout.tsx). */
+  --font-sans: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sora);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -30,6 +31,10 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-danger: var(--danger);
+  --color-gain: var(--gain);
+  --color-loss: var(--loss);
+  --color-label-blue: var(--label-blue);
+  --color-silver: var(--silver);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -55,7 +60,6 @@
   --color-gold: var(--gold-fill);
   --color-gold-text: var(--gold-text);
   --color-neutral: var(--neutral);
-  --color-ink: var(--ink);
   /* Very soft, warm depth: borders do most of the layering. */
   --shadow-soft: 0 1px 2px hsl(var(--shadow-color) / 0.06);
   --shadow-lift: 0 6px 20px -8px hsl(var(--shadow-color) / 0.16);
@@ -92,202 +96,87 @@
 }
 
 /*
- * Quill design tokens: white, near-black, grays and one dark navy accent.
- * No other colours, except red (--danger) for quote and swap errors. Every colour lives here as a CSS variable
- * (Tailwind reads them through @theme above), so the theme is adjusted in one
- * place.
+ * Quill design tokens: one dark theme for the whole site. Every colour lives
+ * here as a CSS variable (Tailwind reads them through @theme above).
  *
- * Light (the default): white #FFFFFF page, off-white #FAFAFA cards and
- * sections, near-black #0A0A0A text and headings, gray #6B7280 secondary
- * text, light gray #E5E7EB borders, dark navy #0F1B2D accent (hover #1C2B44).
- * The navbar is navy with white text (`.theme-navy` below).
+ * Page #07090D, surfaces #0D1117, raised cards #121821, borders white at 8%,
+ * text #F5F7FA, muted text #A3ACB9, accents #3B5BDB / #1E3A8A (glows and
+ * graphics), navy #0F1B2D, silver #C9D0D7. Gains #22C55E, losses #EF4444, and
+ * a lighter red for error text.
  *
- * Contrast (WCAG AA, checked): text 19.8:1 on white; navy 17.3:1 (links,
- * focus rings); white on navy 17.3:1 (buttons), 14.2:1 on hover; gray text
- * 4.8:1 on white, 4.6:1 on off-white. Navy vs body text is only 1.15:1, so
- * links in running text always keep an underline (colour alone isn't enough).
- * Without red and green, price changes are told apart by their ▲/▼ arrow and
- * +/− sign (never by colour alone): rises in navy, falls in near-black.
+ * Contrast (WCAG AA, checked): text 18.6:1 on the page, 16.6:1 on raised
+ * cards; muted text 8.7:1 / 7.8:1; gains 9.4:1; losses 5.3:1; error text
+ * #F87171 7.2:1; blue labels #8FA4FF 8.5:1. The glow blues are never text.
  */
 :root {
-  --white: #ffffff;
-  --off-white: #fafafa;
-  --ink: #0a0a0a;
-  --gray: #6b7280;
-  /* Darker gray for small labels on tinted backgrounds (7.6:1 on white). */
-  --gray-dark: #4b5563;
-  --gray-light: #e5e7eb;
+  --page: #07090d;
+  --surface-1: #0d1117;
+  --surface-2: #121821;
+  --text: #f5f7fa;
+  --text-muted: #a3acb9;
   --navy: #0f1b2d;
-  --navy-hover: #1c2b44;
-  /* A very light navy-gray for hovered and selected rows. */
-  --navy-tint: #e8ecf2;
+  --glow-deep: #1e3a8a;
+  --glow-blue: #3b5bdb;
+  --silver: #c9d0d7;
+  --label-blue: #8fa4ff;
+  --gain: #22c55e;
+  --loss: #ef4444;
 
-  /* Light theme (the default). */
-  --background: var(--white);
-  --foreground: var(--ink);
-  --heading: var(--ink);
-  --card: var(--off-white);
-  --card-foreground: var(--ink);
-  --surface: var(--off-white);
-  --surface-raised: var(--white);
-  --popover: var(--white);
-  --popover-foreground: var(--ink);
-  --primary: var(--navy);
-  --primary-hover: var(--navy-hover);
-  --primary-foreground: var(--white);
-  --primary-to: var(--navy-hover);
-  --primary-text: var(--navy);
-  --primary-text-to: var(--navy-hover);
-  --primary-tint: var(--navy-tint);
-  --gold-fill: var(--white);
-  --gold-text: var(--navy);
-  --secondary: var(--white);
-  --secondary-foreground: var(--navy);
-  /* Light enough that gray text on it still passes AA (4.5:1). */
-  --muted: #f6f7f8;
-  --muted-foreground: var(--gray);
-  /* Hover and selected rows in menus: the light navy-gray. */
-  --accent: var(--navy-tint);
-  --accent-foreground: var(--ink);
-  /* Status colours are monochrome too: icons and wording carry the meaning. */
-  --destructive: var(--ink);
-  --success: var(--navy);
-  /*
-   * The one colour outside the palette: red for quote and swap errors only
-   * (one short line with a warning icon). 6.5:1 on white, 6.2:1 on off-white.
-   */
-  --danger: #b91c1c;
-  --warning: #374151;
-  --neutral: var(--gray);
-  --border: var(--gray-light);
-  --input: var(--gray-light);
-  /* The footer's dot field. */
-  --footer-dots: var(--navy);
-  --ring: var(--navy);
-  /* Shadows are navy-tinted and soft. */
-  --shadow-color: 216 50% 12%;
-  --chart-1: var(--gray-light);
-  --chart-2: #9ca3af;
-  --chart-3: var(--gray);
-  --chart-4: #374151;
-  --chart-5: var(--navy);
-  --series-1: var(--navy);
-  --series-2: var(--gray);
-  --radius: 0.5rem;
-  --sidebar: var(--off-white);
-  --sidebar-foreground: var(--ink);
-  --sidebar-primary: var(--navy);
-  --sidebar-primary-foreground: var(--white);
-  --sidebar-accent: var(--navy-tint);
-  --sidebar-accent-foreground: var(--ink);
-  --sidebar-border: var(--gray-light);
-  --sidebar-ring: var(--navy);
-  /* The logo's nib: navy on light backgrounds, with white cut-outs. */
-  --logo-nib: var(--navy);
-  --logo-slit: var(--white);
-  /* Hover lift for cards and buttons: a faint navy-tinted shadow. */
-  --shadow-hover-value: 0 10px 24px -12px hsl(var(--shadow-color) / 0.35);
-  /* Motion: quick and calm. */
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/*
- * Dark: near-black page, gray surfaces, white text. Navy can't carry text on
- * black (1.15:1), so the accent becomes white with navy text on it.
- */
-.dark {
-  --background: var(--ink);
-  --foreground: #f9fafb;
-  --card: #141414;
-  --card-foreground: #f9fafb;
-  --surface: #141414;
-  --surface-raised: #1c1c1c;
-  --popover: #1c1c1c;
-  --popover-foreground: #f9fafb;
-  --primary: #f9fafb;
-  --primary-hover: var(--gray-light);
-  --primary-foreground: var(--navy);
-  --primary-to: var(--gray-light);
-  --primary-text: #f9fafb;
-  --primary-text-to: var(--gray-light);
-  --primary-tint: var(--navy);
-  --heading: #f9fafb;
-  --gold-fill: var(--ink);
-  --gold-text: #f9fafb;
-  --secondary: #141414;
-  --secondary-foreground: #f9fafb;
-  --muted: #1c1c1c;
-  --muted-foreground: #a1a1aa;
-  --accent: var(--navy);
-  --accent-foreground: #f9fafb;
-  --destructive: #f9fafb;
-  --success: #f9fafb;
-  /* 6.9:1 on the dark cards. */
+  --background: var(--page);
+  --foreground: var(--text);
+  --heading: var(--text);
+  --card: var(--surface-1);
+  --card-foreground: var(--text);
+  --surface: var(--surface-1);
+  --surface-raised: var(--surface-2);
+  --popover: var(--surface-2);
+  --popover-foreground: var(--text);
+  /* Primary buttons are white with dark text. */
+  --primary: var(--text);
+  --primary-hover: #ffffff;
+  --primary-foreground: var(--page);
+  --primary-to: #ffffff;
+  --primary-text: var(--text);
+  --primary-text-to: var(--silver);
+  --primary-tint: var(--surface-2);
+  --gold-fill: var(--page);
+  --gold-text: var(--label-blue);
+  --secondary: transparent;
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--surface-2);
+  --accent-foreground: var(--text);
+  --destructive: var(--loss);
+  --success: var(--gain);
+  --warning: #fbbf24;
   --danger: #f87171;
-  --warning: #d1d5db;
-  --neutral: #a1a1aa;
-  --border: #2a2a2a;
-  --input: #3a3a3a;
-  --footer-dots: #d1d5db;
-  --ring: #f9fafb;
+  --neutral: var(--text-muted);
+  --border: rgb(255 255 255 / 0.08);
+  --input: rgb(255 255 255 / 0.14);
+  --ring: #6e8bff;
   --shadow-color: 0 0% 0%;
-  --chart-1: #2a2a2a;
-  --chart-2: #4b5563;
-  --chart-3: #9ca3af;
-  --chart-4: #d1d5db;
-  --chart-5: #f9fafb;
-  --series-1: #f9fafb;
-  --series-2: #9ca3af;
-  --sidebar: #111111;
-  --sidebar-foreground: #f9fafb;
-  --sidebar-primary: #f9fafb;
-  --sidebar-primary-foreground: var(--navy);
-  --sidebar-accent: var(--navy);
-  --sidebar-accent-foreground: #f9fafb;
-  --sidebar-border: #2a2a2a;
-  --sidebar-ring: #f9fafb;
-  /* White nib on dark backgrounds. */
-  --logo-nib: #f9fafb;
-  --logo-slit: var(--ink);
-}
-
-/*
- * The navbar and the selected market card: dark navy with white text, in both themes.
- * The tokens are re-pointed inside it, so buttons, links and the logo invert
- * (white buttons with navy text, white links, a white nib).
- */
-.theme-navy {
-  --background: var(--navy);
-  --foreground: var(--white);
-  --heading: var(--white);
-  --card: var(--navy-hover);
-  --card-foreground: var(--white);
-  --surface: var(--navy-hover);
-  --surface-raised: var(--navy-hover);
-  --primary: var(--white);
-  --primary-hover: var(--gray-light);
-  --primary-foreground: var(--navy);
-  --primary-text: var(--white);
-  --primary-text-to: var(--gray-light);
-  --secondary: var(--navy);
-  --secondary-foreground: var(--white);
-  --muted: var(--navy-hover);
-  /* Gray-300 on navy: 11.7:1. */
-  --muted-foreground: #d1d5db;
-  --accent: var(--navy-hover);
-  --accent-foreground: var(--white);
-  --border: rgb(255 255 255 / 0.14);
-  --input: rgb(255 255 255 / 0.24);
-  --ring: var(--white);
-  /* Price changes on navy: white, with the ▲/▼ and +/− carrying the direction. */
-  --success: var(--white);
-  --destructive: var(--white);
-  --logo-nib: var(--white);
-  --logo-slit: var(--navy);
-  --gold-fill: var(--navy);
-  --shadow-color: 0 0% 0%;
-  background-color: var(--navy);
-  color: var(--white);
+  --chart-1: #1e3a8a;
+  --chart-2: #3b5bdb;
+  --chart-3: #8fa4ff;
+  --chart-4: var(--silver);
+  --chart-5: var(--text);
+  --series-1: var(--label-blue);
+  --series-2: var(--silver);
+  --radius: 0.5rem;
+  --sidebar: var(--surface-1);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--text);
+  --sidebar-primary-foreground: var(--page);
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --sidebar-ring: #6e8bff;
+  --logo-nib: var(--text);
+  --logo-slit: var(--page);
+  --footer-dots: var(--glow-blue);
+  --shadow-hover-value: 0 10px 24px -12px rgb(0 0 0 / 0.6);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
@@ -296,24 +185,28 @@
   }
   html {
     font-variant-numeric: normal;
-    color-scheme: light;
+    color-scheme: dark;
     -webkit-tap-highlight-color: transparent;
   }
-  html.dark {
-    color-scheme: dark;
-  }
   body {
-    @apply bg-background text-sm leading-6 text-foreground;
+    @apply bg-background font-sans text-sm leading-6 text-foreground;
   }
   /* Prices and amounts: monospaced tabular figures so columns line up. */
   .tabular-nums,
   .font-mono {
     font-variant-numeric: tabular-nums slashed-zero;
   }
+  /* Sora for headings; an <em> inside one is an Instrument Serif Italic accent. */
   h1,
   h2,
   h3 {
-    @apply font-semibold tracking-tight text-balance text-heading;
+    @apply font-heading font-semibold tracking-tight text-balance text-heading;
+  }
+  :is(h1, h2, h3) em {
+    font-family: var(--font-instrument), Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
   ::selection {
     background: color-mix(in oklch, var(--primary) 28%, transparent);
@@ -478,8 +371,8 @@ html .wallet-adapter-dropdown-list-item:not([disabled]):hover {
   background: var(--muted);
 }
 
-/* The chat (/chat) is a full-screen app with its own sidebar: no site header or footer. */
-body:has([data-chat-shell]) [data-site-chrome] {
+/* The chat (/chat) fills the screen under the navbar: no footer. */
+body:has([data-chat-shell]) [data-site-footer] {
   display: none;
 }
 /* The home page has its own announcement bar and navbar instead of the site header. */
@@ -487,56 +380,8 @@ body:has([data-home-page]) [data-site-header] {
   display: none;
 }
 
-/*
- * The home page is dark only (whatever the site theme). `.home-dark` re-points
- * the tokens for everything inside it; the footer gets the same tokens on this
- * page. Contrast: text #F5F7FA 18.6:1 and #A3ACB9 8.7:1 on #07090D (7.8:1 on
- * raised cards); blue labels #8FA4FF 8.5:1. The glow blues (#1E3A8A, #3B5BDB)
- * are for graphics only, never text.
- */
-.home-dark,
-body:has([data-home-page]) [data-site-footer] {
-  --background: #07090d;
-  --foreground: #f5f7fa;
-  --heading: #f5f7fa;
-  --card: #0d1117;
-  --card-foreground: #f5f7fa;
-  --surface: #0d1117;
-  --surface-raised: #121821;
-  --popover: #121821;
-  --popover-foreground: #f5f7fa;
-  --primary: #f5f7fa;
-  --primary-hover: #ffffff;
-  --primary-foreground: #07090d;
-  --primary-text: #f5f7fa;
-  --primary-tint: #121821;
-  --secondary: transparent;
-  --secondary-foreground: #f5f7fa;
-  --muted: #121821;
-  --muted-foreground: #a3acb9;
-  --accent: #121821;
-  --accent-foreground: #f5f7fa;
-  --border: rgb(255 255 255 / 0.08);
-  --input: rgb(255 255 255 / 0.14);
-  --ring: #6e8bff;
-  --shadow-color: 0 0% 0%;
-  --logo-nib: #f5f7fa;
-  --logo-slit: #07090d;
-  --footer-dots: #3b5bdb;
-  /* Home-only accents. */
-  --glow-deep: #1e3a8a;
-  --glow-blue: #3b5bdb;
-  --silver: #c9d0d7;
-  --label-blue: #8fa4ff;
-  color-scheme: dark;
-  background-color: var(--background);
-  color: var(--foreground);
-}
-body:has([data-home-page]) {
-  background: #07090d;
-}
-/* Secondary buttons on the dark home page: a light outline that fills white on hover. */
-.home-dark [data-variant="outline"] {
+/* Secondary (outline) buttons: a light outline that fills white on hover. */
+[data-slot="button"][data-variant="outline"] {
   border-color: rgb(255 255 255 / 0.24);
 }
 
@@ -652,27 +497,14 @@ body:has([data-home-page]) {
 
 /* --- Home page: fonts, scrolling and text hover effects -------------------- */
 
-/* Manrope for text, Sora for headings, Instrument Serif Italic for accent words. */
-.home-dark {
-  font-family: var(--font-manrope), var(--font-geist-sans), sans-serif;
-}
-.home-dark :is(h1, h2, h3) {
-  font-family: var(--font-sora), var(--font-geist-sans), sans-serif;
-}
-.home-dark :is(h1, h2, h3) em {
-  font-family: var(--font-instrument), Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-}
 /* Native smooth scrolling as a fallback when Lenis isn't running. */
 @media (prefers-reduced-motion: no-preference) {
-  html:has([data-home-page]) {
+  html {
     scroll-behavior: smooth;
   }
 }
-/* No line between the page and the footer on the home page. */
-body:has([data-home-page]) [data-site-footer] footer {
+/* No line between a page and the footer. */
+[data-site-footer] footer {
   border-top-color: transparent;
 }
 /* Looping animations stop while their section is off screen (PauseOffscreen). */
@@ -752,10 +584,10 @@ body:has([data-home-page]) [data-site-footer] footer {
     transform: scaleX(1);
   }
   /* Buttons on the home page: a soft light sweeps across. */
-  .home-dark [data-slot="button"] {
+  [data-slot="button"] {
     overflow: hidden;
   }
-  .home-dark [data-slot="button"]::after {
+  [data-slot="button"]::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -769,7 +601,7 @@ body:has([data-home-page]) [data-site-footer] footer {
     transform: translateX(-130%);
     transition: transform 400ms ease-out;
   }
-  .home-dark [data-slot="button"][data-variant="default"]::after {
+  [data-slot="button"][data-variant="default"]::after {
     background: linear-gradient(
       110deg,
       transparent 30%,
@@ -777,11 +609,11 @@ body:has([data-home-page]) [data-site-footer] footer {
       transparent 70%
     );
   }
-  .home-dark [data-slot="button"]:hover::after {
+  [data-slot="button"]:hover::after {
     transform: translateX(130%);
   }
   /* Footer links on the home page: grey to white with a tiny lift. */
-  body:has([data-home-page]) [data-site-footer] footer a {
+  [data-site-footer] footer a {
     transition:
       color 250ms ease-out,
       transform 250ms ease-out;
@@ -793,7 +625,7 @@ body:has([data-home-page]) [data-site-footer] footer {
     .statement-hover:hover {
       letter-spacing: -0.012em;
     }
-    body:has([data-home-page]) [data-site-footer] footer a:hover {
+    [data-site-footer] footer a:hover {
       transform: translateY(-1px);
     }
   }

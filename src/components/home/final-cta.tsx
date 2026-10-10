@@ -27,12 +27,15 @@ export function FinalCta() {
         >
           Search it. Approve it. Own it.
         </h2>
-        <div className="relative mt-10">
-          <Button asChild size="lg">
-            <Link href="/chat">
-              Launch Quill
+        <div className="relative mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Button asChild size="lg" className="w-full sm:w-auto">
+            <Link href="/markets">
+              Start trading
               <ArrowRight data-icon="inline-end" />
             </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
+            <Link href="/chat">Research with Quill</Link>
           </Button>
         </div>
       </Reveal>

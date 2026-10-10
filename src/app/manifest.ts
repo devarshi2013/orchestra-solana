@@ -10,7 +10,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: TAGLINE,
     start_url: "/",
     display: "standalone",
-    background_color: "#FFFFFF",
+    background_color: "#07090D",
     theme_color: "#0F1B2D",
     icons: [
       { src: "/brand/quill-icon-192.png", sizes: "192x192", type: "image/png" },

@@ -69,7 +69,7 @@ export function sparklinePoints(candles: readonly Candle[]): Point[] | null {
 }
 
 /** The token a ticker's live data comes from: the most liquid issuer's. */
-function bestToken(candidates: StockEntry[]): StockEntry {
+export function bestToken(candidates: StockEntry[]): StockEntry {
   return [...candidates].sort(
     (a, b) =>
       LIQUIDITY_TIERS.indexOf(a.liquidityTier) - LIQUIDITY_TIERS.indexOf(b.liquidityTier) ||

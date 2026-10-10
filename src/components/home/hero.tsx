@@ -110,13 +110,13 @@ export function Hero() {
           className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
         >
           <Button asChild size="lg" className="w-full sm:w-auto">
-            <Link href="/chat">
-              Launch Quill
+            <Link href="/markets">
+              Start trading
               <ArrowRight data-icon="inline-end" />
             </Link>
           </Button>
           <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
-            <a href="#how-it-works">See how it works</a>
+            <Link href="/chat">Research with Quill</Link>
           </Button>
         </motion.div>
       </div>

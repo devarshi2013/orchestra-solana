@@ -13,12 +13,12 @@ export const ChatAppLoader = dynamic(() => import("./assistant-chat").then((m) =
   ssr: false,
   loading: () => (
     <div
-      className="flex h-dvh flex-col items-center justify-center gap-3"
+      className="flex h-[calc(100dvh-4rem-1px)] flex-col items-center justify-center gap-3"
       role="status"
       aria-label="Loading Quill"
     >
       <LogoMark className="size-12" />
-      <span className="text-lg font-semibold tracking-tight text-primary-text">quill</span>
+      <span className="font-heading text-lg font-semibold tracking-tight">Quill</span>
       <ProgressBar label="Loading" className="mt-2 w-40 rounded-full" />
     </div>
   ),

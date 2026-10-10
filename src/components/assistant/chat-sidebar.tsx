@@ -14,11 +14,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import Link from "next/link";
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 
-import { Wordmark } from "@/components/brand/logo";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,7 +72,7 @@ export type ChatSidebarProps = {
 /**
  * Chat history, ChatGPT-style: logo and "New chat", a search box, chats
  * grouped by date (pinned first) with a menu to rename, pin or delete each,
- * and the wallet, theme and settings at the bottom. Used as the desktop
+ * and the wallet and settings at the bottom. Used as the desktop
  * sidebar and inside the mobile drawer.
  */
 export function ChatSidebar({
@@ -156,15 +153,9 @@ export function ChatSidebar({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Logo, collapse, new chat */}
+      {/* Title, collapse, new chat (the Quill logo is in the site navbar above) */}
       <div className="flex items-center gap-2 px-3 pt-3">
-        <Link
-          href="/"
-          aria-label="Quill home"
-          className="flex-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <Wordmark />
-        </Link>
+        <p className="flex-1 px-1 text-sm font-semibold">Chats</p>
         {onCollapse && (
           <Button variant="ghost" size="icon-sm" onClick={onCollapse} aria-label="Close sidebar">
             <PanelLeftClose />
@@ -372,7 +363,7 @@ export function ChatSidebar({
         </nav>
       </ScrollArea>
 
-      {/* Wallet, theme, settings */}
+      {/* Wallet and settings */}
       <div className="space-y-2 border-t p-3">
         <p className="px-1 text-[11px] text-muted-foreground">
           {guest
@@ -383,7 +374,6 @@ export function ChatSidebar({
           <div className="min-w-0 flex-1 [&_.wallet-adapter-button]:h-9 [&_.wallet-adapter-button]:w-full [&_.wallet-adapter-button]:justify-center [&_.wallet-adapter-button]:px-3 [&_.wallet-adapter-button]:text-sm">
             <WalletButton />
           </div>
-          <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon-sm" aria-label="Chat settings">

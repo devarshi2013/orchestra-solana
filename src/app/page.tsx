@@ -6,30 +6,26 @@ import { FeatureRows } from "@/components/home/feature-rows";
 import { FinalCta } from "@/components/home/final-cta";
 import { Hero } from "@/components/home/hero";
 import { HowQuillWorks } from "@/components/home/how-quill-works";
-import { HomeNavbar } from "@/components/home/home-navbar";
-import { SmoothScroll } from "@/components/home/smooth-scroll";
 import { Statement } from "@/components/home/statement";
-import { homeFontVariables } from "@/components/home/fonts";
+import { SiteNavbar } from "@/components/layout/site-navbar";
 import { SubscribeBox } from "@/components/subscribe-box";
 
 /**
- * The home page, dark only (`.home-dark` re-points the theme tokens; the
- * footer follows on this page). Announcement bar, its own navbar (the site
- * header is hidden here: data-home-page, see globals.css), hero, statement,
+ * The home page: announcement bar, the site navbar (rendered here so it sits
+ * under the bar; the layout's copy is hidden: data-home-page, globals.css), hero, statement,
  * how Quill works (four steps), the three product rows, the bento grid, FAQ, email signup and a closing
  * call to action. No market data: nothing here calls a price or quote API.
  */
 export default function Home() {
   return (
     // Sideways overflow is clipped here (not per section), so glows can cross section edges.
-    <div
-      data-home-page
-      className={`${homeFontVariables} home-dark relative flex flex-1 flex-col overflow-x-clip`}
-    >
-      <SmoothScroll />
+    <div data-home-page className="relative flex flex-1 flex-col overflow-x-clip">
       <Grain />
       <AnnouncementBar />
-      <HomeNavbar />
+      {/* The site navbar, here under the announcement bar (the layout's copy is hidden on this page). */}
+      <div className="sticky top-0 z-40">
+        <SiteNavbar />
+      </div>
       <main id="home-main" className="relative flex-1">
         <Hero />
         <Statement />

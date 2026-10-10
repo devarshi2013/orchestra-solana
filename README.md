@@ -19,6 +19,8 @@ An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain Engli
 | Route                 | What it does                                                                                                                                                                                                                                                  |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/`                   | Home page: hero, Quill Research™ / Search™ / Approve™, feature grid, FAQ and email signup; no market data ([docs](docs/home.md))                                                                                                                              |
+| `/markets`            | Stocks screener: search, Equities / ETFs / Commodities tabs, top performers and a sortable table with live prices and 24h sparklines ([docs](docs/markets.md))                                                                                                |
+| `/markets/[symbol]`   | One stock: live price, chart (1H–1Y), stats and a Buy / Sell panel; every trade is signed in your wallet                                                                                                                                                      |
 | `/chat`, `/chat/[id]` | The chatbot (`/assistant` redirects here), with a ChatGPT-style chat history sidebar and a "Browse stocks" panel: streamed answers, "Data used" panels, plan cards with live quotes, warnings, pre-flight checks, and wallet-approved buys with Solscan links |
 
 There's **no database**:
@@ -31,18 +33,13 @@ See [docs/assistant.md](docs/assistant.md).
 
 ## Brand
 
-- **Name and line:** Quill. "Write what you want. Own what you choose." (`src/lib/brand.ts`).
-- **Mark:** an upward-pointing fountain-pen nib (it doubles as an "up" arrow): navy with a white slit and breather hole on light backgrounds, white with black cut-outs on dark ones; flat, no gradients. The shapes live in `src/components/brand/logo.tsx` and are shared by the favicon (`src/app/icon.svg`, which switches with the OS theme), the apple-touch icon and OG image (generated in `src/app`), and the files in `public/brand/`: icon and horizontal wordmark (nib + "quill" in Geist, as outlines) for light and dark backgrounds, plus 512px and 192px PNG app icons.
-- **Colours:** white, near-black, grays and one dark navy accent; nothing else. All are CSS variables in `src/app/globals.css`, exposed as Tailwind colours, so the theme is adjusted in one place.
-  - Light (the default): white `#FFFFFF` page, off-white `#FAFAFA` cards and sections, near-black `#0A0A0A` text and headings, gray `#6B7280` secondary text, light gray `#E5E7EB` borders, dark navy `#0F1B2D` accent (hover `#1C2B44`).
-  - The navbar is a navy band with white text in both themes (`.theme-navy`). The footer is `DitheredFooter` (`src/components/ui/dithered-footer.tsx`, MIT, from 21st.dev), set up in `src/app/layout.tsx`: the tagline and link columns, a short strip of drifting navy dots that brighten under the cursor (light gray in dark mode), and the bottom bar. It links only to pages that exist. The email signup is the "Stay in the loop" box on the home page (not in the footer); it posts to `/api/subscribe`, which adds the address to a Resend audience (validated, rate-limited per IP, with a hidden honeypot field against bots).
-  - Dark: near-black page, gray surfaces, white text; the accent becomes white with navy text, since navy can't be read on black.
-  - No red or green: price changes always carry a ▲/▼ and a +/− sign. Rises are navy (white in dark mode), falls gray or near-black. Token and company logos are the projects' own images.
-  - WCAG AA checked for every text/background pair (notes at the top of `globals.css`). Links inside text keep an underline, since navy and body text are too close to tell apart by colour alone.
-- **Buttons:** navy with white text, 8–12px corners; hover lightens to `#1C2B44`, lifts 2px and adds a soft shadow. Secondary buttons are white with a navy border and text, filling navy on hover. 0.3s ease transitions.
-- **Motion** (200–600ms, navy and gray only): sections fade and slide up as they scroll into view (`Reveal` in `src/components/motion.tsx`), link underlines grow from the left (`link-grow` / `link-inline`), cards lift with a soft navy-tinted shadow (`card-lift`), and a navy progress bar shows while a reply is written. All movement is off under `prefers-reduced-motion`.
-- **Type:** Geist for all text (headings in semibold with tighter tracking) and Geist Mono with tabular figures for prices, tickers, percentages, chart labels and addresses, both via `next/font/google` in `src/app/layout.tsx` (`--font-geist-sans` / `--font-geist-mono`, mapped to Tailwind's `font-sans` / `font-mono`). No other fonts load: the wallet library's DM Sans import is patched out (in `patches/`).
-- **Surfaces:** 1px borders, 8px controls and 14px cards, very soft shadows. Your messages are navy bubbles; the AI's are off-white cards.
+- **Name:** Quill. One dark theme on every page; there is no light mode or theme switch.
+- **Mark:** a "Q": a ring, a feather inside it, and the Q's tail as a pen nib (`src/components/brand/quill-mark.tsx`). White in the navbar; on navy as the favicon (`src/app/icon.svg`), Apple touch icon, install icons (`public/brand/`) and in the link-preview image.
+- **Colours** (CSS variables at the top of `src/app/globals.css`, exposed as Tailwind colours): page `#07090D`, surfaces `#0D1117`, raised cards `#121821`, borders white at 8%, text `#F5F7FA`, muted text `#A3ACB9`, accents `#3B5BDB` / `#1E3A8A` (glows and graphics, never text), blue labels `#8FA4FF`, silver `#C9D0D7`, gains `#22C55E`, losses `#EF4444`, error text `#F87171`. WCAG AA checked (ratios in the comment above the tokens).
+- **Type** (`src/app/fonts.ts`, via `next/font`): Sora for headings, Manrope for text, buttons, nav and cards, Instrument Serif Italic for accent words inside headings (`<em>`), Geist Mono with tabular figures for prices, numbers and small labels.
+- **Navbar and footer:** the same navbar on every page (`src/components/layout/site-navbar.tsx`: Markets, Research, the home sections, "Launch app"; its border appears once scrolled) and the same `DitheredFooter` with blue dots (hidden on the chat, which fills the screen under the navbar).
+- **Buttons:** white with dark text; outlined ones fill white on hover; a soft light sweeps across on hover.
+- **Motion:** Lenis smooth scrolling on every page (`src/components/layout/smooth-scroll.tsx`; panels such as the chat scroll natively), fade-ins on scroll, hover lifts and glows. Movement is off under `prefers-reduced-motion`.
 
 ## Stack
 
@@ -94,6 +91,7 @@ docs/                        Assistant, home dashboard, tokenized stocks (issuer
 src/app/                     Pages (/ and /chat) and /api route handlers
 src/components/assistant/    Chat, plan card, data-used panels, disclosure and wallet gates
 src/components/home/         Home page sections (hero, feature rows and grid, FAQ)
+src/components/markets/      Screener table, sparkline, price chart, trade panel, top performers
 src/hooks/                   Chat stream, plan quotes, plan buying
 src/lib/agent/               System prompt, plan validation, address redaction
 src/lib/stocks/              Stock registry + sync logic, best-issuer choice, tools (listStocks, metrics, quotes, balances)

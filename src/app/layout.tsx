@@ -1,20 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 
 import { SiteFooter } from "@/components/layout/site-footer";
 import { MotionProvider } from "@/components/motion";
 import { SolanaWalletProvider } from "@/components/providers/wallet-provider";
-import { themeScript } from "@/components/layout/theme-toggle";
-import { SiteHeader } from "@/components/site-header";
+import { SiteNavbar } from "@/components/layout/site-navbar";
+import { SmoothScroll } from "@/components/layout/smooth-scroll";
 import { Toaster } from "@/components/ui/toast";
 
 import { TAGLINE } from "@/lib/brand";
 
+import { fontVariables } from "./fonts";
 import "./globals.css";
-
-/** Geist for all text; Geist Mono for prices, tickers and addresses (tabular figures). */
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
@@ -33,34 +29,27 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-    { media: "(prefers-color-scheme: light)", color: "#0f1b2d" },
-  ],
+  themeColor: "#07090d",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className="h-full"
-      // The theme script adds class="dark" before hydration when the visitor chose it.
-      suppressHydrationWarning
-    >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} flex min-h-full flex-col font-sans antialiased`}
-      >
+    // One dark theme for the whole site; "dark" keeps any dark: variants consistent.
+    <html lang="en" className="dark h-full">
+      <body className={`${fontVariables} flex min-h-full flex-col font-sans antialiased`}>
         <MotionProvider>
           <SolanaWalletProvider>
-            <SiteHeader />
+            <SmoothScroll />
+            {/* The home page renders this navbar itself, under its announcement bar. */}
+            <div data-site-header className="sticky top-0 z-40">
+              <SiteNavbar />
+            </div>
             <div id="main" className="flex flex-1 flex-col">
               {children}
             </div>
-            {/* Hidden on /chat, a full-screen app (see data-site-chrome in globals.css). */}
-            <div data-site-chrome data-site-footer>
+            {/* Hidden on /chat, which fills the screen under the navbar (globals.css). */}
+            <div data-site-footer>
               <SiteFooter />
             </div>
             <Toaster />

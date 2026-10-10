@@ -96,7 +96,7 @@ export const MARKET_MINTS = MARKET_TOKENS.map((t) => t.mint);
 
 export const marketToken = (mint: string) => MARKET_TOKENS.find((t) => t.mint === mint) ?? null;
 
-export type WindowId = "1h" | "24h" | "7d" | "30d";
+export type WindowId = "1h" | "24h" | "7d" | "30d" | "1y";
 
 export type WindowSpec = {
   id: WindowId;
@@ -146,6 +146,15 @@ export const WINDOWS: Record<WindowId, WindowSpec> = {
     aggregate: 4,
     limit: 180,
     ttlMs: 2 * 3_600_000,
+  },
+  "1y": {
+    id: "1y",
+    label: "1Y",
+    secs: 31_536_000,
+    timeframe: "day",
+    aggregate: 1,
+    limit: 365,
+    ttlMs: 6 * 3_600_000,
   },
 };
 

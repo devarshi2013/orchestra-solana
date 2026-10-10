@@ -322,7 +322,8 @@ export function ChatApp() {
   );
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-background">
+    // Fills the screen under the site navbar (4rem); its panels scroll natively (data-chat-app).
+    <div data-chat-app className="flex h-[calc(100dvh-4rem-1px)] overflow-hidden bg-background">
       {!collapsed && (
         <aside
           aria-label="Chats"
