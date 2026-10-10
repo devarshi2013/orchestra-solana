@@ -1,8 +1,5 @@
-"use client";
-
 import { GitHubIcon, XIcon } from "@/components/brand/social-icons";
 import { DitheredFooter, type FooterColumn } from "@/components/ui/dithered-footer";
-import { subscribeEmail } from "@/lib/api-client";
 
 const REPO = "https://github.com/devarshi2013/orchestra-solana";
 /** No X account yet: the X icon shares Quill instead of linking a profile. */
@@ -22,9 +19,8 @@ const FOOTER_COLUMNS: FooterColumn[] = [
 ];
 
 /**
- * The site footer: DitheredFooter with Quill's links and the email signup,
- * which posts to /api/subscribe (Resend). A client component, since the signup
- * handler is a function.
+ * The site footer: DitheredFooter with Quill's links. No signup form here: the
+ * email signup lives on the home page (SubscribeBox).
  */
 export function SiteFooter() {
   return (
@@ -45,9 +41,6 @@ export function SiteFooter() {
       // Dark navy dots (#0F1B2D); light gray on the dark theme, where navy can't be seen.
       accent="var(--footer-dots)"
       markColor="var(--footer-mark)"
-      onSubscribe={async (email, honeypot) => {
-        await subscribeEmail(email, honeypot);
-      }}
     />
   );
 }
