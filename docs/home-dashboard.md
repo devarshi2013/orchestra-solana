@@ -8,8 +8,8 @@ tokens and tokenized stocks, with **one** button into the chat.
 - **Market list** (`src/components/market/market-grid.tsx`), at the top: a card
   per token with logo, price, 24h change and a 24h sparkline; tabs Crypto /
   Stocks / Top movers (largest absolute 24h change). It's the only way to pick
-  a market: clicking a card (or Enter on it) shows it in the chart below, and the
-  card gets a navy border. The first token is picked by default. On phones the
+  a market: clicking a card (or Enter on it) shows it in the chart below, and that
+  card turns navy with white text. The first token is picked by default. On phones the
   cards are one swipeable row, and picking one scrolls the chart into view.
 - **Chart** (`src/components/market/hero-chart.tsx`), below the list: the
   picked market's name ("NVDAx · NVIDIA"), big live price with the 24h change, a

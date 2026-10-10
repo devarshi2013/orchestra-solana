@@ -250,7 +250,7 @@
 }
 
 /*
- * The navbar: a dark navy band with white text, in both themes.
+ * The navbar and the selected market card: dark navy with white text, in both themes.
  * The tokens are re-pointed inside it, so buttons, links and the logo invert
  * (white buttons with navy text, white links, a white nib).
  */
@@ -277,6 +277,9 @@
   --border: rgb(255 255 255 / 0.14);
   --input: rgb(255 255 255 / 0.24);
   --ring: var(--white);
+  /* Price changes on navy: white, with the ▲/▼ and +/− carrying the direction. */
+  --success: var(--white);
+  --destructive: var(--white);
   --logo-nib: var(--white);
   --logo-slit: var(--navy);
   --gold-fill: var(--navy);

@@ -126,9 +126,12 @@ function MarketCard({
       aria-controls="market-chart"
       aria-label={`Show ${token.name} in the chart`}
       className={cn(
-        "group w-full card-lift rounded-xl border bg-card p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        // The market the chart is showing: a navy border.
-        active && "border-primary ring-1 ring-primary",
+        "group w-full card-lift rounded-xl border p-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        // The market the chart is showing: a navy card with white text.
+        // Its focus ring is gray, which shows on both white and black pages.
+        active
+          ? "theme-navy border-[var(--navy)] focus-visible:ring-[var(--gray)] focus-visible:ring-offset-0"
+          : "bg-card",
       )}
     >
       <div className="flex items-center gap-2.5">
@@ -153,8 +156,9 @@ function MarketCard({
         <Liveline
           data={points}
           value={price ?? 0}
-          theme={theme}
-          color={changeColor(change, theme)}
+          // On the navy (selected) card, draw in the dark theme's light colours.
+          theme={active ? "dark" : theme}
+          color={changeColor(change, active ? "dark" : theme)}
           window={WINDOWS["24h"].secs}
           grid={false}
           badge={false}
