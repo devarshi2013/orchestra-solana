@@ -337,17 +337,13 @@ function LivePlanCard({ plan, saved, onBuyChange }: PlanCardProps) {
             >
               <ShieldCheck /> Approve &amp; buy {formatUsd(total)}
             </Button>
-            <p className="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
-              Each stock is a separate swap you approve in your wallet: {draft.length}{" "}
-              {draft.length === 1 ? "signature" : "signatures"}. Nothing is signed automatically.
+            {/* The one safety line on the approval step. */}
+            <p className="text-xs text-muted-foreground">
+              Not financial advice · You approve every trade
             </p>
           </div>
         </>
       )}
-      <p className="text-xs text-muted-foreground">
-        AI-generated research, not financial advice. Tokenized stocks are securities with
-        eligibility rules. Each buy is re-quoted right before you sign.
-      </p>
     </Ticket>
   );
 }

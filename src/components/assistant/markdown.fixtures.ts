@@ -59,8 +59,6 @@ export const FIXTURES = {
     "> Tokenized stocks aren't available to US persons.",
     "",
     "More on the issuers: [xStocks](https://xstocks.com).",
-    "",
-    "This is research, not financial advice.",
   ].join("\n"),
 
   /** Text from two model calls (before and after a tool call), as separate blocks. */

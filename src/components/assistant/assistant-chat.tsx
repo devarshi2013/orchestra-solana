@@ -2,16 +2,7 @@
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Cpu,
-  HeartPulse,
-  Menu,
-  PanelLeftOpen,
-  Plus,
-  Scale,
-  ShieldAlert,
-  TrendingUp,
-} from "lucide-react";
+import { Cpu, HeartPulse, Menu, PanelLeftOpen, Plus, Scale, TrendingUp } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -481,12 +472,6 @@ export function ChatApp() {
                   )}
                 </AnimatePresence>
               </DisclosureGate>
-              <p className="mt-2 mb-4 flex items-start gap-1.5 text-xs text-muted-foreground">
-                <ShieldAlert className="mt-px size-3.5 shrink-0" />
-                The assistant researches and proposes; it never trades. Figures come from live data
-                tools (open &ldquo;Data used&rdquo;), and you approve every buy in your wallet.
-                Research, not financial advice.
-              </p>
             </div>
           </div>
         </div>

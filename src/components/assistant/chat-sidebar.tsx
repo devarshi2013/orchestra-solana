@@ -423,12 +423,7 @@ export function ChatSidebar({
       </ScrollArea>
 
       {/* Wallet and settings */}
-      <div className="space-y-2 border-t p-3">
-        <p className="px-1 text-[11px] text-muted-foreground">
-          {guest
-            ? "Guest: chats are saved in this browser. Connect a wallet to keep them with it."
-            : "Saved in this browser, for this wallet only."}
-        </p>
+      <div className="border-t p-3">
         <div className="flex items-center gap-1.5">
           <div className="min-w-0 flex-1 [&_.wallet-adapter-button]:h-9 [&_.wallet-adapter-button]:w-full [&_.wallet-adapter-button]:justify-center [&_.wallet-adapter-button]:px-3 [&_.wallet-adapter-button]:text-sm">
             <WalletButton />
