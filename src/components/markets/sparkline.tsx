@@ -47,6 +47,8 @@ export function Sparkline({
         strokeWidth="1.5"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
+        // Thickens when its table row (a `group/row`) is hovered.
+        className="transition-[stroke-width] duration-200 ease-out group-hover/row:[stroke-width:2.5px]"
       />
     </svg>
   );

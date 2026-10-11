@@ -116,7 +116,7 @@ function RankedRows({ items, basis }: { items: StoryItem[]; basis: StoryData["ba
             >
               <span
                 style={{ width: `${(item.marketCap / max) * 100}%` }}
-                className="block h-full rounded-full bg-[linear-gradient(90deg,#3B5BDB,#8FA4FF)]"
+                className="block h-full rounded-full bg-[linear-gradient(90deg,var(--glow-blue),var(--label-blue))]"
               />
             </span>
             <span
@@ -288,13 +288,13 @@ function PlanCard({ data, dimmed = false }: { data: StoryData; dimmed?: boolean 
                       USDC
                       {hops.map((h, i) => (
                         <span key={`${h.label}-${i}`} className="flex items-center gap-0.5">
-                          <span className="h-px w-2 bg-[linear-gradient(90deg,#C9D0D7,#3B5BDB)]" />
+                          <span className="h-px w-2 bg-[linear-gradient(90deg,var(--silver),var(--glow-blue))]" />
                           <span className="max-w-16 truncate rounded-full border px-1">
                             {h.label}
                           </span>
                         </span>
                       ))}
-                      <span className="h-px w-2 bg-[linear-gradient(90deg,#C9D0D7,#3B5BDB)]" />
+                      <span className="h-px w-2 bg-[linear-gradient(90deg,var(--silver),var(--glow-blue))]" />
                       {q.symbol}
                     </span>
                   </div>

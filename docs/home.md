@@ -26,7 +26,7 @@ Each section is its own component in `src/components/home/`:
 | Final call to action: navy-to-black panel with a glowing orb in a corner                                                                                                                                                                                                                                                                                                                                        | `final-cta.tsx`                           |
 
 Shared effects (orbs, faded grid, gradient-bordered card with a hover glow,
-grain) are in `effects.tsx`. Then the site-wide `DitheredFooter`: logo and
+grain) are in `src/components/design/effects.tsx`, shared with the markets page. Then the site-wide `DitheredFooter`: logo and
 tagline, three links (Ask Quill, Browse stocks, GitHub), the blue (`#3B5BDB`)
 dot band, and the "Research only. Not financial advice." line (with links to
 the risk disclosure and terms) beside the copyright.
@@ -187,7 +187,7 @@ left out.
   fixed blur and drift with transform; looping animations pause off screen
   (`PauseOffscreen`); scroll-in animations run once (IntersectionObserver via
   `Reveal`); the grain is left out on phones.
-- **Hover effects (mouse only, `hover-text.tsx` + `globals.css`):** headline
+- **Hover effects (mouse only, `src/components/design/text.tsx` + `globals.css`):** headline
   words lift and brighten; gradient accents sweep; the punch line lights up
   on hover, keyboard focus or a tap (a brand gradient sweeps across it, a glow
   fades in, and "edge" lifts over a highlighter underline; a plain colour

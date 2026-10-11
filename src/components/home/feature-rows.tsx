@@ -3,11 +3,11 @@ import type { ReactNode } from "react";
 import { Reveal } from "@/components/motion";
 import { cn } from "@/lib/utils";
 
-import { GradientCard } from "./effects";
+import { GradientCard } from "@/components/design/effects";
 import { ResearchVisual } from "./feature-visuals/research-visual";
 import { SearchVisual } from "./feature-visuals/search-visual";
 import { TradeVisual } from "./feature-visuals/trade-visual";
-import { SectionLabel } from "./hover-text";
+import { SectionLabel } from "@/components/design/text";
 
 const ROWS: { label: string; title: string; text: string; visual: ReactNode }[] = [
   {

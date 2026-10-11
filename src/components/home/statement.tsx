@@ -29,7 +29,7 @@ export function Statement() {
           >
             <span
               aria-hidden
-              className="punch-glow pointer-events-none absolute inset-x-[10%] inset-y-0 -z-10 rounded-full bg-[radial-gradient(ellipse_at_center,rgb(59_91_219/0.35),transparent_70%)] opacity-0 blur-2xl"
+              className="punch-glow pointer-events-none absolute inset-x-[10%] inset-y-0 -z-10 rounded-full bg-[radial-gradient(ellipse_at_center,color-mix(in_srgb,var(--glow-blue)_35%,transparent),transparent_70%)] opacity-0 blur-2xl"
             />
             <span className="punch-text">Clarity is the best</span>{" "}
             <span className="punch-edge">

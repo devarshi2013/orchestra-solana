@@ -134,7 +134,7 @@ function Research({ active, reduce }: { active: boolean; reduce: boolean }) {
                         transitionDelay: reduce ? undefined : `${i * 160 + 150}ms`,
                       }}
                       className={cn(
-                        "block h-full origin-left rounded-full bg-[linear-gradient(90deg,#3B5BDB,#8FA4FF)] transition-transform duration-700 ease-out",
+                        "block h-full origin-left rounded-full bg-[linear-gradient(90deg,var(--glow-blue),var(--label-blue))] transition-transform duration-700 ease-out",
                         column === "cap" && "brightness-150",
                       )}
                     />

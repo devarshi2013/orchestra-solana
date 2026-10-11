@@ -1,6 +1,7 @@
 "use client";
 
 import { animate, useReducedMotion } from "framer-motion";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -35,7 +36,8 @@ export function LiveNumber({
       el.textContent = value === null ? "—" : format(value);
       if (value === null || from === null || from === value) return;
     }
-    const overlay = flash.current;
+    // Under reduced motion the number just changes: no flash.
+    const overlay = reduce ? null : flash.current;
     if (overlay) {
       overlay.dataset.dir = value > from ? "up" : "down";
       overlay.style.opacity = "1";
@@ -79,6 +81,27 @@ export function ChangeText({ value, className }: { value: number | null; classNa
   const up = value >= 0;
   return (
     <span className={cn("font-mono tabular-nums", up ? "text-gain" : "text-loss", className)}>
+      {up ? "+" : "−"}
+      {Math.abs(value).toFixed(2)}%
+    </span>
+  );
+}
+
+/** The same change as a small pill with an arrow: green up, red down, "—" when unknown. */
+export function ChangePill({ value, className }: { value: number | null; className?: string }) {
+  if (value === null)
+    return <span className={cn("font-mono text-xs text-muted-foreground", className)}>—</span>;
+  const up = value >= 0;
+  const Arrow = up ? ArrowUpRight : ArrowDownRight;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 rounded-full py-0.5 pr-2 pl-1.5 font-mono text-xs font-medium tabular-nums",
+        up ? "bg-gain/12 text-gain" : "bg-loss/12 text-loss",
+        className,
+      )}
+    >
+      <Arrow className="size-3" aria-hidden />
       {up ? "+" : "−"}
       {Math.abs(value).toFixed(2)}%
     </span>

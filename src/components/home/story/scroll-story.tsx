@@ -141,7 +141,7 @@ function LiveStory({
               scaleY: autoStep === null ? scrollYProgress : (autoStep + 0.5) / STEPS.length,
             }}
             className={cn(
-              "absolute top-5 bottom-5 left-[1.1875rem] w-px origin-top bg-[linear-gradient(180deg,#C9D0D7,#3B5BDB)] will-change-transform",
+              "absolute top-5 bottom-5 left-[1.1875rem] w-px origin-top bg-[linear-gradient(180deg,var(--silver),var(--glow-blue))] will-change-transform",
               // Scroll drives it directly; only the auto-play steps ease.
               autoStep !== null && "transition-transform duration-300 ease-out",
             )}
@@ -160,9 +160,9 @@ function LiveStory({
                     className={cn(
                       "relative z-10 flex size-10 shrink-0 items-center justify-center rounded-full border font-mono text-sm font-medium transition-colors duration-300",
                       state === "active" &&
-                        "border-[rgb(143_164_255/0.6)] bg-[rgb(30_58_138/0.9)] text-foreground shadow-[0_0_24px_-2px_rgb(59_91_219/0.75)]",
+                        "border-[color-mix(in_srgb,var(--label-blue)_60%,transparent)] bg-[color-mix(in_srgb,var(--glow-deep)_90%,transparent)] text-foreground shadow-[0_0_24px_-2px_color-mix(in_srgb,var(--glow-blue)_75%,transparent)]",
                       state === "done" &&
-                        "border-[rgb(143_164_255/0.4)] bg-card text-[var(--label-blue)]",
+                        "border-[color-mix(in_srgb,var(--label-blue)_40%,transparent)] bg-card text-[var(--label-blue)]",
                       state === "todo" &&
                         "bg-card text-muted-foreground group-hover:text-foreground",
                     )}

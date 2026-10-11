@@ -145,7 +145,7 @@ export function HoursDial() {
           <path
             d={`M${x1} ${y1} A84 84 0 0 1 ${x2} ${y2}`}
             fill="none"
-            stroke={open ? "#8FA4FF" : "#3B5BDB"}
+            stroke={open ? "var(--label-blue)" : "var(--glow-blue)"}
             strokeWidth="10"
             strokeLinecap="round"
           />
@@ -195,8 +195,8 @@ export function HoursDial() {
           </p>
           <ul className="space-y-1 font-mono text-xs text-muted-foreground">
             <li className="flex items-center justify-center gap-2 sm:justify-start">
-              <span aria-hidden className="h-1.5 w-4 rounded-full bg-[#3B5BDB]" /> NYSE / Nasdaq,
-              09:30–16:00 ET
+              <span aria-hidden className="h-1.5 w-4 rounded-full bg-[var(--glow-blue)]" /> NYSE /
+              Nasdaq, 09:30–16:00 ET
             </li>
             <li className="flex items-center justify-center gap-2 sm:justify-start">
               <span aria-hidden className="h-0.5 w-4 rounded-full bg-gain" /> Tokens, Mon–Fri around
@@ -244,7 +244,7 @@ export function FractionSlider() {
           value={usd}
           onChange={(e) => setUsd(Number(e.target.value))}
           aria-valuetext={`${usd} US dollars`}
-          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-surface-raised accent-[#8FA4FF] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="h-2 w-full cursor-pointer appearance-none rounded-full bg-surface-raised accent-[var(--label-blue)] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         />
         <ul className="space-y-2.5" aria-live="polite">
           {failed ? (
@@ -280,7 +280,7 @@ export function FractionSlider() {
                   >
                     <span
                       style={{ transform: `scaleX(${shares === null ? 0 : Math.min(1, shares)})` }}
-                      className="block h-full origin-left rounded-full bg-[linear-gradient(90deg,#3B5BDB,#8FA4FF)] transition-transform duration-300 ease-out"
+                      className="block h-full origin-left rounded-full bg-[linear-gradient(90deg,var(--glow-blue),var(--label-blue))] transition-transform duration-300 ease-out"
                     />
                   </span>
                 </li>
@@ -378,7 +378,7 @@ export function NetworkTile({ stats, failed }: { stats: NetworkStats | null; fai
           >
             <Sparkline
               points={stats.tps.map((value, time) => ({ time, value }))}
-              className="h-14 w-full text-[#8FA4FF]"
+              className="h-14 w-full text-[var(--label-blue)]"
             />
           </span>
         </div>

@@ -1,6 +1,6 @@
 import { AnnouncementBar } from "@/components/home/announcement-bar";
 import { BentoGrid } from "@/components/home/bento-grid";
-import { Grain } from "@/components/home/effects";
+import { Grain } from "@/components/design/effects";
 import { Faq } from "@/components/home/faq";
 import { FeatureRows } from "@/components/home/feature-rows";
 import { FinalCta } from "@/components/home/final-cta";

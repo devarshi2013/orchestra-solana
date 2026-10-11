@@ -1,6 +1,6 @@
 import { Reveal } from "@/components/motion";
 
-import { Accent } from "./hover-text";
+import { Accent } from "@/components/design/text";
 import { InvestorBento } from "./investors/investor-bento";
 
 /**
@@ -18,7 +18,7 @@ export function BentoGrid() {
       {/* The band: a soft blue tint that fades into the page above and below. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent,rgb(59_91_219/0.09)_18%,rgb(59_91_219/0.09)_82%,transparent)]"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent,color-mix(in_srgb,var(--glow-blue)_9%,transparent)_18%,color-mix(in_srgb,var(--glow-blue)_9%,transparent)_82%,transparent)]"
       />
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         <Reveal>

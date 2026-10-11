@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Decorative pieces for the dark home page, all CSS/SVG: blurred gradient
+ * Decorative pieces shared by the home and markets pages, all CSS/SVG: blurred gradient
  * orbs, a dot grid that fades out at its edges, a gradient-bordered card with
  * a hover glow, and a faint grain. Everything here is aria-hidden except the
  * card's children.
@@ -17,8 +17,8 @@ export function Orbs({ className }: { className?: string }) {
       className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)}
     >
       {/* The blur is fixed; only transform moves (animate-orb), so drifting stays cheap. */}
-      <div className="absolute -top-40 left-[8%] size-[26rem] rounded-full bg-[radial-gradient(circle,rgb(30_58_138/0.55),rgb(15_27_45/0)_70%)] blur-3xl will-change-transform motion-safe:animate-orb sm:size-[40rem]" />
-      <div className="absolute top-24 right-[4%] hidden size-[34rem] rounded-full bg-[radial-gradient(circle,rgb(59_91_219/0.28),rgb(15_27_45/0)_70%)] blur-3xl will-change-transform [animation-delay:-9s] motion-safe:animate-orb sm:block" />
+      <div className="absolute -top-40 left-[8%] size-[26rem] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--glow-deep)_55%,transparent),color-mix(in_srgb,var(--navy)_0%,transparent)_70%)] blur-3xl will-change-transform motion-safe:animate-orb sm:size-[40rem]" />
+      <div className="absolute top-24 right-[4%] hidden size-[34rem] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--glow-blue)_28%,transparent),color-mix(in_srgb,var(--navy)_0%,transparent)_70%)] blur-3xl will-change-transform [animation-delay:-9s] motion-safe:animate-orb sm:block" />
     </div>
   );
 }
@@ -62,7 +62,7 @@ export function GradientCard({
   return (
     <div
       className={cn(
-        "group relative rounded-2xl bg-[linear-gradient(140deg,rgb(201_208_215/0.38),rgb(201_208_215/0.08)_38%,rgb(59_91_219/0.18)_100%)] p-px transition-transform duration-300 motion-safe:hover:-translate-y-0.5",
+        "group relative rounded-2xl bg-[linear-gradient(140deg,color-mix(in_srgb,var(--silver)_38%,transparent),color-mix(in_srgb,var(--silver)_8%,transparent)_38%,color-mix(in_srgb,var(--glow-blue)_18%,transparent)_100%)] p-px transition-transform duration-300 motion-safe:hover:-translate-y-0.5",
         className,
       )}
     >
@@ -74,7 +74,7 @@ export function GradientCard({
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgb(59_91_219/0.16),transparent_60%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,color-mix(in_srgb,var(--glow-blue)_16%,transparent),transparent_60%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
         />
         {children}
       </div>

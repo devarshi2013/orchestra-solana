@@ -10,6 +10,29 @@
 - **Table:** Company (logo, name, ticker), Price, 24h %, Last 24h (SVG sparkline, `sparkline.tsx`), Market cap, 24h volume. Every header sorts; a row opens the stock's page. On phones Market cap and Volume are hidden and the table scrolls sideways. Skeleton rows show while loading.
 - **Live prices:** the rows on screen (IntersectionObserver) are polled every 12 s in one batched request, only while the tab is visible; a changed price glides to its new value and flashes green or red (`live-number.tsx`).
 
+### Look: the same as the home page
+
+The page is dressed from the same sources as the home page, so the two can't
+drift apart:
+
+- **Tokens** (`src/app/globals.css`): page, surface, border, text, accent
+  (`--glow-blue`, `--label-blue`, `--silver`), gain and loss. Home components
+  use these tokens rather than repeating hex values, and the chart reads its
+  canvas colours from them.
+- **Shared components** (`src/components/design/`): `GradientCard` (the
+  table and the top-performer cards), `Accent` (the italic word in the title),
+  `Orbs` and `GridOverlay` (behind the heading).
+- **Spacing:** `section-head` and `--section-gap`, as on the home page.
+
+Table details: header labels are small tracked-out uppercase and stick under
+the navbar from tablets up (with a blur); sortable headers get an underline
+that slides in, and the active sort arrow is accent blue. Rows tint on hover,
+light their left edge, brighten the name and thicken the sparkline; they fade
+in with a light stagger on first load and when the tab or search changes.
+24h change is a green or red pill with an arrow (`ChangePill`); a price flashes
+green or red when it updates. Under reduced motion there is no stagger and no
+flash. Clicking a row opens the stock's page, as before.
+
 ## /markets/[symbol]: one stock
 
 Built ahead of time for every listed company (`generateStaticParams`); live data loads in the browser.

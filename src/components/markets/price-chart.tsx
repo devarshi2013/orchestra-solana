@@ -27,10 +27,15 @@ const TIMEFRAMES: { id: WindowId; label: string }[] = [
   { id: "1y", label: "1Y" },
 ];
 
-// The theme's colours as hex: the chart draws on a canvas and can't read CSS variables.
-const GAIN = "#22C55E";
-const LOSS = "#EF4444";
-const MUTED = "#A3ACB9";
+/** A theme colour token's value (the chart draws on a canvas, which can't read CSS variables itself). */
+const token = (name: string) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+/** A hex colour token as rgba, for the area fill. */
+const tint = (name: string, alpha: number) => {
+  const hex = token(name).replace("#", "");
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return `rgba(${r},${g},${b},${alpha})`;
+};
 const GRID = "rgba(255,255,255,0.05)";
 /** Half of the crossfade when a fixed chart changes stock. */
 const FADE_MS = 200;
@@ -67,7 +72,7 @@ export function PriceChart({ ticker, fixedWindow }: { ticker: string; fixedWindo
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: MUTED,
+        textColor: token("--text-muted"),
         fontFamily: "var(--font-geist-mono), monospace",
         fontSize: 11,
         attributionLogo: false,
@@ -124,9 +129,9 @@ export function PriceChart({ ticker, fixedWindow }: { ticker: string; fixedWindo
           const data = points.map((p) => ({ time: p.time as UTCTimestamp, value: p.value }));
           const up = data.length < 2 || data.at(-1)!.value >= data[0]!.value;
           s.applyOptions({
-            lineColor: up ? GAIN : LOSS,
-            topColor: up ? "rgba(34,197,94,0.22)" : "rgba(239,68,68,0.22)",
-            bottomColor: "rgba(7,9,13,0)",
+            lineColor: token(up ? "--gain" : "--loss"),
+            topColor: tint(up ? "--gain" : "--loss", 0.22),
+            bottomColor: tint("--page", 0),
           });
           s.setData(data);
           chart.current?.timeScale().fitContent();

@@ -5,7 +5,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Shared text hover pieces for the home page (styles in globals.css, under
+ * Shared text pieces for the home and markets pages (styles in globals.css, under
  * "Home page: fonts, scrolling and text hover effects"). Mouse only; movement
  * is dropped under reduced motion, colour changes stay.
  */

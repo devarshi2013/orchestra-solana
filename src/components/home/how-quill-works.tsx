@@ -1,6 +1,6 @@
 import { Reveal } from "@/components/motion";
 
-import { Accent } from "./hover-text";
+import { Accent } from "@/components/design/text";
 import { ScrollStory } from "./story/scroll-story";
 
 /**

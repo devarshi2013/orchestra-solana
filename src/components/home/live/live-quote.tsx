@@ -5,7 +5,7 @@ import { LogoMark } from "@/components/brand/logo";
 import { Reveal } from "@/components/motion";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { GradientCard } from "../effects";
+import { GradientCard } from "@/components/design/effects";
 import { LiveStamp } from "./home-market";
 import { useExampleQuote } from "./use-example-quote";
 

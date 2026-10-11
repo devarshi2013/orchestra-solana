@@ -117,7 +117,7 @@ function Trade({ active, reduce }: { active: boolean; reduce: boolean }) {
               cy="10"
               r="8"
               fill="none"
-              stroke="#8FA4FF"
+              stroke="var(--label-blue)"
               strokeWidth="2"
               strokeLinecap="round"
               strokeDasharray="50.3"
@@ -224,7 +224,7 @@ function Node({ children, strong }: { children: React.ReactNode; strong?: boolea
       className={cn(
         "rounded-full border px-2 py-0.5 whitespace-nowrap",
         strong
-          ? "border-[rgb(143_164_255/0.5)] bg-[rgb(30_58_138/0.4)] text-foreground"
+          ? "border-[color-mix(in_srgb,var(--label-blue)_50%,transparent)] bg-[color-mix(in_srgb,var(--glow-deep)_40%,transparent)] text-foreground"
           : "bg-background/60",
       )}
     >
@@ -234,5 +234,7 @@ function Node({ children, strong }: { children: React.ReactNode; strong?: boolea
 }
 
 function Line() {
-  return <span className="h-px w-3 shrink-0 bg-[linear-gradient(90deg,#C9D0D7,#3B5BDB)]" />;
+  return (
+    <span className="h-px w-3 shrink-0 bg-[linear-gradient(90deg,var(--silver),var(--glow-blue))]" />
+  );
 }

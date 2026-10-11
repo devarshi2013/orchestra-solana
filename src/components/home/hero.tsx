@@ -7,9 +7,9 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { GridOverlay, Orbs } from "./effects";
+import { GridOverlay, Orbs } from "@/components/design/effects";
 import { HeroVisual } from "./hero-visual";
-import { Accent, HoverWords, PauseOffscreen } from "./hover-text";
+import { Accent, HoverWords, PauseOffscreen } from "@/components/design/text";
 
 const STEPS = ["Search", "Research", "Approve", "Trade"];
 const STEP_MS = 2200;

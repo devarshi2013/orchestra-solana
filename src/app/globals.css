@@ -34,6 +34,9 @@
   --color-gain: var(--gain);
   --color-loss: var(--loss);
   --color-label-blue: var(--label-blue);
+  --color-glow-blue: var(--glow-blue);
+  --color-glow-deep: var(--glow-deep);
+  --color-navy: var(--navy);
   --color-silver: var(--silver);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -487,9 +490,9 @@ body:has([data-home-page]) [data-site-header] {
   background-image: linear-gradient(
     100deg,
     #e6eaf0 0%,
-    #c9d0d7 22%,
-    #8fa4ff 48%,
-    #c9d0d7 74%,
+    var(--silver) 22%,
+    var(--label-blue) 48%,
+    var(--silver) 74%,
     #e6eaf0 100%
   );
   background-size: 220% 100%;
@@ -546,7 +549,7 @@ body:has([data-home-page]) [data-site-header] {
   }
   /* Feature row headlines: a blue gradient underline grows from the left. */
   .underline-grow {
-    background-image: linear-gradient(90deg, #8fa4ff 0 50%, transparent 50% 100%);
+    background-image: linear-gradient(90deg, var(--label-blue) 0 50%, transparent 50% 100%);
     background-repeat: no-repeat;
     background-size: 200% 2px;
     background-position: 100% 100%;
@@ -597,7 +600,7 @@ body:has([data-home-page]) [data-site-header] {
     background: linear-gradient(
       110deg,
       transparent 30%,
-      rgb(59 91 219 / 0.16) 50%,
+      color-mix(in srgb, var(--glow-blue) 16%, transparent) 50%,
       transparent 70%
     );
   }
@@ -646,7 +649,7 @@ body:has([data-home-page]) [data-site-header] {
   bottom: 0.08em;
   height: 0.28em;
   border-radius: 999px;
-  background: linear-gradient(90deg, #3b5bdb, #8fa4ff);
+  background: linear-gradient(90deg, var(--glow-blue), var(--label-blue));
   opacity: 0;
   z-index: -1;
   transition: opacity 300ms ease-out;
@@ -656,12 +659,12 @@ body:has([data-home-page]) [data-site-header] {
   .punch-text {
     background-image: linear-gradient(
       100deg,
-      #f5f7fa 0%,
-      #f5f7fa 40%,
-      #c9d0d7 56%,
-      #8fa4ff 72%,
-      #3b5bdb 88%,
-      #8fa4ff 100%
+      var(--text) 0%,
+      var(--text) 40%,
+      var(--silver) 56%,
+      var(--label-blue) 72%,
+      var(--glow-blue) 88%,
+      var(--label-blue) 100%
     );
     background-size: 250% 100%;
     background-position: 0% 50%;
@@ -691,7 +694,7 @@ body:has([data-home-page]) [data-site-header] {
 @media (prefers-reduced-motion: reduce) {
   .punch[data-lit] .punch-text,
   .punch:focus-visible .punch-text {
-    color: #8fa4ff;
+    color: var(--label-blue);
   }
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -711,6 +714,31 @@ body:has([data-home-page]) [data-site-header] {
   .punch:focus-visible .punch-edge::after {
     transform: scaleX(1);
   }
+}
+
+/* An underline that slides in from the left on hover or focus (sortable table headers). */
+.underline-slide {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1px;
+  padding-bottom: 2px;
+  transition: background-size 200ms ease-out;
+}
+button:hover > .underline-slide,
+button:focus-visible > .underline-slide {
+  background-size: 100% 1px;
+}
+/* Table rows fade and slide in, each a touch after the one above (--i is the row's index). */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@utility animate-row-in {
+  animation: row-in 320ms var(--ease-out-soft) both;
+  animation-delay: calc(min(var(--i, 0), 14) * 28ms);
 }
 
 /*

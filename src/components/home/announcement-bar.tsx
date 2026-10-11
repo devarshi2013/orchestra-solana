@@ -17,7 +17,7 @@ export function AnnouncementBar() {
       </Link>
       <div
         aria-hidden
-        className="h-px bg-[linear-gradient(90deg,transparent,rgb(59_91_219/0.7),rgb(201_208_215/0.4),rgb(59_91_219/0.7),transparent)]"
+        className="h-px bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--glow-blue)_70%,transparent),color-mix(in_srgb,var(--silver)_40%,transparent),color-mix(in_srgb,var(--glow-blue)_70%,transparent),transparent)]"
       />
     </div>
   );

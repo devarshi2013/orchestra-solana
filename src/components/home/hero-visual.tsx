@@ -11,7 +11,7 @@ import { formatPrice } from "@/lib/market/series";
 import { cn } from "@/lib/utils";
 
 import { HERO_WINDOW, useHeroRotation } from "./hero-rotation";
-import { PauseOffscreen } from "./hover-text";
+import { PauseOffscreen } from "@/components/design/text";
 import { LiveStamp, useHomeMarket, useWatch } from "./live/home-market";
 
 // The charting library loads after the page, so the hero's text isn't waiting on it.
@@ -41,7 +41,7 @@ export function HeroVisual() {
     <PauseOffscreen className="relative aspect-[800/460] min-h-[24rem] w-full">
       <div
         {...hold}
-        className="absolute inset-0 flex flex-col overflow-hidden rounded-3xl border bg-card/70 p-4 shadow-[0_0_120px_-30px_rgb(59_91_219/0.55)] backdrop-blur sm:p-6"
+        className="absolute inset-0 flex flex-col overflow-hidden rounded-3xl border bg-card/70 p-4 shadow-[0_0_120px_-30px_color-mix(in_srgb,var(--glow-blue)_55%,transparent)] backdrop-blur sm:p-6"
       >
         {/* Keyed by stock, so the header fades to the next one. */}
         <motion.div
@@ -107,7 +107,7 @@ export function HeroVisual() {
                 className={cn(
                   "shrink-0 rounded-full border px-2.5 py-1 font-mono text-[11px] font-medium transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   s.ticker === stock.ticker
-                    ? "border-[rgb(143_164_255/0.5)] bg-surface-raised text-foreground"
+                    ? "border-[color-mix(in_srgb,var(--label-blue)_50%,transparent)] bg-surface-raised text-foreground"
                     : "border-transparent text-muted-foreground hover:text-white",
                 )}
               >
@@ -142,7 +142,7 @@ export function HeroVisual() {
 
       {/* Trade: a real quote for the same stock, lower right, a step after the question. */}
       <div className="pointer-events-none absolute -right-1 bottom-[16%] [animation-delay:-3s] motion-safe:animate-float sm:right-[9%]">
-        <div className="min-w-44 rounded-2xl border border-[rgb(143_164_255/0.3)] bg-background/95 px-4 py-3 text-left shadow-lift backdrop-blur">
+        <div className="min-w-44 rounded-2xl border border-[color-mix(in_srgb,var(--label-blue)_30%,transparent)] bg-background/95 px-4 py-3 text-left shadow-lift backdrop-blur">
           <p className="font-mono text-[10px] tracking-[0.14em] text-[var(--label-blue)] uppercase">
             Live Jupiter quote
           </p>
