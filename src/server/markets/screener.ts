@@ -5,6 +5,7 @@ import { z } from "zod";
 import { mintInformationSchema } from "@/lib/jupiter/schemas";
 import { MARKET_TOKENS, WINDOWS, type WindowId } from "@/lib/market/config";
 import type { Candle, Point } from "@/lib/market/series";
+import { HERO_COUNT, heroQuestion, rankHeroCandidates, type HeroStocks } from "@/lib/markets/hero";
 import type {
   ExampleQuote,
   InvestorExtras,
@@ -242,11 +243,32 @@ export async function sparklines(
   return { series, pending };
 }
 
-/** Candles for a stock's chart; throws when no history is available. */
+/** Timeframes drawn from hourly or daily candles: a copy up to half an hour old still reads the same. */
+const SLOW_WINDOWS: readonly WindowId[] = ["7d", "30d", "1y"];
+const STALE_CANDLES_MS = 30 * 60_000;
+const lastCandles = new Map<string, { at: number; candles: Candle[] }>();
+
+/**
+ * Candles for a stock's chart; throws when no history is available. For the
+ * slow timeframes (7 days and longer) the last good copy is returned straight
+ * away, for up to 30 minutes, while a fresh one loads in the background: the
+ * chart never waits on (or fails with) a busy GeckoTerminal once it has loaded.
+ */
 export function chartCandles(ticker: string, window: WindowId): Promise<Candle[]> {
   const c = companyTokens(ticker);
   if (!c) throw new Error("Unknown stock");
-  return loadCandles(c.chart.mint, WINDOWS[window], "now");
+  const key = `${c.chart.mint}:${window}`;
+  const kept = lastCandles.get(key);
+  const fresh = loadCandles(c.chart.mint, WINDOWS[window], "now").then((candles) => {
+    if (candles.length > 0 && lastCandles.get(key)?.candles !== candles)
+      lastCandles.set(key, { at: Date.now(), candles });
+    return candles;
+  });
+  if (kept && SLOW_WINDOWS.includes(window) && Date.now() - kept.at < STALE_CANDLES_MS) {
+    fresh.catch(() => {});
+    return Promise.resolve(kept.candles);
+  }
+  return fresh;
 }
 
 /** Live prices for some stocks (by ticker, checked across issuers) or crypto tokens (by symbol). */
@@ -350,7 +372,8 @@ export function exampleQuote(index = 0): Promise<ExampleQuote> {
 
 /**
  * The same quote for one named stock, only for the stocks the home page
- * shows quotes for: the example ones and the current top-3 tech ranking.
+ * shows quotes for: the example ones, the current top-3 tech ranking and the
+ * hero's rotation.
  * Anything else is refused, so the route can't be used to spend our Jupiter
  * rate limit on arbitrary tokens. Returns null for a ticker that isn't allowed.
  */
@@ -359,7 +382,10 @@ export async function exampleQuoteFor(ticker: string): Promise<ExampleQuote | nu
   const ranked = await researchTop()
     .then((top) => top.rows.map((r) => r.ticker))
     .catch(() => []);
-  const allowed: readonly string[] = [...EXAMPLE_TICKERS, ...ranked];
+  const hero = await heroStocks()
+    .then((h) => h.stocks.map((s) => s.ticker))
+    .catch(() => []);
+  const allowed: readonly string[] = [...EXAMPLE_TICKERS, ...ranked, ...hero];
   return allowed.includes(wanted) ? quoteTicker(wanted) : null;
 }
 
@@ -388,6 +414,84 @@ function quoteTicker(ticker: string): Promise<ExampleQuote> {
       asOf: new Date().toISOString(),
     };
   });
+}
+
+const HERO_TTL_MS = 10 * 60_000;
+/** While some candidates' history is still loading, the partial list is kept only this long. */
+const HERO_PENDING_TTL_MS = 5_000;
+/** A few more than we show, so stocks without history can be skipped. */
+const HERO_CANDIDATES = HERO_COUNT + 2;
+const HERO_BUDGET_MS = 6_000;
+let heroCache: { expires: number; value: Promise<HeroStocks> } | null = null;
+/** The last complete list, served while a refresh is still loading histories. */
+let heroLast: HeroStocks | null = null;
+
+/**
+ * The stocks the home hero's chart rotates through: the top 8 by Jupiter's
+ * 24h on-chain volume (market cap when no volume is reported) among liquid,
+ * public-company stocks whose 7-day price history actually loads. Anything
+ * whose history fails is left out. Cached 10 minutes. While a refresh is
+ * still loading histories the previous list is served; on a cold start the
+ * ready ones are returned with `pending: true`.
+ */
+export function heroStocks(): Promise<HeroStocks> {
+  if (heroCache && heroCache.expires > Date.now()) return heroCache.value;
+  let complete = false;
+  const value = buildHeroStocks().then((result) => {
+    complete = !result.pending;
+    if (complete) heroLast = result;
+    return heroLast ?? result;
+  });
+  heroCache = { expires: Date.now() + HERO_TTL_MS, value };
+  value.then(
+    () => {
+      // A partial (or previous) list is kept only briefly, so the next request checks again.
+      if (!complete && heroCache?.value === value)
+        heroCache.expires = Date.now() + HERO_PENDING_TTL_MS;
+    },
+    () => {
+      if (heroCache?.value === value) heroCache = null;
+    },
+  );
+  return value;
+}
+
+async function buildHeroStocks(): Promise<HeroStocks> {
+  const tiers = new Map(companies().map((c) => [c.best.ticker, c.chart.liquidityTier]));
+  const rows = (await listMarkets()).map((r) => ({ ...r, tier: tiers.get(r.ticker) ?? "low" }));
+  const { ranked, basis } = rankHeroCandidates(rows);
+  const candidates = ranked.slice(0, HERO_CANDIDATES);
+  // One batched pool lookup, then the same loader (and cache) the chart route reads, so a
+  // listed stock's chart is already warm.
+  await Promise.race([
+    primePools(candidates.map((r) => r.chartMint)),
+    new Promise((resolve) => setTimeout(resolve, 2_500)),
+  ]);
+  const deadline = new Promise<"pending">((resolve) =>
+    setTimeout(() => resolve("pending"), HERO_BUDGET_MS),
+  );
+  const checked = await Promise.all(
+    candidates.map((r) => {
+      const load = chartCandles(r.ticker, "7d").then(
+        (candles) => (candles.length >= 2 ? ("ok" as const) : ("failed" as const)),
+        () => "failed" as const,
+      );
+      return Promise.race([load, deadline]);
+    }),
+  );
+  const ready = candidates.filter((_, i) => checked[i] === "ok").slice(0, HERO_COUNT);
+  return {
+    stocks: ready.map((r, i) => ({
+      ticker: r.ticker,
+      name: r.name,
+      symbol: r.chartSymbol,
+      icon: r.icon,
+      question: heroQuestion(r.name, i),
+    })),
+    basis,
+    pending: ready.length < HERO_COUNT && checked.includes("pending"),
+    asOf: new Date().toISOString(),
+  };
 }
 
 const RESEARCH_TTL_MS = 15 * 60_000;

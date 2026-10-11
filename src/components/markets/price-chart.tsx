@@ -12,11 +12,12 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { getJson } from "@/hooks/use-markets";
 import { friendlyError } from "@/lib/friendly-error";
 import type { WindowId } from "@/lib/market/config";
-import { formatPrice, type Candle } from "@/lib/market/series";
+import { formatPrice } from "@/lib/market/series";
 import { cn } from "@/lib/utils";
+
+import { loadHistory } from "./history-cache";
 
 const TIMEFRAMES: { id: WindowId; label: string }[] = [
   { id: "1h", label: "1H" },
@@ -31,6 +32,8 @@ const GAIN = "#22C55E";
 const LOSS = "#EF4444";
 const MUTED = "#A3ACB9";
 const GRID = "rgba(255,255,255,0.05)";
+/** Half of the crossfade when a fixed chart changes stock. */
+const FADE_MS = 200;
 
 type Tip = { left: number; top: number; time: string; price: string } | null;
 
@@ -39,12 +42,15 @@ type Tip = { left: number; top: number; time: string; price: string } | null;
  * an area line coloured by the period's move, 1H to 1Y timeframes, a
  * crosshair and a hover tooltip. History comes from /api/markets/history.
  * With `fixedWindow` it is just the plot for that one timeframe, filling its
- * parent (no card, no timeframe tabs): the home page's hero uses it that way.
+ * parent (no card, no timeframe tabs): the home page's hero uses it that way,
+ * and changing `ticker` then crossfades to the new line.
  */
 export function PriceChart({ ticker, fixedWindow }: { ticker: string; fixedWindow?: WindowId }) {
   const container = useRef<HTMLDivElement>(null);
   const chart = useRef<IChartApi | null>(null);
   const series = useRef<ISeriesApi<"Area"> | null>(null);
+  // True once a line has been drawn: later stocks crossfade instead of flashing a skeleton.
+  const drawn = useRef(false);
   const [picked, setWindowId] = useState<WindowId>("24h");
   const windowId = fixedWindow ?? picked;
   // The last load's outcome, tagged with what it was for: anything else is still loading.
@@ -107,43 +113,60 @@ export function PriceChart({ ticker, fixedWindow }: { ticker: string; fixedWindo
 
   // Load the timeframe's history and draw it.
   useEffect(() => {
-    const abort = new AbortController();
-    getJson<{ candles: Candle[] }>(
-      `/api/markets/history?ticker=${encodeURIComponent(ticker)}&window=${windowId}`,
-      abort.signal,
-    )
-      .then(({ candles }) => {
+    let cancelled = false;
+    let swap: number | undefined;
+    const el = container.current;
+    loadHistory(ticker, windowId)
+      .then((points) => {
         const s = series.current;
-        if (!s) return;
-        const seen = new Set<number>();
-        const data = candles
-          .filter((c) => !seen.has(c.time) && seen.add(c.time))
-          .sort((a, b) => a.time - b.time)
-          .map((c) => ({ time: c.time as UTCTimestamp, value: c.close }));
-        const up = data.length < 2 || data.at(-1)!.value >= data[0]!.value;
-        const color = up ? GAIN : LOSS;
-        s.applyOptions({
-          lineColor: color,
-          topColor: up ? "rgba(34,197,94,0.22)" : "rgba(239,68,68,0.22)",
-          bottomColor: "rgba(7,9,13,0)",
-        });
-        s.setData(data);
-        chart.current?.timeScale().fitContent();
-        setLoaded({ key, error: null });
+        if (cancelled || !s) return;
+        const draw = () => {
+          const data = points.map((p) => ({ time: p.time as UTCTimestamp, value: p.value }));
+          const up = data.length < 2 || data.at(-1)!.value >= data[0]!.value;
+          s.applyOptions({
+            lineColor: up ? GAIN : LOSS,
+            topColor: up ? "rgba(34,197,94,0.22)" : "rgba(239,68,68,0.22)",
+            bottomColor: "rgba(7,9,13,0)",
+          });
+          s.setData(data);
+          chart.current?.timeScale().fitContent();
+          if (el) el.style.opacity = "1";
+          drawn.current = true;
+          setLoaded({ key, error: null });
+        };
+        // A fixed chart changing stock fades the old line out, swaps, and fades the new one in (~400 ms).
+        const fade =
+          fixedWindow &&
+          drawn.current &&
+          el &&
+          !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (!fade) return draw();
+        el.style.opacity = "0";
+        swap = window.setTimeout(draw, FADE_MS);
       })
       .catch((e: unknown) => {
-        if (abort.signal.aborted) return;
+        if (cancelled) return;
         console.error("[chart] history failed", e);
         series.current?.setData([]);
+        if (el) el.style.opacity = "1";
         setLoaded({ key, error: friendlyError(e) });
       });
-    return () => abort.abort();
-  }, [ticker, windowId, key]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(swap);
+    };
+  }, [ticker, windowId, key, fixedWindow]);
 
   const plot = (
     <>
-      <div ref={container} className="absolute inset-0" aria-label={`${ticker} price chart`} />
-      {status === "loading" && <Skeleton className="absolute inset-0 rounded-xl opacity-60" />}
+      <div
+        ref={container}
+        className="absolute inset-0 transition-opacity duration-200 ease-out"
+        aria-label={`${ticker} price chart`}
+      />
+      {status === "loading" && !(fixedWindow && loaded) && (
+        <Skeleton className="absolute inset-0 rounded-xl opacity-60" />
+      )}
       {status === "error" && (
         <p className="absolute inset-0 grid place-items-center px-6 text-center text-sm text-muted-foreground">
           {loaded?.error}
