@@ -20,6 +20,9 @@ const LINKS = [
  * The navbar on every page: Q mark + "Quill", Markets and Research, the home
  * sections, and a white "Launch app". Sticky and lightly glassy; its bottom
  * border shows only once the page is scrolled. Phones get Markets and Research.
+ * On the Research page (/chat) the button reads "Browse stocks", shows on
+ * phones too, and is the only link to the Markets page: a CSS switch on the
+ * chat's marker (globals.css), so the navbar needs no knowledge of the route.
  */
 export function SiteNavbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -60,7 +63,12 @@ export function SiteNavbar() {
         <span className="flex-1" />
         <ul className="flex items-center gap-4 sm:gap-6">
           {LINKS.map((l) => (
-            <li key={l.href} className={cn(!l.app && "hidden lg:block")}>
+            <li
+              key={l.href}
+              // On the Research page the button below is the one link to Markets (globals.css).
+              data-nav-markets={l.href === "/markets" ? "" : undefined}
+              className={cn(!l.app && "hidden lg:block")}
+            >
               {l.app ? (
                 <Link href={l.href} className={linkClass}>
                   {l.label}
@@ -73,8 +81,13 @@ export function SiteNavbar() {
             </li>
           ))}
         </ul>
-        <Button asChild size="sm" className="hidden h-9 px-4 sm:inline-flex">
-          <Link href="/markets">Launch app</Link>
+        <Button asChild size="sm" data-nav-cta className="hidden h-9 px-4 sm:inline-flex">
+          <Link href="/markets">
+            <span data-nav-launch>Launch app</span>
+            <span data-nav-browse className="hidden">
+              Browse stocks
+            </span>
+          </Link>
         </Button>
       </nav>
     </header>

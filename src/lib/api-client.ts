@@ -76,24 +76,7 @@ const json = (method: string, body?: unknown): RequestInit => ({
   body: body === undefined ? undefined : JSON.stringify(body),
 });
 
-export type StockCompany = {
-  ticker: string;
-  companyName: string;
-  type: "stock" | "etf";
-  sector: string;
-  industry: string | null;
-  preIpo: boolean;
-  liquidityTier: "high" | "medium" | "low";
-  issuers: { issuer: string; symbol: string; liquidityTier: "high" | "medium" | "low" }[];
-};
-
 export const assistantApi = {
-  stocks: (signal?: AbortSignal) =>
-    request(
-      "/api/stocks",
-      { signal },
-      trusted<{ syncedAt: string; sectors: string[]; companies: StockCompany[] }>(),
-    ),
   balances: (wallet: string, signal?: AbortSignal) =>
     request(
       `/api/assistant/balances?${new URLSearchParams({ wallet })}`,

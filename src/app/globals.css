@@ -378,6 +378,17 @@ html .wallet-adapter-dropdown-list-item:not([disabled]):hover {
 body:has([data-chat-shell]) [data-site-footer] {
   display: none;
 }
+/* On the chat the navbar's button reads "Browse stocks" and is the one link to Markets. */
+body:has([data-chat-shell]) [data-nav-markets],
+body:has([data-chat-shell]) [data-nav-launch] {
+  display: none;
+}
+body:has([data-chat-shell]) [data-nav-browse] {
+  display: inline;
+}
+body:has([data-chat-shell]) [data-nav-cta] {
+  display: inline-flex;
+}
 /* The home page has its own announcement bar and navbar instead of the site header. */
 body:has([data-home-page]) [data-site-header] {
   display: none;
@@ -714,6 +725,110 @@ body:has([data-home-page]) [data-site-header] {
   .punch:focus-visible .punch-edge::after {
     transform: scaleX(1);
   }
+}
+
+/*
+ * The Research page (/chat) has its own buttons, scoped by data-research:
+ * - primary (Approve, Send, New chat): solid accent blue with an inner
+ *   highlight; lifts and gets a light sweep on hover, presses to 0.98;
+ * - secondary (outline): an accent outline that fills softly on hover;
+ * - ghost and icon buttons: round, with a soft circle behind on hover.
+ * Focus rings are accent blue. Colours come from the shared tokens.
+ */
+[data-research] {
+  --ring: var(--label-blue);
+}
+[data-research] [data-slot="button"] {
+  transition-duration: 200ms;
+  transition-property: background-color, border-color, color, box-shadow, translate, scale;
+}
+[data-research] [data-slot="button"]:active {
+  scale: 0.98;
+}
+[data-research] [data-slot="button"][data-variant="default"] {
+  background-color: var(--glow-blue);
+  color: var(--text);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.24),
+    0 8px 20px -10px color-mix(in srgb, var(--glow-blue) 80%, transparent);
+}
+[data-research] [data-slot="button"][data-variant="default"]:hover {
+  background-color: color-mix(in srgb, var(--glow-blue) 82%, var(--label-blue));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    0 12px 26px -10px color-mix(in srgb, var(--glow-blue) 90%, transparent);
+}
+[data-research] [data-slot="button"][data-variant="default"]::after {
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgb(255 255 255 / 0.28) 50%,
+    transparent 70%
+  );
+}
+[data-research] [data-slot="button"][data-variant="outline"],
+[data-research] [data-slot="button"][data-variant="secondary"] {
+  border-color: color-mix(in srgb, var(--label-blue) 40%, transparent);
+  background-color: transparent;
+  color: var(--text);
+}
+[data-research] [data-slot="button"][data-variant="outline"]:hover,
+[data-research] [data-slot="button"][data-variant="secondary"]:hover,
+[data-research] [data-slot="button"][data-variant="outline"][aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--label-blue) 70%, transparent);
+  background-color: color-mix(in srgb, var(--glow-blue) 16%, transparent);
+  color: var(--text);
+}
+[data-research] [data-slot="button"][data-variant="ghost"] {
+  border-radius: 999px;
+  color: var(--text-muted);
+}
+[data-research] [data-slot="button"][data-variant="ghost"]:hover,
+[data-research] [data-slot="button"][data-variant="ghost"][aria-expanded="true"] {
+  background-color: rgb(255 255 255 / 0.08);
+  color: var(--text);
+}
+[data-research] [data-slot="button"][data-variant="ghost"]::after {
+  content: none;
+}
+/* The command bar: an accent outline and a soft glow while it is in use. */
+.command-bar:focus-within {
+  border-color: color-mix(in srgb, var(--label-blue) 55%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--label-blue) 30%, transparent),
+    0 0 48px -10px color-mix(in srgb, var(--glow-blue) 70%, transparent);
+}
+/* The sidebar's search pill: its glow grows as it takes focus. */
+.search-pill {
+  transition:
+    border-color 200ms ease-out,
+    box-shadow 250ms ease-out;
+}
+.search-pill:focus-within {
+  border-color: color-mix(in srgb, var(--label-blue) 60%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--glow-blue) 22%, transparent);
+}
+/* The trade ticket's perforation: a dashed line with a notch cut into each edge. */
+.ticket-tear {
+  position: relative;
+  border-top: 1px dashed color-mix(in srgb, var(--silver) 35%, transparent);
+}
+.ticket-tear::before,
+.ticket-tear::after {
+  content: "";
+  position: absolute;
+  top: -0.5rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: var(--background);
+  border: 1px solid var(--border);
+}
+.ticket-tear::before {
+  left: -0.5rem;
+}
+.ticket-tear::after {
+  right: -0.5rem;
 }
 
 /* An underline that slides in from the left on hover or focus (sortable table headers). */

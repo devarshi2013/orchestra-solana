@@ -45,8 +45,16 @@ function ComparisonBlock({ source }: { source: string }) {
 }
 
 const components: Components = {
-  h1: ({ children }) => <h3 className="mt-5 text-base font-semibold first:mt-0">{children}</h3>,
-  h2: ({ children }) => <h3 className="mt-5 text-base font-semibold first:mt-0">{children}</h3>,
+  h1: ({ children }) => (
+    <h3 className="mt-5 font-heading text-base font-semibold tracking-tight first:mt-0">
+      {children}
+    </h3>
+  ),
+  h2: ({ children }) => (
+    <h3 className="mt-5 font-heading text-base font-semibold tracking-tight first:mt-0">
+      {children}
+    </h3>
+  ),
   h3: ({ children }) => <h4 className="mt-4 font-semibold first:mt-0">{children}</h4>,
   h4: ({ children }) => <h4 className="mt-4 font-semibold first:mt-0">{children}</h4>,
   h5: ({ children }) => <h5 className="mt-3 font-medium first:mt-0">{children}</h5>,
@@ -88,7 +96,7 @@ const components: Components = {
     </a>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="space-y-2 border-l-2 border-primary/50 pl-3 text-muted-foreground">
+    <blockquote className="space-y-2 border-l-2 border-label-blue/50 pl-3 text-muted-foreground">
       {children}
     </blockquote>
   ),
@@ -100,7 +108,7 @@ const components: Components = {
       return <ComparisonBlock source={hastText(code)} />;
     }
     return (
-      <pre className="overflow-x-auto rounded-lg border bg-muted/50 p-3 font-mono text-xs leading-relaxed">
+      <pre className="overflow-x-auto rounded-xl border bg-card p-3 font-mono text-xs leading-relaxed">
         {children}
       </pre>
     );
@@ -114,13 +122,15 @@ const components: Components = {
     ),
   table: ({ children }) => (
     // Scrolls inside its own box on narrow screens, never widening the chat.
-    <div className="max-h-[28rem] max-w-full overflow-auto rounded-lg border">
+    <div className="max-h-[28rem] max-w-full overflow-auto rounded-xl border bg-card">
       <table className="w-full border-collapse text-xs tabular-nums sm:text-sm">{children}</table>
     </div>
   ),
-  thead: ({ children }) => <thead className="sticky top-0 z-10 bg-muted">{children}</thead>,
+  thead: ({ children }) => (
+    <thead className="sticky top-0 z-10 bg-card/85 backdrop-blur">{children}</thead>
+  ),
   tbody: ({ children }) => (
-    <tbody className="[&>tr]:border-t [&>tr]:border-border [&>tr]:transition-colors [&>tr:hover]:bg-muted/60 [&>tr:nth-child(even)]:bg-muted/30">
+    <tbody className="[&>tr]:border-t [&>tr]:border-border [&>tr]:transition-colors [&>tr]:duration-200 [&>tr:hover]:bg-glow-blue/[0.08]">
       {children}
     </tbody>
   ),
@@ -130,7 +140,7 @@ const components: Components = {
       scope="col"
       style={style}
       className={cn(
-        "px-3 py-2 text-left font-medium whitespace-nowrap text-muted-foreground",
+        "px-3 py-2.5 text-left font-mono text-[11px] font-medium tracking-[0.14em] whitespace-nowrap text-muted-foreground uppercase",
         (props as CellProps)["data-numeric"] && "text-right",
       )}
     >
@@ -162,7 +172,7 @@ const MarkdownBody = memo(function MarkdownBody({ text }: { text: string }) {
 
 function PendingTable({ label }: { label: string }) {
   return (
-    <div className="space-y-2 rounded-lg border p-3" role="status" aria-label={label}>
+    <div className="space-y-2 rounded-xl border bg-card p-3" role="status" aria-label={label}>
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-3.5 w-11/12" />
       <Skeleton className="h-3.5 w-4/5" />

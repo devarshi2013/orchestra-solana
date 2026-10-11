@@ -7,14 +7,14 @@ import {
   Pencil,
   Pin,
   PinOff,
+  Plus,
   Search,
   Settings,
   ShoppingBag,
-  SquarePen,
   Trash2,
   X,
 } from "lucide-react";
-import { useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
 import {
   AlertDialog,
@@ -45,7 +45,16 @@ import {
 } from "@/lib/assistant/chat-history";
 import { cn } from "@/lib/utils";
 
+import { Tip } from "./tip";
+
 const LONG_PRESS_MS = 500;
+
+type Filter = "all" | "pinned" | "trades";
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "pinned", label: "Pinned" },
+  { id: "trades", label: "With trades" },
+];
 
 /** "⌘⇧O" on Apple devices, "Ctrl+Shift+O" elsewhere. */
 function shortcutLabel() {
@@ -70,10 +79,10 @@ export type ChatSidebarProps = {
 };
 
 /**
- * Chat history, ChatGPT-style: logo and "New chat", a search box, chats
- * grouped by date (pinned first) with a menu to rename, pin or delete each,
- * and the wallet and settings at the bottom. Used as the desktop
- * sidebar and inside the mobile drawer.
+ * Chat history: "New chat", a search pill and an All / Pinned / With trades
+ * filter, then the chats grouped by date (pinned first) with a menu to
+ * rename, pin or delete each, and the wallet and settings at the bottom.
+ * Used as the desktop sidebar and inside the mobile drawer.
  */
 export function ChatSidebar({
   chats,
@@ -90,6 +99,8 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const nowMs = useNow();
   const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const indicatorId = useId();
   const [editing, setEditing] = useState<{ id: string; title: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<StoredChat | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -102,10 +113,15 @@ export function ChatSidebar({
   const longPressed = useRef(false);
   const [shortcut] = useState(shortcutLabel);
 
-  const groups = useMemo(
-    () => groupChats(searchChats(chats, query), new Date(nowMs)),
-    [chats, query, nowMs],
-  );
+  const groups = useMemo(() => {
+    const kept =
+      filter === "pinned"
+        ? chats.filter((c) => c.pinned)
+        : filter === "trades"
+          ? chats.filter(hasPurchase)
+          : chats;
+    return groupChats(searchChats(kept, query), new Date(nowMs));
+  }, [chats, filter, query, nowMs]);
   const announce = (text: string) => setAnnouncement(text);
 
   const finishRename = () => {
@@ -155,30 +171,32 @@ export function ChatSidebar({
     <div className="flex h-full min-h-0 flex-col">
       {/* Title, collapse, new chat (the Quill logo is in the site navbar above) */}
       <div className="flex items-center gap-2 px-3 pt-3">
-        <p className="flex-1 px-1 text-sm font-semibold">Chats</p>
+        <p className="flex-1 px-1 font-heading text-base font-semibold tracking-tight">Chats</p>
         {onCollapse && (
-          <Button variant="ghost" size="icon-sm" onClick={onCollapse} aria-label="Close sidebar">
-            <PanelLeftClose />
-          </Button>
+          <Tip label="Close sidebar">
+            <Button variant="ghost" size="icon-sm" onClick={onCollapse} aria-label="Close sidebar">
+              <PanelLeftClose />
+            </Button>
+          </Tip>
         )}
       </div>
-      <div className="space-y-2 px-3 pt-3">
+      <div className="space-y-3 px-3 pt-3">
         <Button
-          variant="outline"
-          className="w-full justify-start"
+          className="group/new w-full justify-start"
           onClick={onNew}
           disabled={busy}
           aria-keyshortcuts="Control+Shift+O Meta+Shift+O"
         >
-          <SquarePen /> New chat
-          <kbd className="ml-auto font-mono text-[10px] font-normal text-muted-foreground">
+          <Plus className="transition-transform duration-200 ease-out motion-safe:group-hover/new:rotate-90" />
+          New chat
+          <kbd className="ml-auto rounded border border-white/25 px-1.5 py-0.5 font-mono text-[10px] font-normal text-foreground/80">
             {shortcut}
           </kbd>
         </Button>
-        <label className="relative block">
+        <label className="search-pill relative flex h-9 items-center rounded-full border border-input bg-background/60">
           <span className="sr-only">Search chats</span>
           <Search
-            className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute left-3 size-3.5 text-muted-foreground"
             aria-hidden
           />
           <input
@@ -187,23 +205,54 @@ export function ChatSidebar({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Escape" && setQuery("")}
             placeholder="Search chats"
-            className="h-8 w-full rounded-md border border-input bg-transparent pr-7 pl-8 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-search-cancel-button]:hidden"
+            className="h-full w-full rounded-full bg-transparent pr-8 pl-9 text-sm outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
               aria-label="Clear search"
-              className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              className="absolute right-1.5 flex size-6 items-center justify-center rounded-full text-muted-foreground transition-colors duration-200 outline-none hover:bg-white/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
             >
               <X className="size-3.5" />
             </button>
           )}
         </label>
+        {/* Which chats to list: a segmented control whose highlight slides to the choice. */}
+        <div
+          role="radiogroup"
+          aria-label="Show chats"
+          className="grid grid-cols-3 rounded-full border bg-background/60 p-0.5"
+        >
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              role="radio"
+              aria-checked={filter === f.id}
+              onClick={() => setFilter(f.id)}
+              className={cn(
+                "relative rounded-full px-2 py-1 text-xs font-medium whitespace-nowrap transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                filter === f.id ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {filter === f.id && (
+                <motion.span
+                  layoutId={indicatorId}
+                  aria-hidden
+                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  className="absolute inset-0 rounded-full bg-glow-blue/25 ring-1 ring-label-blue/40"
+                />
+              )}
+              <span className="relative">{f.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* The chats */}
-      <ScrollArea className="mt-3 min-h-0 flex-1">
+      {/* The scroll area's inner wrapper is a table by default, which lets long titles widen the list. */}
+      <ScrollArea className="mt-3 min-h-0 flex-1 [&_[data-radix-scroll-area-viewport]>div]:block!">
         <nav aria-label="Chat history" className="px-2 pb-3">
           {chats.length === 0 ? (
             <p className="px-3 py-8 text-center text-sm text-muted-foreground">
@@ -211,7 +260,11 @@ export function ChatSidebar({
             </p>
           ) : groups.length === 0 ? (
             <p className="px-3 py-8 text-center text-sm text-muted-foreground">
-              No chats match &ldquo;{query}&rdquo;.
+              {query
+                ? `No chats match “${query}”.`
+                : filter === "pinned"
+                  ? "No pinned chats yet. Pin one from its menu."
+                  : "No chats with trades yet."}
             </p>
           ) : (
             <div ref={listRef} onKeyDown={onListKeyDown}>
@@ -223,7 +276,7 @@ export function ChatSidebar({
                 >
                   <h3
                     id={`chats-${group.label}`}
-                    className="flex items-center gap-1 px-2 pt-2 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
+                    className="flex items-center gap-1 px-2 pt-2 pb-1 font-mono text-[10px] font-medium tracking-[0.16em] text-muted-foreground uppercase"
                   >
                     {group.label === "Pinned" && <Pin className="size-3" aria-hidden />}
                     {group.label}
@@ -262,7 +315,7 @@ export function ChatSidebar({
                                   if (skipBlurSave.current) skipBlurSave.current = false;
                                   else finishRename();
                                 }}
-                                className="h-8 w-full rounded-md border border-ring bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                className="h-9 w-full rounded-lg border border-ring bg-background px-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
                               />
                             ) : (
                               <>
@@ -287,13 +340,19 @@ export function ChatSidebar({
                                   aria-disabled={busy && !active}
                                   title={chat.title}
                                   className={cn(
-                                    "flex h-8 w-full items-center gap-1.5 rounded-md px-2 pr-8 text-left text-sm transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-ring",
+                                    "flex h-9 w-full items-center gap-2 rounded-lg px-2.5 pr-8 text-left text-sm transition-colors duration-200 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring",
                                     active
-                                      ? "bg-primary/14 font-medium text-primary-text"
-                                      : "text-foreground/80 hover:bg-primary/8 hover:text-primary-text",
+                                      ? "bg-glow-blue/20 font-medium text-foreground"
+                                      : "text-foreground/75 hover:bg-glow-blue/10 hover:text-foreground",
                                     busy && !active && "cursor-not-allowed opacity-60",
                                   )}
                                 >
+                                  {active && (
+                                    <span
+                                      aria-hidden
+                                      className="size-1.5 shrink-0 rounded-full bg-label-blue"
+                                    />
+                                  )}
                                   <span className="min-w-0 flex-1 truncate">{chat.title}</span>
                                   {purchased && (
                                     <ShoppingBag
@@ -311,7 +370,7 @@ export function ChatSidebar({
                                       type="button"
                                       aria-label={`Options for "${chat.title}"`}
                                       className={cn(
-                                        "absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded text-muted-foreground opacity-0 transition-opacity outline-none group-hover/chat:opacity-100 hover:bg-background/70 hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100",
+                                        "absolute top-1/2 right-1 flex size-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-[opacity,background-color,color] duration-200 outline-none group-hover/chat:opacity-100 hover:bg-white/10 hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100",
                                         active && "opacity-100",
                                       )}
                                     >
@@ -376,7 +435,12 @@ export function ChatSidebar({
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="Chat settings">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Chat settings"
+                title="Chat settings"
+              >
                 <Settings />
               </Button>
             </DropdownMenuTrigger>

@@ -19,6 +19,8 @@ export type AssistantTurn = {
   buy?: SavedBuy;
   error?: string;
   done: boolean;
+  /** When the reply finished (ms), for the note's "as of" line; absent on replies saved before this was recorded. */
+  at?: number;
 };
 export type ChatTurn = { role: "user"; text: string } | AssistantTurn;
 
@@ -144,7 +146,8 @@ export function useAgentChat(wallet: string | null) {
           updateLast(() => ({ error: "Connection lost. Try again." }));
       } finally {
         // A stopped reply's chat has already been swapped out: leave the new one alone.
-        if (!controller.signal.aborted) updateLast(() => ({ done: true, progress: "" }));
+        if (!controller.signal.aborted)
+          updateLast(() => ({ done: true, progress: "", at: Date.now() }));
         if (inFlight.current === controller) inFlight.current = null;
         setBusy(false);
       }
@@ -157,6 +160,13 @@ export function useAgentChat(wallet: string | null) {
     inFlight.current?.abort();
     inFlight.current = null;
   }, []);
+
+  /** The Stop button: ends the reply streaming now and keeps what has arrived so far. */
+  const cancel = useCallback(() => {
+    if (!inFlight.current) return;
+    stop();
+    updateLast((t) => (t.done ? {} : { done: true, progress: "", at: Date.now() }));
+  }, [stop]);
 
   const reset = useCallback(() => {
     stop();
@@ -185,5 +195,5 @@ export function useAgentChat(wallet: string | null) {
     [],
   );
 
-  return { turns, history, busy, send, stop, reset, load, updateTurn };
+  return { turns, history, busy, send, stop, cancel, reset, load, updateTurn };
 }

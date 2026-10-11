@@ -4,7 +4,7 @@ import { ShieldAlert } from "lucide-react";
 import { useState, useSyncExternalStore, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { GradientCard } from "@/components/design/effects";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ASSISTANT_DISCLOSURE_VERSION, DISCLOSURE_POINTS } from "@/lib/assistant/disclosure";
 
@@ -47,14 +47,18 @@ export function DisclosureGate({ children }: { children: ReactNode }) {
   if (accepted || sessionAccepted) return <>{children}</>;
   if (accepted === null) return <Skeleton className="h-64 w-full" />;
   return (
-    <Card className="mx-auto max-w-xl">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ShieldAlert className="size-5" /> Before you use the assistant
-        </CardTitle>
-        <CardDescription>Please read and accept this once.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <GradientCard
+      className="mx-auto max-w-xl motion-safe:hover:translate-y-0"
+      innerClassName="space-y-5 p-5 sm:p-7"
+    >
+      <header className="relative space-y-1">
+        <h2 className="flex items-center gap-2 font-heading text-xl font-semibold tracking-tight">
+          <ShieldAlert className="size-5 text-label-blue" aria-hidden /> Before you use the
+          assistant
+        </h2>
+        <p className="text-sm text-muted-foreground">Please read and accept this once.</p>
+      </header>
+      <div className="relative space-y-4">
         <ul className="space-y-3 text-sm">
           {DISCLOSURE_POINTS.map((point) => (
             <li key={point.title}>
@@ -68,7 +72,7 @@ export function DisclosureGate({ children }: { children: ReactNode }) {
             type="checkbox"
             checked={checked}
             onChange={(e) => setChecked(e.target.checked)}
-            className="mt-0.5 size-4 accent-primary"
+            className="mt-0.5 size-4 accent-[var(--glow-blue)]"
           />
           I understand the AI can be wrong, its plans aren&apos;t financial advice, tokenized stocks
           are securities I must be eligible to buy, and I can lose money.
@@ -76,7 +80,7 @@ export function DisclosureGate({ children }: { children: ReactNode }) {
         <Button onClick={accept} disabled={!checked}>
           Accept and continue
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </GradientCard>
   );
 }

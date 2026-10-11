@@ -110,7 +110,10 @@ export function ComparisonTable({ comparison }: { comparison: Comparison }) {
       <th
         scope="col"
         aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
-        className={cn("px-3 py-2 font-medium whitespace-nowrap", numeric && "text-right")}
+        className={cn(
+          "px-3 py-2.5 font-mono text-[11px] font-medium tracking-[0.14em] whitespace-nowrap uppercase",
+          numeric && "text-right",
+        )}
       >
         <button
           type="button"
@@ -135,9 +138,9 @@ export function ComparisonTable({ comparison }: { comparison: Comparison }) {
           {comparison.title}
         </figcaption>
       )}
-      <div className="max-h-[28rem] overflow-auto rounded-lg border">
+      <div className="max-h-[28rem] overflow-auto rounded-xl border bg-card">
         <table className="w-full border-collapse text-xs tabular-nums sm:text-sm">
-          <thead className="sticky top-0 z-10 bg-muted text-left text-muted-foreground">
+          <thead className="sticky top-0 z-10 bg-card/85 text-left text-muted-foreground backdrop-blur">
             <tr>
               {header("company", "Company")}
               {header("ticker", "Ticker")}
@@ -145,12 +148,15 @@ export function ComparisonTable({ comparison }: { comparison: Comparison }) {
               {header("marketCap", "Market cap", true)}
               {header("return1y", "1Y return", true)}
               {header("pe", "P/E", true)}
-              <th scope="col" className="px-3 py-2 text-right font-medium whitespace-nowrap">
+              <th
+                scope="col"
+                className="px-3 py-2.5 text-right font-mono text-[11px] font-medium tracking-[0.14em] whitespace-nowrap uppercase"
+              >
                 7D
               </th>
             </tr>
           </thead>
-          <tbody className="[&>tr]:border-t [&>tr]:border-border [&>tr]:transition-colors [&>tr:hover]:bg-muted/60 [&>tr:nth-child(even)]:bg-muted/30">
+          <tbody className="[&>tr]:border-t [&>tr]:border-border [&>tr]:transition-colors [&>tr]:duration-200 [&>tr:hover]:bg-glow-blue/[0.08]">
             {rows.map((row) => {
               const live = data?.rows[row.ticker];
               const loading = !data && !failed;

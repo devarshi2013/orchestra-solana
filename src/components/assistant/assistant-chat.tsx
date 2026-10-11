@@ -1,28 +1,23 @@
 "use client";
 
 import { useWallet } from "@solana/wallet-adapter-react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Cpu,
-  Fuel,
-  Landmark,
-  LibraryBig,
+  HeartPulse,
   Menu,
   PanelLeftOpen,
+  Plus,
+  Scale,
   ShieldAlert,
-  SquarePen,
   TrendingUp,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { GridOverlay, Orbs } from "@/components/design/effects";
+import { PauseOffscreen } from "@/components/design/text";
 import { Appear, ProgressBar } from "@/components/motion";
-import {
-  AnimatedChatInput,
-  ChatGlow,
-  ChatHero,
-  type ChatCommand,
-} from "@/components/ui/animated-ai-chat";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,40 +27,25 @@ import { usePersistentFlag } from "@/hooks/use-persistent-flag";
 import { chatIdFromPath, GUEST } from "@/lib/assistant/chat-history";
 
 import { ChatSidebar } from "./chat-sidebar";
+import { Composer, type ChatCommand } from "./composer";
 import { DisclosureGate } from "./disclosure-gate";
 import { PlanCard } from "./plan-card";
-import { StockBrowser } from "./stock-browser";
+import { EXAMPLES, ResearchIntro } from "./research-intro";
+import { Tip } from "./tip";
 import { AssistantTurnView, UserBubble } from "./turn";
 
-/** "/" commands and starter chips: each fills the input with a prompt to edit or send. */
-const COMMANDS: ChatCommand[] = [
-  {
-    icon: <Cpu className="size-4" />,
-    label: "Top tech",
-    prefix: "/tech",
-    prompt:
-      "I have 200 USDC. Suggest 3 large US tech stocks ranked by market cap, with live quotes.",
-  },
-  {
-    icon: <Landmark className="size-4" />,
-    label: "Biggest banks",
-    prefix: "/banks",
-    prompt: "What are the biggest banks I can buy? Plan 100 USDC across the top 2.",
-  },
-  {
-    icon: <Fuel className="size-4" />,
-    label: "Energy ETFs",
-    prefix: "/energy",
-    prompt: "Show me energy ETFs and compare their price impact for a 50 USDC buy.",
-  },
-  {
-    icon: <TrendingUp className="size-4" />,
-    label: "Best performers",
-    prefix: "/returns",
-    prompt:
-      "Which highly liquid stocks had the best 1-year return? Plan 100 USDC across the top 2.",
-  },
+/** "/" commands in the command bar: the same example questions the empty screen offers. */
+const COMMAND_META = [
+  { icon: <Cpu className="size-4" />, prefix: "/tech" },
+  { icon: <Scale className="size-4" />, prefix: "/compare" },
+  { icon: <HeartPulse className="size-4" />, prefix: "/health" },
+  { icon: <TrendingUp className="size-4" />, prefix: "/value" },
 ];
+const COMMANDS: ChatCommand[] = EXAMPLES.map((prompt, i) => ({
+  ...COMMAND_META[i]!,
+  label: prompt,
+  prompt,
+}));
 
 // Named before the rebrand to Quill; kept so the saved preference carries over.
 const COLLAPSED_KEY = "askfirst.sidebar.collapsed";
@@ -84,26 +64,12 @@ function prefillFromUrl(): string {
 
 /**
  * Changes the URL without a server round trip (Next.js keeps usePathname in
- * sync). The query string (the Browse stocks filters) carries over.
+ * sync).
  */
 function go(path: string, replace = false) {
   if (window.location.pathname === path) return;
-  const url = path + window.location.search;
-  if (replace) window.history.replaceState(null, "", url);
-  else window.history.pushState(null, "", url);
-}
-
-/** Whether a media query matches (false until the browser says otherwise). */
-function useMediaQuery(query: string) {
-  return useSyncExternalStore(
-    (onChange) => {
-      const list = window.matchMedia(query);
-      list.addEventListener("change", onChange);
-      return () => list.removeEventListener("change", onChange);
-    },
-    () => window.matchMedia(query).matches,
-    () => false,
-  );
+  if (replace) window.history.replaceState(null, "", path);
+  else window.history.pushState(null, "", path);
 }
 
 /** First reply finished and the title is still the automatic one: time to ask for a better one. */
@@ -126,9 +92,10 @@ async function fetchAiTitle(turns: ChatTurn[]): Promise<string | null> {
 }
 
 /**
- * The stock assistant as a full-screen app, ChatGPT-style: chat history in a
- * sidebar (a drawer on phones), the conversation with streamed replies,
- * "data used" panels and plan cards, and the stock browser. Each chat has its
+ * The stock assistant as a full-screen app: chat history in a sidebar (a
+ * drawer on phones) and the conversation, where each reply is a research note
+ * (data used, live trail, sources) and each plan a trade ticket. An empty
+ * chat shows the intro and example questions. Each chat has its
  * own URL (/chat/[id]); /chat is a new chat. History lives in this browser,
  * per wallet, with a guest list before a wallet connects.
  */
@@ -152,10 +119,7 @@ export function ChatApp() {
   }, []);
 
   const [collapsed, setCollapsed] = usePersistentFlag(COLLAPSED_KEY);
-  // One Browse stocks panel at a time (it owns the filter query string): a column on wide screens.
-  const wide = useMediaQuery("(min-width: 1280px)");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [browseOpen, setBrowseOpen] = useState(false);
 
   // The chat in `chat` (the live one you send in): its id once it has one,
   // and whose list it belongs to. The URL decides what's on screen: this live
@@ -260,7 +224,6 @@ export function ChatApp() {
   const send = (text: string) => {
     if (!text.trim() || busy) return;
     setInput("");
-    setBrowseOpen(false);
     if (live && activeId) {
       void chat.send(text);
       return;
@@ -289,7 +252,8 @@ export function ChatApp() {
   // Follow the conversation when a message is sent or another chat opens.
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    scroller.current?.scrollTo({ top: scroller.current.scrollHeight });
+    // An empty chat starts at the top, so the intro's headline is in view on small screens.
+    scroller.current?.scrollTo({ top: viewTurns.length === 0 ? 0 : scroller.current.scrollHeight });
   }, [viewTurns.length, viewId]);
 
   const activeChat = viewId ? history.chats.find((c) => c.id === viewId) : undefined;
@@ -310,30 +274,35 @@ export function ChatApp() {
   };
 
   const composer = (
-    <AnimatedChatInput
+    <Composer
       value={input}
       onValueChange={setInput}
       onSend={send}
-      busy={busy}
+      onStop={chat.cancel}
+      busy={busy && live}
       commands={COMMANDS}
-      showChips={empty}
-      placeholder="Ask about tokenized stocks, or type / for ideas…"
+      placeholder="Ask about any stock, or type / for ideas…"
     />
   );
 
   return (
     // Fills the screen under the site navbar (4rem); its panels scroll natively (data-chat-app).
-    <div data-chat-app className="flex h-[calc(100dvh-4rem-1px)] overflow-hidden bg-background">
+    // data-research scopes this page's button styles (globals.css).
+    <div
+      data-chat-app
+      data-research
+      className="flex h-[calc(100dvh-4rem-1px)] overflow-hidden bg-background"
+    >
       {!collapsed && (
         <aside
           aria-label="Chats"
-          className="hidden w-65 shrink-0 flex-col border-r bg-surface md:flex"
+          className="hidden w-70 shrink-0 flex-col border-r bg-surface md:flex"
         >
           <ChatSidebar {...sidebarProps} onCollapse={() => setCollapsed(true)} />
         </aside>
       )}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent side="left" className="w-70 max-w-[85vw] gap-0 p-0">
+        <SheetContent data-research side="left" className="w-76 max-w-[88vw] gap-0 p-0">
           <SheetTitle className="sr-only">Chats</SheetTitle>
           <SheetDescription className="sr-only">
             Your chat history, saved in this browser.
@@ -347,58 +316,67 @@ export function ChatApp() {
           <ProgressBar label="Writing a reply" className="absolute inset-x-0 top-12 z-20" />
         )}
         <header className="flex h-12 shrink-0 items-center gap-1 border-b px-2 sm:px-3">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="md:hidden"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Open chat history"
-          >
-            <Menu />
-          </Button>
-          {collapsed && (
+          <Tip label="Chat history">
             <Button
               variant="ghost"
               size="icon-sm"
-              className="hidden md:inline-flex"
-              onClick={() => setCollapsed(false)}
-              aria-label="Open sidebar"
+              className="md:hidden"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Open chat history"
             >
-              <PanelLeftOpen />
+              <Menu />
             </Button>
+          </Tip>
+          {collapsed && (
+            <Tip label="Open sidebar">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="hidden md:inline-flex"
+                onClick={() => setCollapsed(false)}
+                aria-label="Open sidebar"
+              >
+                <PanelLeftOpen />
+              </Button>
+            </Tip>
           )}
-          <h1 className="min-w-0 flex-1 truncate px-1 text-sm font-medium">
+          <h1 className="min-w-0 flex-1 truncate px-1 font-heading text-sm font-semibold tracking-tight">
             {activeChat?.title ?? "New chat"}
           </h1>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="xl:hidden"
-            onClick={() => setBrowseOpen(true)}
-            aria-label="Browse stocks"
-          >
-            <LibraryBig /> <span className="hidden sm:inline">Browse stocks</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className={collapsed ? "" : "md:hidden"}
-            onClick={newChat}
-            disabled={busy}
-            aria-label="New chat"
-          >
-            <SquarePen />
-          </Button>
+          <Tip label="New chat">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className={collapsed ? "" : "md:hidden"}
+              onClick={newChat}
+              disabled={busy}
+              aria-label="New chat"
+            >
+              <Plus />
+            </Button>
+          </Tip>
         </header>
 
         <div className="flex min-h-0 flex-1">
           <div ref={scroller} className="relative isolate min-w-0 flex-1 overflow-y-auto">
+            {/* The home page's backdrop, behind an empty chat only. */}
+            {empty && !missing && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[34rem]"
+              >
+                <PauseOffscreen className="absolute inset-0">
+                  <Orbs />
+                </PauseOffscreen>
+                <GridOverlay className="[mask-image:radial-gradient(ellipse_at_top,#000_10%,transparent_65%)]" />
+              </div>
+            )}
             <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pt-6 sm:px-6">
               {offerMove && (
                 <div
                   role="region"
                   aria-label="Chats from before you connected"
-                  className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3 text-sm"
+                  className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border bg-card p-3.5 text-sm"
                 >
                   <p className="min-w-0 flex-1 basis-56">
                     You have {guestCount} {guestCount === 1 ? "chat" : "chats"} from before you
@@ -420,71 +398,88 @@ export function ChatApp() {
               )}
 
               <DisclosureGate>
-                <ChatGlow />
-                {reconnecting ? (
-                  <div className="space-y-3 py-8" role="status" aria-label="Opening chat">
-                    <Skeleton className="ml-auto h-9 w-2/3 rounded-2xl" />
-                    <Skeleton className="h-4 w-11/12" />
-                    <Skeleton className="h-4 w-4/5" />
-                  </div>
-                ) : missing ? (
-                  <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center">
-                    <h2 className="text-lg font-semibold">This chat isn&apos;t here</h2>
-                    <p className="max-w-sm text-sm text-muted-foreground">
-                      Chats are saved in the browser they were made in, for the wallet that made
-                      them. Connect that wallet, or start a new chat.
-                    </p>
-                    <Button onClick={newChat}>
-                      <SquarePen /> New chat
-                    </Button>
-                  </div>
-                ) : empty ? (
-                  <motion.div
-                    className="flex flex-1 flex-col justify-center space-y-10 py-6"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                  >
-                    <ChatHero
-                      title="How can I help today?"
-                      subtitle="Research tokenized US stocks on Solana with live data and real Jupiter quotes"
-                    />
-                    {composer}
-                  </motion.div>
-                ) : (
-                  <div className="flex flex-1 flex-col">
-                    <div className="flex-1 space-y-6" aria-live="polite">
-                      {viewTurns.map((turn, i) =>
-                        turn.role === "user" ? (
-                          <Appear key={`${viewId ?? "new"}-${i}`}>
-                            <UserBubble text={turn.text} />
-                          </Appear>
-                        ) : (
-                          <Appear key={`${viewId ?? "new"}-${i}`}>
-                            <AssistantTurnView
-                              turn={turn}
-                              cards={
-                                turn.plan && (
-                                  <Appear y={14} delay={0.05}>
-                                    <PlanCard
-                                      plan={turn.plan}
-                                      saved={turn.buy}
-                                      archived={i < viewArchived}
-                                      onBuyChange={(buy) => recordBuy(i, buy)}
-                                    />
-                                  </Appear>
-                                )
-                              }
-                            />
-                          </Appear>
-                        ),
-                      )}
+                {/* The intro fades away as the first message is sent. */}
+                <AnimatePresence mode="wait" initial={false}>
+                  {reconnecting ? (
+                    <div
+                      key="opening"
+                      className="space-y-3 py-8"
+                      role="status"
+                      aria-label="Opening chat"
+                    >
+                      <Skeleton className="ml-auto h-9 w-2/3 rounded-2xl" />
+                      <Skeleton className="h-4 w-11/12" />
+                      <Skeleton className="h-4 w-4/5" />
                     </div>
-                    <div className="sticky bottom-0 z-10 bg-linear-to-t from-background via-background/90 to-transparent pt-6 pb-4">
+                  ) : missing ? (
+                    <div
+                      key="missing"
+                      className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center"
+                    >
+                      <h2 className="font-heading text-2xl font-semibold tracking-tight">
+                        This chat isn&apos;t here
+                      </h2>
+                      <p className="max-w-sm text-sm text-muted-foreground">
+                        Chats are saved in the browser they were made in, for the wallet that made
+                        them. Connect that wallet, or start a new chat.
+                      </p>
+                      <Button onClick={newChat}>
+                        <Plus /> New chat
+                      </Button>
+                    </div>
+                  ) : empty ? (
+                    <motion.div
+                      key="intro"
+                      className="flex flex-1 flex-col justify-center space-y-9 py-6"
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8, transition: { duration: 0.18 } }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                    >
+                      <ResearchIntro onAsk={send} disabled={busy} />
                       {composer}
-                    </div>
-                  </div>
-                )}
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="conversation"
+                      className="flex flex-1 flex-col"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <div className="flex-1 space-y-8" aria-live="polite">
+                        {viewTurns.map((turn, i) =>
+                          turn.role === "user" ? (
+                            <Appear key={`${viewId ?? "new"}-${i}`}>
+                              <UserBubble text={turn.text} />
+                            </Appear>
+                          ) : (
+                            <Appear key={`${viewId ?? "new"}-${i}`}>
+                              <AssistantTurnView
+                                turn={turn}
+                                cards={
+                                  turn.plan && (
+                                    <Appear y={14} delay={0.05}>
+                                      <PlanCard
+                                        plan={turn.plan}
+                                        saved={turn.buy}
+                                        archived={i < viewArchived}
+                                        onBuyChange={(buy) => recordBuy(i, buy)}
+                                      />
+                                    </Appear>
+                                  )
+                                }
+                              />
+                            </Appear>
+                          ),
+                        )}
+                      </div>
+                      <div className="sticky bottom-0 z-10 bg-linear-to-t from-background via-background/90 to-transparent pt-6 pb-4">
+                        {composer}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </DisclosureGate>
               <p className="mt-2 mb-4 flex items-start gap-1.5 text-xs text-muted-foreground">
                 <ShieldAlert className="mt-px size-3.5 shrink-0" />
@@ -494,23 +489,8 @@ export function ChatApp() {
               </p>
             </div>
           </div>
-          {wide && (
-            <aside aria-label="Browse stocks" className="w-96 shrink-0 border-l p-4">
-              <StockBrowser onAsk={send} disabled={busy} />
-            </aside>
-          )}
         </div>
       </div>
-
-      <Sheet open={browseOpen && !wide} onOpenChange={setBrowseOpen}>
-        <SheetContent side="right" className="w-88 max-w-[92vw] p-4">
-          <SheetTitle className="sr-only">Browse stocks</SheetTitle>
-          <SheetDescription className="sr-only">
-            Every stock you can research, by sector.
-          </SheetDescription>
-          <StockBrowser onAsk={send} disabled={busy} />
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

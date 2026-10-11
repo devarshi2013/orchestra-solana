@@ -105,7 +105,7 @@ How it behaves:
 
 ## Chat history
 
-A ChatGPT-style sidebar (`src/components/assistant/chat-sidebar.tsx`; a drawer under 768px), with the app shell in `assistant-chat.tsx`. The chat app is in `src/app/chat/layout.tsx` and renders in the browser only, since everything it shows comes from there.
+A chat history sidebar (`src/components/assistant/chat-sidebar.tsx`; a drawer under 768px), with the app shell in `assistant-chat.tsx`. The chat app is in `src/app/chat/layout.tsx` and renders in the browser only, since everything it shows comes from there.
 
 - **URLs:** each chat is `/chat/[id]`; `/chat` is a new chat, and `/assistant` (with its `?q=` pre-fill) redirects to it. Switching chats uses `history.pushState`, so refresh, back/forward and bookmarks work. The URL decides what's on screen: a saved chat is shown from storage and becomes the live conversation when you send a message in it. A reply still streaming when you leave its chat keeps going and is saved.
 - **Storage** (`src/lib/assistant/chat-history.ts`): localStorage, one list per wallet (`askfirst.chats.v1.<wallet>`) and a `guest` list before a wallet connects. Every read and write is wrapped; if storage is blocked, chats live in memory for the visit. Each chat stores its id, title (and where it came from), pinned flag, timestamps, messages, the model-side history, and plans with each purchase's statuses and Solscan signatures. A chat is saved once its first message is sent. At most 200 chats; the oldest unpinned go first, and a full quota drops old chats' model history before whole chats.
@@ -118,21 +118,47 @@ A ChatGPT-style sidebar (`src/components/assistant/chat-sidebar.tsx`; a drawer u
 
 Replies are GitHub-flavoured Markdown (`src/components/assistant/markdown.tsx`: react-markdown + remark-gfm). Raw HTML from the model is dropped and unsafe link protocols are stripped; links open in a new tab.
 
-- **Tables:** each one sits in its own rounded scroll box, so it never widens the chat on a phone. The header row is sticky, rows are zebra-striped with a hover state. `src/lib/markdown/table-columns.ts` reads each table by column: numeric columns are right-aligned (tabular figures), and change columns (returns, growth, 24h…) get an explicit +/− sign and green/red colour.
+- **Tables:** each one sits in its own rounded scroll box, so it never widens the chat on a phone. The header row is sticky with small tracked-out labels, and rows tint on hover (the same table style as the markets page). `src/lib/markdown/table-columns.ts` reads each table by column: numeric columns are right-aligned (tabular figures), and change columns (returns, growth, 24h…) get an explicit +/− sign and green/red colour.
 - **Text blocks:** the server puts a blank line between the text of separate model calls in a turn. Without it, "Here they are:" and the table after a tool call ran together and the table showed as raw pipes.
 - **Streaming:** `src/lib/markdown/streaming.ts` holds back what would flash as raw syntax: a table until its delimiter row arrives (a skeleton shows meanwhile), a row until its line ends, an unmatched `**`, and an unfinished comparison block.
 - **Comparison blocks:** for 2+ stocks compared on market cap, 1Y return and P/E, the prompt asks for a fenced `comparison` block of JSON (`src/lib/markdown/comparison.ts`, validated with Zod). It renders as `ComparisonTable`: sortable columns, logos, Jupiter's live price and a 7-day sparkline per row, from `GET /api/market/compare?tickers=` (`src/server/market/compare.ts`). Tickers resolve through the registry only. Every issuer's token is priced and a stock whose tokens disagree by over 5% shows no price, since a thin token's Jupiter price can be far off. Sparklines use the xStocks token's GeckoTerminal history (Ondo tokens trade mostly by RFQ, and their pools record bad prints); isolated bad prints are dropped and a noisy history isn't drawn. Invalid JSON falls back to a plain table.
 - **Preview:** in development, `/dev/chat-preview` renders sample replies (`markdown.fixtures.ts`), including half-streamed ones.
 
-## Browse stocks
+## The Research page's look
 
-The **Browse stocks** panel (`src/components/assistant/stock-browser.tsx`, controls in `stock-filters.tsx`, logic in `src/lib/stocks/browse.ts`) lists every registry company from `GET /api/stocks` (no mints). Clicking one asks the assistant about it.
+`/chat` shares the home and markets pages' tokens, fonts and backdrop
+(`src/components/design/`), and adds its own pieces:
 
-- **Filters** (they combine): search by company or ticker (debounced 200 ms); **Sector** (multi-select with counts, the 11 standard sectors plus Diversified and Unclassified); **Industry** (multi-select, searchable, only within the chosen sectors and disabled until one is chosen); **Type** (All, Stocks, ETFs); **Liquidity** (Any, High, Medium+, from the 100 USDC test quote). Counts apply every other filter.
-- **Sort:** Liquidity (default), Market cap, 24h change, 1Y return, Name, with an ascending/descending toggle; missing figures sort last. `GET /api/stocks/metrics` (`src/server/stocks/metrics.ts`) supplies the figures: 24h change live from Jupiter for each company's most liquid token (all issuers' tokens are priced, and a company whose tokens disagree by over 5% gets none); market cap and 1Y return from Financial Modeling Prep's batch endpoints, only when `MARKET_DATA_API_KEY` is set and the plan includes them. A sort without data is shown disabled ("needs market data"), never estimated.
-- **Active filters** show as removable chips with "Clear all" (which also resets the sort), plus "Showing N of M stocks". An empty result offers "Clear filters".
-- **URL:** the filters live in the query string (`?sector=technology,energy&industry=…&type=etf&liquidity=medium&sort=change&dir=asc&find=…`), so a refresh or a shared link shows the same list; unknown values are ignored, and switching chats keeps them.
-- **Phones (<768px):** search plus a "Filters (n)" button opening a bottom sheet with the same dropdowns, applied together with "Apply".
+- **Navigation:** the navbar button reads "Browse stocks" here and is the only
+  link to `/markets` (a CSS switch on the chat's marker in `globals.css`). The
+  old Browse stocks panel, its filters and its `/api/stocks` routes are gone.
+- **Empty chat** (`research-intro.tsx`): "Research it. _Quote_ it. Own it.",
+  one line on what Quill does, the steps Ask → Live quote → You approve, and
+  four example questions that send on click. It fades out with the first message.
+- **Research notes** (`turn.tsx`): each reply is a note on a thin accent rule:
+  "Data used" chips (`data-used.tsx`, one per tool call, opening its input and
+  result), a lead sentence in the heading font when the reply opens with a
+  plain one, the body, and "Sources: … · as of HH:MM" (sources come from the
+  tool calls that succeeded; the time from when the reply finished, absent on
+  older saved replies). Your messages are accent pills on the right.
+- **Research trail:** while a reply is in progress the note lists the REAL
+  tool calls as steps ("Fetching market data: TSLA…"), ticking each as its
+  result arrives, then "Writing the note".
+- **Trade ticket** (`plan-card.tsx`): a plan is a ticket with a perforated
+  divider, one line per stock (ticker, amount in, tokens out, impact, fees), a
+  total row and the Approve button. The buying logic is unchanged.
+- **Command bar** (`composer.tsx`): a floating bar that glows on focus; Enter
+  sends, Shift+Enter adds a line, "/" lists the example questions, the "$"
+  pill appends "Budget: N USDC." to the message, and the round button turns
+  into Stop while a reply streams (Stop keeps what has arrived).
+- **Buttons** (scoped by `data-research` in `globals.css`): primary is solid
+  accent blue with an inner highlight, a lift and light sweep on hover and a
+  0.98 press; secondary is outlined and fills softly; ghost and icon buttons
+  are round with tooltips (`tip.tsx`).
+- **Sidebar** (`chat-sidebar.tsx`): a primary "New chat" (its "+" turns on
+  hover; Ctrl/Cmd+Shift+O), a search pill with a clear button, an All / Pinned
+  / With trades control with a sliding highlight, and the list with an accent
+  dot on the open chat.
 
 ## Disclosure
 
@@ -143,7 +169,6 @@ Before first use, the browser shows a one-time disclosure: AI can be wrong, it's
 - `src/server/agent/loop.test.ts`: the loop against a fake streaming client.
 - `src/lib/assistant/chat-history.test.ts`: create, rename, pin, delete, search, grouping, the 200-chat cap, per-wallet lists, moving guest chats, restoring a chat from its URL, and blocked storage.
 - `src/server/agent/guest.test.ts`, `title.test.ts`: guest tools and AI titles.
-- `src/lib/stocks/browse.test.ts`: Browse stocks filters combining, industries per sector, sorting, URL round-trip and Clear all.
 - `src/components/assistant/markdown.test.tsx`, `src/lib/markdown/*.test.ts`: tables, signs and colours, streamed tables in chunks, comparison blocks and their fallback.
 - `src/server/market/compare.test.ts`: registry-only tickers, issuer price cross-check, sparkline bad prints.
 - `src/server/agent/tools.test.ts`: stock-only tools and plan rejection.

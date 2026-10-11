@@ -9,16 +9,14 @@ import {
   Loader2,
   RefreshCw,
   RotateCcw,
-  ShoppingCart,
+  ShieldCheck,
   TriangleAlert,
   X,
   XCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { LiquidityBadge } from "@/components/assistant/liquidity-badge";
 import { SwapStatus } from "@/components/motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -67,52 +65,100 @@ export function PlanCard({ archived = false, ...props }: PlanCardProps & { archi
   const bought = saved?.items.filter((i) => i.step === "bought").length ?? 0;
   const unfinished = saved ? saved.items.length - bought : plan.items.length;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {!saved
-            ? "Proposed plan"
-            : unfinished === 0
-              ? "Plan bought"
-              : bought > 0
-                ? "Plan partly bought"
-                : "Plan not bought"}{" "}
-          · {formatUsd(total)}
-        </CardTitle>
-        <CardDescription>Ranking: {plan.rankingMethod}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {saved ? (
-          <PurchaseList items={saved.items} />
-        ) : (
-          <ul className="divide-y rounded-lg border">
-            {plan.items.map((item) => (
-              <li
-                key={item.symbol}
-                className="flex flex-wrap items-start gap-x-3 px-3 py-2 text-sm"
-              >
-                <div className="min-w-0 flex-1 basis-44">
-                  <span className="font-medium">{item.name}</span>{" "}
-                  <Badge variant="outline">{item.symbol}</Badge>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{item.reason}</p>
-                </div>
-                <span className="text-sm tabular-nums">{formatUsd(item.usdcAmount)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {unfinished > 0 && (
-          <div className="flex flex-wrap items-center gap-3">
-            <Button variant="outline" onClick={() => setLive(true)}>
-              <RefreshCw /> Get fresh quote
-            </Button>
-            <p className="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
-              From an earlier chat: its quotes have expired. Get fresh quotes to review and buy.
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <Ticket
+      title={
+        !saved
+          ? "Proposed plan"
+          : unfinished === 0
+            ? "Plan bought"
+            : bought > 0
+              ? "Plan partly bought"
+              : "Plan not bought"
+      }
+      total={total}
+      method={plan.rankingMethod}
+    >
+      {saved ? (
+        <PurchaseList items={saved.items} />
+      ) : (
+        <ul className="divide-y">
+          {plan.items.map((item) => (
+            <li
+              key={item.symbol}
+              className="flex flex-wrap items-start gap-x-3 py-2.5 text-sm first:pt-0"
+            >
+              <div className="min-w-0 flex-1 basis-44">
+                <span className="font-mono font-semibold">{item.symbol}</span>{" "}
+                <span className="text-muted-foreground">{item.name}</span>
+                <p className="mt-0.5 text-xs text-muted-foreground">{item.reason}</p>
+              </div>
+              <span className="font-mono text-sm tabular-nums">{formatUsd(item.usdcAmount)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <TotalRow count={plan.items.length} total={total} />
+      {unfinished > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="outline" onClick={() => setLive(true)}>
+            <RefreshCw /> Get fresh quote
+          </Button>
+          <p className="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
+            From an earlier chat: its quotes have expired. Get fresh quotes to review and buy.
+          </p>
+        </div>
+      )}
+    </Ticket>
+  );
+}
+
+/**
+ * The ticket shell: a card with a label, the plan's status and total, a
+ * perforated tear line, then the lines and actions.
+ */
+function Ticket({
+  title,
+  total,
+  method,
+  children,
+}: {
+  title: string;
+  total: number;
+  method: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      aria-label={`Trade ticket: ${title}`}
+      className="overflow-hidden rounded-2xl border bg-card shadow-lift"
+    >
+      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 p-4 sm:p-5">
+        <div className="min-w-0">
+          <p className="font-mono text-[11px] font-medium tracking-[0.16em] text-label-blue uppercase">
+            Trade ticket
+          </p>
+          <h3 className="mt-1 font-heading text-lg font-semibold tracking-tight">{title}</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">Ranking: {method}</p>
+        </div>
+        <p className="font-heading text-2xl font-semibold tracking-tight tabular-nums">
+          {formatUsd(total)}
+        </p>
+      </header>
+      <div aria-hidden className="ticket-tear" />
+      <div className="space-y-4 p-4 sm:p-5">{children}</div>
+    </section>
+  );
+}
+
+/** The ticket's total line. */
+function TotalRow({ count, total }: { count: number; total: number }) {
+  return (
+    <p className="flex items-baseline justify-between gap-3 border-t pt-3 text-sm">
+      <span className="font-mono text-[11px] tracking-[0.14em] text-muted-foreground uppercase">
+        Total · {count} {count === 1 ? "item" : "items"}
+      </span>
+      <span className="font-mono font-semibold tabular-nums">{formatUsd(total)} USDC</span>
+    </p>
   );
 }
 
@@ -186,131 +232,137 @@ function LivePlanCard({ plan, saved, onBuyChange }: PlanCardProps) {
   const failed = buy.items?.filter((i) => i.step === "failed" || i.step === "waiting") ?? [];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {reviewing
-            ? "Proposed plan"
-            : buy.running
-              ? "Buying your plan"
-              : failed.length === 0
-                ? "Plan bought"
-                : bought.length > 0
-                  ? "Plan partly bought"
-                  : "Plan not bought"}{" "}
-          · {formatUsd(total)}
-        </CardTitle>
-        <CardDescription>Ranking: {plan.rankingMethod}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {buy.items ? (
-          <div className="space-y-3">
-            <PurchaseList items={buy.items} />
-            {buy.stopped && <ErrorLine className="text-sm">{buy.stopped}</ErrorLine>}
-            {!buy.running && (
-              <div
-                className={cn(
-                  "flex flex-wrap items-center gap-3 rounded-lg border p-3 text-sm",
-                  failed.length > 0
-                    ? "border-warning/40 bg-warning/5"
-                    : "border-success/40 bg-success/5",
-                )}
-              >
-                <p className="min-w-0 flex-1 basis-56">
-                  {failed.length === 0
-                    ? `All ${bought.length} bought.`
-                    : `Bought ${bought.length} of ${buy.items.length}. ${failed
-                        .map((i) => i.symbol)
-                        .join(
-                          ", ",
-                        )} ${failed.length === 1 ? "wasn't" : "weren't"} bought; that USDC stays in your wallet.`}
-                </p>
-                {failed.length > 0 && (
-                  <Button size="sm" onClick={buy.retry}>
-                    <RotateCcw /> Retry{" "}
-                    {failed.length === 1 ? "the item" : `${failed.length} items`} not bought
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            <ul className="divide-y rounded-lg border">
-              {draft.map((item) => {
-                const amount = parseAmount(item.amountText);
-                const quote = quotes.get(item.symbol);
-                return (
-                  <PlanRow
-                    key={item.symbol}
-                    item={item}
-                    quote={quote}
-                    warnings={itemWarnings({ kind: item.kind, usdcAmount: amount }, quote, now)}
-                    loading={!quote && amount > 0 && wallet !== null}
-                    retrying={retrying.has(item.symbol)}
-                    onAmount={(text) => setAmount(item.symbol, text)}
-                    onRemove={() => remove(item.symbol)}
-                    canRemove={draft.length > 1}
-                  />
-                );
-              })}
-            </ul>
-
-            <div className="space-y-2 rounded-lg border p-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">Before you buy</h3>
-                <Button variant="ghost" size="xs" onClick={refresh} disabled={quoting}>
-                  <RefreshCw className={cn(quoting && "animate-spin")} /> Refresh quotes
-                </Button>
-              </div>
-              <ul className="space-y-1 text-sm">
-                {checks.map((check) => (
-                  <li key={check.id} className="flex items-start gap-1.5">
-                    {check.ok === null ? (
-                      <Circle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-                    ) : check.ok ? (
-                      <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success" />
-                    ) : (
-                      <XCircle className="mt-0.5 size-3.5 shrink-0 text-danger" />
-                    )}
-                    <span className={cn(check.ok === false && "text-danger")}>{check.label}</span>
-                  </li>
-                ))}
-              </ul>
-              {fundsError && <ErrorLine>{fundsError}</ErrorLine>}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Button onClick={() => void approve()} disabled={!ready || buy.running}>
-                <ShoppingCart /> Approve &amp; buy {formatUsd(total)}
-              </Button>
-              <p className="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
-                Each stock is a separate swap you approve in your wallet: {draft.length}{" "}
-                {draft.length === 1 ? "signature" : "signatures"}. Nothing is signed automatically.
+    <Ticket
+      title={
+        reviewing
+          ? "Proposed plan"
+          : buy.running
+            ? "Buying your plan"
+            : failed.length === 0
+              ? "Plan bought"
+              : bought.length > 0
+                ? "Plan partly bought"
+                : "Plan not bought"
+      }
+      total={total}
+      method={plan.rankingMethod}
+    >
+      {buy.items ? (
+        <div className="space-y-3">
+          <PurchaseList items={buy.items} />
+          {buy.stopped && <ErrorLine className="text-sm">{buy.stopped}</ErrorLine>}
+          {!buy.running && (
+            <div
+              className={cn(
+                "flex flex-wrap items-center gap-3 rounded-xl border p-3 text-sm",
+                failed.length > 0
+                  ? "border-warning/40 bg-warning/5"
+                  : "border-success/40 bg-success/5",
+              )}
+            >
+              <p className="min-w-0 flex-1 basis-56">
+                {failed.length === 0
+                  ? `All ${bought.length} bought.`
+                  : `Bought ${bought.length} of ${buy.items.length}. ${failed
+                      .map((i) => i.symbol)
+                      .join(
+                        ", ",
+                      )} ${failed.length === 1 ? "wasn't" : "weren't"} bought; that USDC stays in your wallet.`}
               </p>
+              {failed.length > 0 && (
+                <Button size="sm" onClick={buy.retry}>
+                  <RotateCcw /> Retry {failed.length === 1 ? "the item" : `${failed.length} items`}{" "}
+                  not bought
+                </Button>
+              )}
             </div>
-          </>
-        )}
-        <p className="text-xs text-muted-foreground">
-          AI-generated research, not financial advice. Tokenized stocks are securities with
-          eligibility rules. Each buy is re-quoted right before you sign.
-        </p>
-      </CardContent>
-    </Card>
+          )}
+        </div>
+      ) : (
+        <>
+          <ul className="divide-y">
+            {draft.map((item) => {
+              const amount = parseAmount(item.amountText);
+              const quote = quotes.get(item.symbol);
+              return (
+                <PlanRow
+                  key={item.symbol}
+                  item={item}
+                  quote={quote}
+                  warnings={itemWarnings({ kind: item.kind, usdcAmount: amount }, quote, now)}
+                  loading={!quote && amount > 0 && wallet !== null}
+                  retrying={retrying.has(item.symbol)}
+                  onAmount={(text) => setAmount(item.symbol, text)}
+                  onRemove={() => remove(item.symbol)}
+                  canRemove={draft.length > 1}
+                />
+              );
+            })}
+          </ul>
+          <TotalRow count={draft.length} total={total} />
+
+          <div className="space-y-2 rounded-xl border p-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-mono text-[11px] tracking-[0.14em] text-muted-foreground uppercase">
+                Before you buy
+              </h4>
+              <Button variant="ghost" size="xs" onClick={refresh} disabled={quoting}>
+                <RefreshCw className={cn(quoting && "animate-spin")} /> Refresh quotes
+              </Button>
+            </div>
+            <ul className="space-y-1 text-sm">
+              {checks.map((check) => (
+                <li key={check.id} className="flex items-start gap-1.5">
+                  {check.ok === null ? (
+                    <Circle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                  ) : check.ok ? (
+                    <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-success" />
+                  ) : (
+                    <XCircle className="mt-0.5 size-3.5 shrink-0 text-danger" />
+                  )}
+                  <span className={cn(check.ok === false && "text-danger")}>{check.label}</span>
+                </li>
+              ))}
+            </ul>
+            {fundsError && <ErrorLine>{fundsError}</ErrorLine>}
+          </div>
+
+          <div aria-hidden className="ticket-tear -mx-4 sm:-mx-5" />
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              size="lg"
+              className="w-full sm:w-auto"
+              onClick={() => void approve()}
+              disabled={!ready || buy.running}
+            >
+              <ShieldCheck /> Approve &amp; buy {formatUsd(total)}
+            </Button>
+            <p className="min-w-0 flex-1 basis-56 text-xs text-muted-foreground">
+              Each stock is a separate swap you approve in your wallet: {draft.length}{" "}
+              {draft.length === 1 ? "signature" : "signatures"}. Nothing is signed automatically.
+            </p>
+          </div>
+        </>
+      )}
+      <p className="text-xs text-muted-foreground">
+        AI-generated research, not financial advice. Tokenized stocks are securities with
+        eligibility rules. Each buy is re-quoted right before you sign.
+      </p>
+    </Ticket>
   );
 }
 
 /** Each bought (or attempted) item with its status, amount received and Solscan link. */
 function PurchaseList({ items }: { items: BuyItem[] }) {
   return (
-    <ul className="divide-y rounded-lg border">
+    <ul className="divide-y">
       {items.map((item) => (
         <li
           key={item.symbol}
-          className="flex flex-wrap items-start gap-x-3 gap-y-1 px-3 py-2 text-sm"
+          className="flex flex-wrap items-start gap-x-3 gap-y-1 py-2.5 text-sm first:pt-0"
         >
           <div className="min-w-0 flex-1">
-            <span className="font-medium">{item.symbol}</span>{" "}
+            <span className="font-mono font-semibold">{item.symbol}</span>{" "}
             <span className="text-xs text-muted-foreground">
               {item.name} · {formatUsd(item.usdcAmount)}
             </span>
@@ -328,7 +380,7 @@ function PurchaseList({ items }: { items: BuyItem[] }) {
                 href={solscanTxUrl(item.signature, "mainnet-beta")}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-0.5 text-primary-text hover:underline"
+                className="inline-flex items-center gap-0.5 text-label-blue hover:underline"
               >
                 Solscan <ExternalLink className="size-3" />
               </a>
@@ -361,12 +413,12 @@ function PlanRow({
 }) {
   const q = quote?.quote;
   return (
-    <li className="space-y-2 px-3 py-2.5 text-sm transition-colors hover:bg-muted/30">
+    <li className="space-y-2 py-3 text-sm first:pt-0">
       <div className="flex flex-wrap items-start gap-x-3 gap-y-2">
         <div className="min-w-0 flex-1 basis-44">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-medium">{item.name}</span>
-            <Badge variant="outline">{item.symbol}</Badge>
+            <span className="font-mono font-semibold">{item.symbol}</span>
+            <span className="text-muted-foreground">{item.name}</span>
             {quote?.token && (
               <>
                 <span className="text-xs text-muted-foreground">
@@ -384,7 +436,7 @@ function PlanRow({
             inputMode="decimal"
             value={item.amountText}
             onChange={(e) => onAmount(e.target.value.replace(/[^\d.]/g, ""))}
-            className="h-7 w-24 text-right tabular-nums"
+            className="h-8 w-24 rounded-full text-right font-mono tabular-nums"
           />
           <span className="text-xs text-muted-foreground">USDC</span>
         </label>

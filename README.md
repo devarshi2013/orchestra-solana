@@ -16,13 +16,13 @@ An **AI research chatbot for tokenized US stocks on Solana**. Ask in plain Engli
 
 ## Pages
 
-| Route                 | What it does                                                                                                                                                                                                                                                  |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                   | Home page: hero, Quill Research™ / Search™ / Approve™, feature grid, FAQ, email signup and live sections: ticker tape, a real Jupiter quote, stats, markets table, sector heatmap ([docs](docs/home.md))                                                      |
-| `/markets`            | Stocks screener: search, Equities / ETFs / Commodities tabs, top performers and a sortable table with live prices and 24h sparklines ([docs](docs/markets.md))                                                                                                |
-| `/markets/[symbol]`   | One stock: live price, chart (1H–1Y), stats and a Buy / Sell panel; every trade is signed in your wallet                                                                                                                                                      |
-| `/registry`           | Every listed token: company, issuer, mint with a Solscan link, and when it was last verified                                                                                                                                                                  |
-| `/chat`, `/chat/[id]` | The chatbot (`/assistant` redirects here), with a ChatGPT-style chat history sidebar and a "Browse stocks" panel: streamed answers, "Data used" panels, plan cards with live quotes, warnings, pre-flight checks, and wallet-approved buys with Solscan links |
+| Route                 | What it does                                                                                                                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                   | Home page: hero, Quill Research™ / Search™ / Approve™, feature grid, FAQ, email signup and live sections: ticker tape, a real Jupiter quote, stats, markets table, sector heatmap ([docs](docs/home.md))            |
+| `/markets`            | Stocks screener: search, Equities / ETFs / Commodities tabs, top performers and a sortable table with live prices and 24h sparklines ([docs](docs/markets.md))                                                      |
+| `/markets/[symbol]`   | One stock: live price, chart (1H–1Y), stats and a Buy / Sell panel; every trade is signed in your wallet                                                                                                            |
+| `/registry`           | Every listed token: company, issuer, mint with a Solscan link, and when it was last verified                                                                                                                        |
+| `/chat`, `/chat/[id]` | The chatbot (`/assistant` redirects here), with a chat history sidebar: streamed answers, "Data used" panels, plan cards with live quotes, warnings, pre-flight checks, and wallet-approved buys with Solscan links |
 
 There's **no database**:
 
@@ -90,7 +90,7 @@ Import `serverEnv` from `@/env/server` (guarded by `server-only`) and `clientEnv
 ```
 docs/                        Assistant, home dashboard, tokenized stocks (issuers, sync), Jupiter API notes, deployment
 src/app/                     Pages (/ and /chat) and /api route handlers
-src/components/assistant/    Chat, plan card, data-used panels, disclosure and wallet gates
+src/components/assistant/    Chat: research notes, trade ticket, data-used chips, command bar, sidebar, disclosure
 src/components/home/         Home page sections (hero, feature rows and grid, FAQ)
 src/components/markets/      Screener table, sparkline, price chart, trade panel, top performers
 src/hooks/                   Chat stream, plan quotes, plan buying
