@@ -1,4 +1,5 @@
 import type { ChatTurn } from "@/hooks/use-agent-chat";
+import type { BuyStep } from "@/hooks/use-plan-buy";
 
 /**
  * Past conversations, kept in this browser only (localStorage, no database).
@@ -8,7 +9,8 @@ import type { ChatTurn } from "@/hooks/use-agent-chat";
  * chat, they just mean history isn't kept.
  */
 
-export type TitleSource = "auto" | "ai" | "user";
+const TITLE_SOURCES = ["auto", "ai", "user"] as const;
+type TitleSource = (typeof TITLE_SOURCES)[number];
 
 export type StoredChat = {
   id: string;
@@ -28,15 +30,15 @@ export type StoredChat = {
 export type Owner = string;
 export const GUEST: Owner = "guest";
 
-// Named before the rebrand to Quill; kept so saved chats carry over.
-export const STORAGE_PREFIX = "askfirst.chats.v1.";
-export const MAX_CHATS = 200;
+// Named before the rebrands (to Quill, then Tickertape); kept so saved chats carry over.
+const STORAGE_PREFIX = "askfirst.chats.v1.";
+const MAX_CHATS = 200;
 const TITLE_LENGTH = 40;
 
 export const storageKey = (owner: Owner) => STORAGE_PREFIX + owner;
 
 /** A title from the first message: one line, cut at a word near 40 characters. */
-export function titleFrom(message: string): string {
+function titleFrom(message: string): string {
   const line = message.replace(/\s+/g, " ").trim();
   if (line.length <= TITLE_LENGTH) return line || "New chat";
   const cut = line.slice(0, TITLE_LENGTH);
@@ -58,13 +60,6 @@ export function cleanAiTitle(raw: string): string | null {
   return title;
 }
 
-/** True once any item of any plan in the chat was bought (or sent and landed). */
-export function hasPurchase(chat: Pick<StoredChat, "turns">): boolean {
-  return chat.turns.some(
-    (t) => t.role === "assistant" && t.buy?.items.some((item) => item.step === "bought"),
-  );
-}
-
 /** The chat id in a /chat/[id] path, or null for /chat. */
 export function chatIdFromPath(pathname: string | null): string | null {
   const match = /^\/chat\/([^/?#]+)/.exec(pathname ?? "");
@@ -76,55 +71,49 @@ export function chatIdFromPath(pathname: string | null): string | null {
  * marked as interrupted, and a buy cut off mid-swap says to check the wallet
  * (a swap that was sending may have landed).
  */
-export function reopened(turns: ChatTurn[]): ChatTurn[] {
+function reopened(turns: ChatTurn[]): ChatTurn[] {
   return turns.map((turn) => {
     if (turn.role !== "assistant") return turn;
     const buy = turn.buy && {
       ...turn.buy,
-      items: turn.buy.items.map((item) =>
-        item.step === "quoting" || item.step === "retrying" || item.step === "signing"
-          ? { ...item, step: "failed" as const, error: "Interrupted before it was signed." }
-          : item.step === "sending"
-            ? {
-                ...item,
-                step: "failed" as const,
-                error:
-                  "The page closed while this swap was sending. Check your wallet before retrying.",
-              }
-            : item,
-      ),
+      items: turn.buy.items.map((item) => {
+        const error = Object.hasOwn(INTERRUPTED, item.step) && INTERRUPTED[item.step];
+        return error ? { ...item, step: "failed" as const, error } : item;
+      }),
     };
-    return turn.done
-      ? { ...turn, buy }
-      : {
-          ...turn,
-          buy,
-          done: true,
-          progress: "",
-          error: turn.error ?? "This reply was interrupted.",
-        };
+    const interrupted = {
+      done: true,
+      progress: "",
+      error: turn.error ?? "This reply was interrupted.",
+    };
+    return { ...turn, buy, ...(turn.done ? {} : interrupted) };
   });
 }
+
+/**
+ * What a buy step cut off by closing the page means for that item
+ * ("retrying" is a step chats saved by earlier versions can hold).
+ */
+const INTERRUPTED: Partial<Record<BuyStep | "retrying", string>> = {
+  quoting: "Interrupted before it was signed.",
+  retrying: "Interrupted before it was signed.",
+  signing: "Interrupted before it was signed.",
+  sending: "The page closed while this swap was sending. Check your wallet before retrying.",
+};
 
 // --- Changes to a list (pure) -------------------------------------------------
 
 const byRecent = (a: StoredChat, b: StoredChat) => b.updatedAt - a.updatedAt;
 
 /** Newest first, at most `max`: the oldest unpinned chats go first. */
-export function capChats(chats: StoredChat[], max = MAX_CHATS): StoredChat[] {
+function capChats(chats: StoredChat[], max = MAX_CHATS): StoredChat[] {
   const sorted = [...chats].sort(byRecent);
-  let excess = sorted.length - max;
+  const excess = sorted.length - max;
   if (excess <= 0) return sorted;
-  const drop = new Set<string>();
-  for (let i = sorted.length - 1; i >= 0 && excess > 0; i--) {
-    if (!sorted[i]!.pinned) {
-      drop.add(sorted[i]!.id);
-      excess--;
-    }
-  }
+  const unpinned = sorted.filter((c) => !c.pinned);
+  const drop = new Set(unpinned.slice(-excess).map((c) => c.id));
   // Only pinned chats left over the cap: drop the oldest of those too.
-  const kept = sorted.filter((c) => !drop.has(c.id));
-  return kept.slice(0, max);
+  return sorted.filter((c) => !drop.has(c.id)).slice(0, max);
 }
 
 /** Stores the conversation under `id`, creating the chat on its first save. */
@@ -172,7 +161,7 @@ export function deleteChat(chats: StoredChat[], id: string): StoredChat[] {
 }
 
 /** Both lists in one; for the same id the more recently updated copy wins. */
-export function mergeChats(target: StoredChat[], incoming: StoredChat[]): StoredChat[] {
+function mergeChats(target: StoredChat[], incoming: StoredChat[]): StoredChat[] {
   const byId = new Map(target.map((c) => [c.id, c]));
   for (const chat of incoming) {
     const existing = byId.get(chat.id);
@@ -237,12 +226,11 @@ function migrate(chat: StoredChat & { renamed?: boolean }): StoredChat {
   const { renamed, ...rest } = chat;
   return {
     ...rest,
-    titleSource:
-      rest.titleSource === "ai" || rest.titleSource === "user" || rest.titleSource === "auto"
-        ? rest.titleSource
-        : renamed
-          ? "user"
-          : "auto",
+    titleSource: TITLE_SOURCES.includes(rest.titleSource)
+      ? rest.titleSource
+      : renamed
+        ? "user"
+        : "auto",
     pinned: rest.pinned === true,
     createdAt: typeof rest.createdAt === "number" ? rest.createdAt : rest.updatedAt,
     history: Array.isArray(rest.history) ? rest.history : null,
@@ -283,13 +271,7 @@ export function saveChats(
       storage.setItem(storageKey(owner), JSON.stringify(kept));
       return kept;
     } catch {
-      let oldestWithHistory = -1;
-      for (let i = kept.length - 1; i > 0; i--) {
-        if (kept[i]!.history !== null) {
-          oldestWithHistory = i;
-          break;
-        }
-      }
+      const oldestWithHistory = kept.findLastIndex((c, i) => i > 0 && c.history !== null);
       if (oldestWithHistory > 0) {
         kept = kept.map((c, i) => (i === oldestWithHistory ? { ...c, history: null } : c));
       } else if (kept.length > 1) {

@@ -8,12 +8,9 @@ import { executeOrder } from "@/server/jupiter/swap";
  * Jupiter processed it; the client decides what a failure means.
  */
 export async function POST(request: Request) {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return errorResponse(400, "Body must be JSON");
-  }
+  // No JSON document parses to undefined.
+  const body: unknown = await request.json().catch(() => undefined);
+  if (body === undefined) return errorResponse(400, "Body must be JSON");
   const parsed = executeBodySchema.safeParse(body);
   if (!parsed.success) return validationErrorResponse(parsed.error);
 

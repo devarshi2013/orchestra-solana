@@ -1,11 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#0F1B2D"/>
-  <path d="M21.74 23.19 A10 10 0 1 1 25.06 19.23" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
-  <path d="M11.2 20.6 C 11.6 15.2 15 10.9 20.9 8.4 C 20.6 14.4 16.9 18.6 11.2 20.6 Z" fill="#fff"/>
-  <path d="M9.6 22.4 L 18.8 11.2" stroke="#0F1B2D" stroke-width="0.9" stroke-linecap="round"/>
-  <path d="M9.4 22.6 L 11.4 20.2" stroke="#fff" stroke-width="1.1" stroke-linecap="round"/>
-  <path d="M17.6 15.6 L 19.4 15.0 M15.6 18.0 L 17.3 17.6 M14.2 12.6 L 14.5 11.3" stroke="#0F1B2D" stroke-width="0.7" stroke-linecap="round"/>
-  <path d="M22.1 22.14 L 24.7 20.26 L 27.02 22.97 L 28.6 28.4 L 23.94 25.19 Z" fill="#fff"/>
-  <path d="M24.9 23.1 L 27.6 27.3" stroke="#0F1B2D" stroke-width="0.7" stroke-linecap="round"/>
-  <circle cx="24.6" cy="22.7" r="0.65" fill="#0F1B2D"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480">
+  <defs>
+    <pattern id="hatch" width="480" height="4.07" y="0.5" patternUnits="userSpaceOnUse">
+      <rect width="480" height="1.92" fill="#fff"/>
+    </pattern>
+  </defs>
+  <rect width="480" height="480" fill="#000"/>
+  <path d="M157.51 123.75A58.76 115 0 0 0 157.51 353.75H202.64A58.76 115 0 0 1 202.64 123.75ZM216.48 123.75A58.76 115 0 0 0 216.48 353.75H261.61A58.76 115 0 0 1 261.61 123.75ZM275.45 123.75A58.76 115 0 0 0 275.45 353.75H320.57A58.76 115 0 0 1 320.57 123.75Z" fill="url(#hatch)"/>
+  <path d="M157.51 123.75A58.76 115 0 0 1 157.51 353.75H202.64A58.76 115 0 0 0 202.64 123.75ZM216.48 123.75A58.76 115 0 0 1 216.48 353.75H261.61A58.76 115 0 0 0 261.61 123.75ZM275.45 123.75A58.76 115 0 0 1 275.45 353.75H320.57A58.76 115 0 0 0 320.57 123.75Z" fill="#fff"/>
 </svg>

@@ -4,7 +4,10 @@ import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-/** A token's logo from Jupiter, or its first letters when there's none or it fails to load. */
+/**
+ * A token's logo from Jupiter in a circle, or its first two letters when it has
+ * none or the image fails to load.
+ */
 export function TokenLogo({
   src,
   symbol,
@@ -20,11 +23,11 @@ export function TokenLogo({
       <span
         aria-hidden
         className={cn(
-          "inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-[10px] font-semibold text-muted-foreground",
+          "inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-medium text-text-medium",
           className,
         )}
       >
-        {symbol.slice(0, 3)}
+        {symbol.slice(0, 2).toUpperCase()}
       </span>
     );
   }
@@ -38,7 +41,7 @@ export function TokenLogo({
       loading="lazy"
       referrerPolicy="no-referrer"
       onError={() => setFailed(true)}
-      className={cn("size-8 shrink-0 rounded-full bg-muted object-cover", className)}
+      className={cn("size-8 shrink-0 rounded-full bg-gray-50 object-cover", className)}
     />
   );
 }

@@ -1,11 +1,12 @@
+import type { ApiError } from "@/lib/api-client";
 import type { ExecuteResponse, OrderResponse } from "@/lib/jupiter/schemas";
 
 /**
  * Maps every way a swap can fail (quote, wallet, execute, our API) onto a small
- * set of kinds the UI knows how to explain. Error codes per docs/jupiter-api.md.
+ * set of kinds the UI knows how to explain, using Jupiter's documented error codes.
  */
 
-export type SwapErrorKind =
+type SwapErrorKind =
   | "rejected" // user declined in the wallet
   | "expired" // quote / blockhash expired; safe to re-quote automatically
   | "slippage" // price moved past the slippage tolerance
@@ -63,118 +64,96 @@ const NO_ROUTE = err(
   "Jupiter couldn't route this swap. The amount may be too small or the pair too illiquid.",
 );
 
-const SLIPPAGE_PATTERN = /slippage|0x1771|custom program error: 6001\b/i;
-const INSUFFICIENT_SOL_PATTERN =
-  /insufficient lamports|InsufficientFundsForFee|insufficient funds for (fee|rent)|InsufficientFundsForRent/i;
-const INSUFFICIENT_FUNDS_PATTERN = /insufficient funds/i;
+/** `/order` error codes per router (JupiterZ RFQ vs the aggregator routers). */
+const JUPITERZ_ORDER_ERRORS: Record<number, SwapError> = {
+  1: INSUFFICIENT_BALANCE,
+  2: err(
+    "unknown",
+    "Token account missing",
+    "The market maker needs an output token account that doesn't exist yet. Try again in a moment.",
+  ),
+  3: NO_ROUTE,
+};
+const ORDER_ERRORS: Record<number, SwapError> = {
+  1: INSUFFICIENT_BALANCE,
+  2: INSUFFICIENT_SOL,
+  3: BELOW_MINIMUM,
+};
 
 /** `/order` returned pricing but `transaction: ""`. Codes depend on the router. */
 export function classifyOrderError(
   order: Pick<OrderResponse, "router" | "errorCode" | "errorMessage">,
 ): SwapError {
-  const fallback = err(
-    "unknown",
-    "Can't build this swap",
-    order.errorMessage ?? "Jupiter quoted a price but couldn't build a transaction.",
+  const errors = order.router === "jupiterz" ? JUPITERZ_ORDER_ERRORS : ORDER_ERRORS;
+  return (
+    errors[order.errorCode ?? 0] ??
+    err(
+      "unknown",
+      "Can't build this swap",
+      order.errorMessage ?? "Jupiter quoted a price but couldn't build a transaction.",
+    )
   );
-  if (order.router === "jupiterz") {
-    switch (order.errorCode) {
-      case 1:
-        return INSUFFICIENT_BALANCE;
-      case 2:
-        return err(
-          "unknown",
-          "Token account missing",
-          "The market maker needs an output token account that doesn't exist yet. Try again in a moment.",
-        );
-      case 3:
-        return NO_ROUTE;
-      default:
-        return fallback;
-    }
-  }
-  switch (order.errorCode) {
-    case 1:
-      return INSUFFICIENT_BALANCE;
-    case 2:
-      return INSUFFICIENT_SOL;
-    case 3:
-      return BELOW_MINIMUM;
-    default:
-      return fallback;
-  }
 }
+
+const EXPIRED_CODES = [-1, -1004, -2003];
+const NOT_LANDED_CODES = [-1000, -2000];
+const NOT_LANDED = err(
+  "unknown",
+  "Transaction didn't land",
+  "The network didn't confirm the transaction in time. No tokens were swapped — try again.",
+);
+const MARKET_MAKER_REJECTED = err(
+  "unknown",
+  "Market maker rejected the swap",
+  "The RFQ market maker declined this fill. Get a fresh quote and try again.",
+);
+/** Failure text → error, checked in order. */
+const EXECUTE_PATTERNS: [RegExp, SwapError][] = [
+  [/slippage|0x1771|custom program error: 6001\b/i, SLIPPAGE],
+  [
+    /insufficient lamports|InsufficientFundsForFee|insufficient funds for (fee|rent)|InsufficientFundsForRent/i,
+    INSUFFICIENT_SOL,
+  ],
+  [/insufficient funds/i, INSUFFICIENT_BALANCE],
+];
 
 /** `/execute` returned `status: "Failed"` (or a 400 with a code). */
 export function classifyExecuteResult(
   result: Pick<ExecuteResponse, "code" | "error" | "signature">,
 ): SwapError {
-  const withSignature = (e: SwapError): SwapError =>
-    result.signature ? { ...e, signature: result.signature } : e;
+  if (EXPIRED_CODES.includes(result.code)) return EXPIRED;
   const message = result.error ?? "";
-
-  if (result.code === -1 || result.code === -1004 || result.code === -2003) return EXPIRED;
-  if (SLIPPAGE_PATTERN.test(message)) return withSignature(SLIPPAGE);
-  if (INSUFFICIENT_SOL_PATTERN.test(message)) return withSignature(INSUFFICIENT_SOL);
-  if (INSUFFICIENT_FUNDS_PATTERN.test(message)) return withSignature(INSUFFICIENT_BALANCE);
-
-  switch (result.code) {
-    case -2004:
-      return err(
-        "unknown",
-        "Market maker rejected the swap",
-        "The RFQ market maker declined this fill. Get a fresh quote and try again.",
-      );
-    case -1000:
-    case -2000:
-      return withSignature(
-        err(
-          "unknown",
-          "Transaction didn't land",
-          "The network didn't confirm the transaction in time. No tokens were swapped — try again.",
-        ),
-      );
-    default:
-      return withSignature(
-        err("unknown", "Swap failed", message || `Jupiter returned error code ${result.code}.`),
-      );
-  }
+  const matched = EXECUTE_PATTERNS.find(([pattern]) => pattern.test(message))?.[1];
+  if (!matched && result.code === -2004) return MARKET_MAKER_REJECTED;
+  const error =
+    matched ??
+    (NOT_LANDED_CODES.includes(result.code)
+      ? NOT_LANDED
+      : err("unknown", "Swap failed", message || `Jupiter returned error code ${result.code}.`));
+  return result.signature ? { ...error, signature: result.signature } : error;
 }
 
 /** Errors thrown by our own /api routes (see lib/api-client.ts). */
-export function classifyApiError(error: {
-  status: number;
-  message: string;
-  code?: number;
-  signature?: string;
-}): SwapError {
-  if (error.status === 0) {
+export function classifyApiError({
+  status,
+  message,
+  code,
+  signature,
+}: Pick<ApiError, "status" | "message" | "code" | "signature">): SwapError {
+  if (status === 0)
     return err("network", "Network error", "Couldn't reach the server. Check your connection.");
-  }
-  if (error.status === 429) {
+  if (status === 429)
     return err(
       "rate_limited",
       "Too many requests",
       "Jupiter's rate limit was hit. Wait a few seconds and try again.",
     );
-  }
-  if (typeof error.code === "number") {
-    return classifyExecuteResult({
-      code: error.code,
-      error: error.message,
-      signature: error.signature,
-    });
-  }
+  if (code !== undefined) return classifyExecuteResult({ code, error: message, signature });
   // Jupiter answers "Failed to get quotes" (400) for dust amounts and unroutable pairs.
-  if (
-    /no route|route not found|could not find any route|failed to get quotes/i.test(error.message)
-  ) {
+  if (/no route|route not found|could not find any route|failed to get quotes/i.test(message))
     return NO_ROUTE;
-  }
-  if (/amount/i.test(error.message) && /small|minimum|min/i.test(error.message)) {
-    return BELOW_MINIMUM;
-  }
-  return err("unknown", "Request failed", error.message);
+  if (/amount/i.test(message) && /small|minimum|min/i.test(message)) return BELOW_MINIMUM;
+  return err("unknown", "Request failed", message);
 }
 
 /** Errors thrown by wallet.signTransaction. */

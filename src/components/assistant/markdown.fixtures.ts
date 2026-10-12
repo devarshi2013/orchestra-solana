@@ -88,9 +88,3 @@ export const FIXTURES = {
     "- **NVDA** returned the most over the year.",
   ].join("\n"),
 } as const;
-
-/** `text` cut into `count` chunks, as a stream would deliver it. */
-export function chunk(text: string, count: number): string[] {
-  const size = Math.ceil(text.length / count);
-  return Array.from({ length: count }, (_, i) => text.slice(i * size, (i + 1) * size));
-}

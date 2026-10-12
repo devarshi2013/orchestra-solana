@@ -2,13 +2,8 @@ import "server-only";
 
 import { z } from "zod";
 
-import {
-  combineKinds,
-  FRIENDLY_MESSAGES,
-  friendlyKind,
-  type FriendlyKind,
-} from "@/lib/friendly-error";
-import { base58AddressSchema, type OrderResponse } from "@/lib/jupiter/schemas";
+import { FRIENDLY_MESSAGES, friendlyKind, type FriendlyKind } from "@/lib/friendly-error";
+import { base58AddressSchema } from "@/lib/jupiter/schemas";
 import { classifyOrderError } from "@/lib/swap/errors";
 import { SOL_MINT, USDC_MINT } from "@/lib/tokens";
 import { toBaseUnits, toUnits, USDC_DECIMALS } from "@/lib/units";
@@ -21,25 +16,23 @@ import {
   fetchPriceChange,
   fetchProfile,
   fetchRatiosTtm,
-  fmpConfigured,
 } from "@/server/market/fmp";
 import { getWalletBalances as readWalletBalances } from "@/server/solana/rpc";
+import { searchStocks, stockUniverse } from "@/server/stocks/universe";
 
-import { pickBest, totalCostPct } from "./best";
-import { listStocks, normalizeSector, resolveTicker, STOCKS } from "./registry";
-import { TIER_LIMITS } from "./sync-core";
-import { ISSUER_NAMES, SECTORS, type StockEntry } from "./types";
+import { normalizeName } from "./group";
+import { ISSUERS } from "./issuers";
+import type { Stock, StockToken } from "./types";
 
 /**
- * Server-side tools over Quill's stock registry (src/lib/stocks), e.g. for an assistant.
- * Every input is Zod-validated. Assets are named by ticker or token symbol
- * and resolved ONLY through the registry: no tool accepts a mint address, so
- * nothing outside the registry can be quoted or reported on.
+ * Server-side tools over the live stock universe (src/server/stocks/universe.ts),
+ * e.g. for an assistant. Every input is Zod-validated. Stocks are named by
+ * company ticker or token symbol and resolved ONLY through the universe: no
+ * tool accepts or returns a mint address.
  *
  * Every tool returns `{ data, reason }`: data, or null with the reason. A
- * missing number is null with an entry in `missing` explaining why; numbers
- * are never estimated or filled in. Market data is cached for 15 minutes;
- * quotes and balances are always live. See docs/market-tools.md.
+ * missing number is null (with an entry in `missing` where it matters);
+ * numbers are never estimated or filled in. Quotes and balances are live.
  */
 
 export type ToolResult<T> =
@@ -47,27 +40,16 @@ export type ToolResult<T> =
   | {
       data: null;
       reason: string;
-      /** For quote failures: which friendly message `reason` is (e.g. to retry a rate limit). */
+      /** For quote and balance failures: which friendly message `reason` is. */
       kind?: FriendlyKind;
     };
 const ok = <T>(data: T): ToolResult<T> => ({ data, reason: null });
-const fail = <T>(reason: string, kind?: FriendlyKind): ToolResult<T> =>
+const fail = (reason: string, kind?: FriendlyKind): ToolResult<never> =>
   kind ? { data: null, reason, kind } : { data: null, reason };
-
-/** Field → why it is null. */
-export type Missing = Record<string, string>;
-
-export const MARKET_DATA_TTL_MS = 15 * 60_000;
-
-const message = (error: unknown) => {
-  if (error instanceof JupiterApiError) {
-    try {
-      return (JSON.parse(error.body) as { error?: string }).error ?? error.message;
-    } catch {
-      return error.message;
-    }
-  }
-  return error instanceof Error ? error.message : String(error);
+/** A failure from an upstream error, as one friendly sentence. */
+const failWith = (error: unknown): ToolResult<never> => {
+  const kind = friendlyKind(error);
+  return fail(FRIENDLY_MESSAGES[kind], kind);
 };
 
 function parse<T>(schema: z.ZodType<T>, input: unknown): { value: T } | { reason: string } {
@@ -77,104 +59,73 @@ function parse<T>(schema: z.ZodType<T>, input: unknown): { value: T } | { reason
     : { reason: `Invalid input: ${z.prettifyError(parsed.error)}` };
 }
 
-const tickerSchema = z
+const nameSchema = z
   .string()
   .trim()
   .min(1)
   .max(20)
-  .regex(/^\$?[A-Za-z0-9.]+$/, "Use a ticker or token symbol, not an address");
+  .regex(/^\$?[A-Za-z0-9.-]+$/, "Use a ticker or token symbol, not an address");
 
-// --- listStocks ---------------------------------------------------------------
+const issuerLabel = (token: StockToken) => (token.issuer ? ISSUERS[token.issuer].label : null);
 
-export const listStocksInput = z
-  .object({
-    /** A standard sector (Technology, Financials, Health Care, …) or a common alias ("tech", "banks"). */
-    sector: z.string().trim().min(1).max(60).optional(),
-    /** Part of an industry name, e.g. "semiconductor", "bank", "oil". */
-    industry: z.string().trim().min(1).max(60).optional(),
-    type: z.enum(["stock", "etf"]).optional(),
-    /** Part of a ticker, token symbol or company name. */
-    search: z.string().trim().min(1).max(60).optional(),
-    /** The least liquid tier to include: "high", "medium" (high + medium) or "low" (all). */
-    minLiquidity: z.enum(["high", "medium", "low"]).optional(),
-  })
-  .strict();
+/** A company as the model sees it: market figures per token, never a mint. */
+const companyView = (stock: Stock) => ({
+  ticker: stock.ticker,
+  name: stock.name,
+  tokens: stock.tokens.map((t) => ({
+    symbol: t.symbol,
+    issuer: issuerLabel(t),
+    priceUsd: t.price,
+    change24hPct: t.change24h,
+    liquidityUsd: t.liquidity,
+    volume24hUsd: t.volume24h,
+    holders: t.holders,
+  })),
+});
 
-/** Most companies returned per call; narrow the filters for more. */
-export const MAX_LISTED = 60;
+// --- searchStocks -------------------------------------------------------------
 
-export type StockListing = {
-  searched: {
-    sectors: string[];
-    industry: string | null;
-    type: string;
-    search: string | null;
-    minLiquidity: string;
-  };
-  total: number;
-  shown: number;
-  companies: {
-    ticker: string;
-    companyName: string;
-    type: "stock" | "etf";
-    sector: string;
-    industry: string | null;
-    liquidityTier: string;
-    preIpo: boolean;
-    issuers: { issuer: string; symbol: string; liquidityTier: string }[];
-  }[];
-};
+const searchInput = z.object({ query: z.string().trim().min(1).max(64) }).strict();
+
+/** Most companies returned per search. */
+const MAX_FOUND = 25;
 
 /**
- * The registry's companies (every tokenized stock and ETF buyable through
- * Jupiter), filtered, most liquid first. Never returns mints.
+ * Listed companies matching `query`: an exact ticker or token symbol first,
+ * then Jupiter's token search (names, symbols), most relevant first.
  */
-export async function listStocksTool(input: unknown = {}): Promise<ToolResult<StockListing>> {
-  const args = parse(listStocksInput, input);
+export async function searchStocksTool(input: unknown) {
+  const args = parse(searchInput, input);
   if ("reason" in args) return fail(args.reason);
-  const filter = args.value;
-  const sector = filter.sector ? normalizeSector(filter.sector) : null;
-  if (filter.sector && !sector) {
-    return fail(`Unknown sector "${filter.sector}". Use one of: ${SECTORS.join(", ")}.`);
+  const { query } = args.value;
+  try {
+    const [{ byName }, found] = await Promise.all([stockUniverse(), searchStocks(query)]);
+    const exact = byName.get(normalizeName(query));
+    const companies = [...new Set([...(exact ? [exact] : []), ...found])];
+    return ok({
+      query,
+      total: companies.length,
+      companies: companies.slice(0, MAX_FOUND).map(companyView),
+    });
+  } catch (error) {
+    console.error("[tools] search failed", error);
+    return failWith(error);
   }
-  const matches = listStocks(filter);
-  return ok({
-    searched: {
-      sectors: sector ? [sector] : ["all sectors"],
-      industry: filter.industry ?? null,
-      type: filter.type ?? "stocks and ETFs",
-      search: filter.search ?? null,
-      minLiquidity: filter.minLiquidity ?? "low (all tiers)",
-    },
-    total: matches.length,
-    shown: Math.min(matches.length, MAX_LISTED),
-    companies: matches.slice(0, MAX_LISTED).map((c) => ({
-      ticker: c.ticker,
-      companyName: c.companyName,
-      type: c.type,
-      sector: c.sector,
-      industry: c.industry,
-      liquidityTier: c.liquidityTier,
-      preIpo: c.preIpo,
-      issuers: c.issuers.map((i) => ({
-        issuer: ISSUER_NAMES[i.issuer],
-        symbol: i.symbol,
-        liquidityTier: i.liquidityTier,
-      })),
-    })),
-  });
 }
 
 // --- getStockMetrics ----------------------------------------------------------
 
-export const tickersInput = z.array(tickerSchema).min(1).max(20);
+const tickersInput = z.array(nameSchema).min(1).max(20);
+
+const MARKET_DATA_TTL_MS = 15 * 60_000;
+
+/** Field → why it is null. */
+type Missing = Record<string, string>;
 
 export type StockMetrics = {
   /** The real company's ticker. */
   ticker: string;
   name: string | null;
-  /** Tokenized versions in the registry. */
-  tokens: { symbol: string; issuer: string }[];
   isEtf: boolean | null;
   marketCapUsd: number | null;
   peRatio: number | null;
@@ -194,20 +145,18 @@ const settle = async <T>(promise: Promise<T>): Promise<{ value: T | null; error?
   try {
     return { value: await promise };
   } catch (error) {
-    return { value: null, error: message(error) };
+    return { value: null, error: error instanceof Error ? error.message : String(error) };
   }
 };
 
-async function stockMetrics(
-  ticker: string,
-  tokens: StockEntry[],
-): Promise<ToolResult<StockMetrics>> {
-  const key = (what: string) => `fmp:${what}:${ticker}`;
+async function stockMetrics(ticker: string): Promise<ToolResult<StockMetrics>> {
+  const load = <T>(what: string, fetch: (ticker: string) => Promise<T>) =>
+    settle(cached(`fmp:${what}:${ticker}`, MARKET_DATA_TTL_MS, () => fetch(ticker)));
   const [profile, change, ratios, growth] = await Promise.all([
-    settle(cached(key("profile"), MARKET_DATA_TTL_MS, () => fetchProfile(ticker))),
-    settle(cached(key("change"), MARKET_DATA_TTL_MS, () => fetchPriceChange(ticker))),
-    settle(cached(key("ratios"), MARKET_DATA_TTL_MS, () => fetchRatiosTtm(ticker))),
-    settle(cached(key("growth"), MARKET_DATA_TTL_MS, () => fetchAnnualGrowth(ticker))),
+    load("profile", fetchProfile),
+    load("change", fetchPriceChange),
+    load("ratios", fetchRatiosTtm),
+    load("growth", fetchAnnualGrowth),
   ]);
   const all = [profile, change, ratios, growth];
   if (all.every((r) => r.value === null)) {
@@ -219,7 +168,7 @@ async function stockMetrics(
   const missing: Missing = {};
   /** The value, or null with the reason recorded. */
   const field = <T>(name: string, value: T | null | undefined, why: string): T | null => {
-    if (value === null || value === undefined) {
+    if (value == null) {
       missing[name] = why;
       return null;
     }
@@ -235,8 +184,9 @@ async function stockMetrics(
     missing.peRatio = "Not applicable to an ETF or fund";
     missing.revenueGrowthPct = "Not applicable to an ETF or fund";
   } else {
+    // The stable API names it priceToEarningsRatioTTM; older responses peRatioTTM.
     const pe = ratios.value?.priceToEarningsRatioTTM ?? ratios.value?.peRatioTTM;
-    if (pe !== null && pe !== undefined && pe <= 0) {
+    if (pe != null && pe <= 0) {
       missing.peRatio = "Negative earnings: P/E isn't meaningful";
     } else {
       peRatio = field("peRatio", pe, absent(ratios, "P/E"));
@@ -244,15 +194,14 @@ async function stockMetrics(
     const fraction = growth.value?.revenueGrowth ?? growth.value?.growthRevenue;
     revenueGrowthPct = field(
       "revenueGrowthPct",
-      fraction === null || fraction === undefined ? null : fraction * 100,
+      fraction == null ? null : fraction * 100,
       absent(growth, "revenue growth"),
     );
   }
 
   return ok({
     ticker,
-    name: profile.value?.companyName ?? tokens[0]?.companyName ?? null,
-    tokens: tokens.map((t) => ({ symbol: t.symbol, issuer: ISSUER_NAMES[t.issuer] })),
+    name: field("name", profile.value?.companyName, absent(profile, "company name")),
     isEtf,
     marketCapUsd: field("marketCapUsd", profile.value?.marketCap, absent(profile, "market cap")),
     peRatio,
@@ -267,47 +216,37 @@ async function stockMetrics(
 }
 
 /**
- * Fundamentals and returns for the real companies behind tokenized stocks in
- * the registry (by ticker, e.g. NVDA, or token symbol, e.g. NVDAx).
+ * Fundamentals and returns for the real companies behind listed stocks (by
+ * ticker, e.g. NVDA, or token symbol, e.g. NVDAx). Offered only when
+ * MARKET_DATA_API_KEY is set.
  */
 export async function getStockMetrics(
   input: unknown,
 ): Promise<ToolResult<PerTicker<StockMetrics>[]>> {
   const args = parse(tickersInput, input);
   if ("reason" in args) return fail(args.reason);
-  const results = await Promise.all(
-    args.value.map(async (ticker): Promise<PerTicker<StockMetrics>> => {
-      // Any issuer's token (or the bare ticker) means the same company.
-      const found = resolveTicker(ticker);
-      if (!found.ok) return { ticker, ...fail<StockMetrics>(found.reason) };
-      if (found.candidates.every((c) => c.preIpo)) {
-        return {
-          ticker,
-          ...fail<StockMetrics>(
-            "A private company (pre-IPO PreStocks token): there's no public market data for it",
-          ),
-        };
-      }
-      if (!fmpConfigured()) {
-        return {
-          ticker,
-          ...fail<StockMetrics>(
-            "Stock fundamentals need MARKET_DATA_API_KEY (Financial Modeling Prep)",
-          ),
-        };
-      }
-      const tokens = STOCKS.filter((s) => s.ticker === found.ticker);
-      return { ticker, ...(await stockMetrics(found.ticker, tokens)) };
-    }),
-  );
-  return ok(results);
+  try {
+    const { byName } = await stockUniverse();
+    const results = await Promise.all(
+      args.value.map(async (name): Promise<PerTicker<StockMetrics>> => {
+        const stock = byName.get(normalizeName(name));
+        if (!stock) return { ticker: name, ...fail(`${name} isn't a listed stock`) };
+        return { ticker: name, ...(await stockMetrics(stock.ticker)) };
+      }),
+    );
+    return ok(results);
+  } catch (error) {
+    console.error("[tools] metrics failed", error);
+    return failWith(error);
+  }
 }
 
 // --- getSwapQuote -------------------------------------------------------------
 
-export const swapQuoteInput = z
+const swapQuoteInput = z
   .object({
-    ticker: tickerSchema,
+    /** A token symbol (that token) or a company ticker (all its tokens). */
+    symbol: nameSchema,
     /** USDC to spend, in whole USDC. */
     usdcAmount: z.number().finite().positive().max(1_000_000),
     /** The wallet that would swap (Jupiter sizes fees and checks balances for it). */
@@ -315,69 +254,143 @@ export const swapQuoteInput = z
   })
   .strict();
 
-export type SwapQuote = {
+export type TokenQuote = {
   ticker: string;
   companyName: string;
-  /** The token chosen: the most liquid issuer's token that Jupiter could quote. */
   symbol: string;
-  issuer: string;
-  liquidityTier: string;
+  issuer: string | null;
   usdcIn: number;
   /** Tokens out before slippage. */
   expectedOut: number;
   /** Least tokens out after the slippage tolerance; null when Jupiter doesn't say. */
   minimumOut: number | null;
-  /** Absolute price impact, percent. */
+  /** Absolute price impact, percent; null when Jupiter doesn't say. */
   priceImpactPct: number | null;
-  /** Thin when price impact exceeds the medium-liquidity limit. */
-  thinLiquidity: boolean;
   feeBps: number | null;
-  /** Signature + priority + rent fees the wallet pays, in SOL. */
+  /** Signature + priority + rent fees the wallet pays, in SOL; null when Jupiter doesn't say. */
   networkFeesSol: number | null;
   gasless: boolean;
   router: string;
-  /** Set when Jupiter priced it but couldn't build it for this wallet (e.g. too little USDC). */
+  /** The wallet's USDC when quoted; null when it couldn't be read. */
+  usdcBalance: number | null;
+  /** Why this quote can't be bought as is (one friendly sentence), or null. */
   warning: string | null;
-  /** The issuers' tokens that were quoted (in order until one worked), cheapest first. */
-  issuersCompared: {
-    symbol: string;
-    issuer: string;
-    totalCostPct: number | null;
-    note: string | null;
-  }[];
   /** Always false: this tool only quotes. */
   executed: false;
   quotedAt: string;
 };
 
-/** The chosen token (with its registry mint) and its quote; the mint never goes to the model. */
-export type BestQuote = { entry: StockEntry; quote: SwapQuote };
+/** A token's quote with the token itself (including its mint, which never goes to the model). */
+export type QuotedToken = { stock: Stock; token: StockToken; quote: TokenQuote };
 
-const MAX_CANDIDATES = 4;
 /** A successful quote is reused for this long, so the same quote isn't asked for twice. */
 const QUOTE_TTL_MS = 10_000;
-const quoteCache = new Map<string, { at: number; result: Promise<ToolResult<BestQuote>> }>();
 
-const TIER_ORDER = { high: 0, medium: 1, low: 2 } as const;
+/** The fees in SOL, or null when Jupiter left any of them out. */
+const lamportsToSol = (lamports: (number | null | undefined)[]) =>
+  lamports.some((l) => l == null) ? null : lamports.reduce<number>((sum, l) => sum + l!, 0) / 1e9;
 
-/**
- * Live Jupiter /order quotes for spending `usdcAmount` USDC on a company from
- * `wallet`. The issuers' tokens (e.g. BACon, BACx) are tried one after another,
- * most liquid first, stopping at the first one Jupiter can build a swap for.
- * Failures come back as one plain reason (`kind` says which), never Jupiter's
- * raw errors; the details are logged on the server. Successful quotes are
- * cached for 10 s. Never signs, sends or returns a transaction.
- */
-export function quoteBestIssuer(
-  ticker: string,
+async function quoteFresh(
+  stock: Stock,
+  token: StockToken,
   usdcAmount: number,
   wallet: string,
-  options: { retryRateLimit?: boolean } = {},
-): Promise<ToolResult<BestQuote>> {
-  const key = `${ticker.toUpperCase()}|${usdcAmount}|${wallet}`;
+): Promise<ToolResult<QuotedToken>> {
+  // RFQ (JupiterZ) quotes don't check the taker's balance, so read it ourselves.
+  const balance = readWalletBalances(wallet).then(
+    (balances) => toUnits(balances[USDC_MINT]?.amount ?? "0", USDC_DECIMALS),
+    (error: unknown) => {
+      console.error("[quote] balance read failed", error);
+      return null;
+    },
+  );
+  let order;
+  try {
+    order = await paced(() =>
+      getOrder({
+        inputMint: USDC_MINT,
+        outputMint: token.mint,
+        amount: toBaseUnits(usdcAmount, USDC_DECIMALS).toString(),
+        taker: wallet,
+      }),
+    );
+  } catch (error) {
+    // JupiterApiError details are already logged by jupiterFetch.
+    if (!(error instanceof JupiterApiError)) console.error(`[quote] ${token.symbol} failed`, error);
+    return failWith(error);
+  }
+  if (!order.outAmount || order.outAmount === "0") {
+    return fail(FRIENDLY_MESSAGES.no_route, "no_route");
+  }
+  const unbuildable = order.transaction === "" ? classifyOrderError(order) : null;
+  if (unbuildable) {
+    console.error(
+      `[quote] ${token.symbol} unbuildable: router=${order.router} code=${order.errorCode} ${order.errorMessage ?? ""}`,
+    );
+  }
+  const usdcBalance = await balance;
+  const warning = unbuildable
+    ? FRIENDLY_MESSAGES[friendlyKind(unbuildable)]
+    : usdcBalance === null
+      ? "Your USDC balance couldn't be read, so this can't be checked."
+      : usdcBalance < usdcAmount
+        ? FRIENDLY_MESSAGES.insufficient_usdc
+        : null;
+  return ok({
+    stock,
+    token,
+    quote: {
+      ticker: stock.ticker,
+      companyName: stock.name,
+      symbol: token.symbol,
+      issuer: issuerLabel(token),
+      usdcIn: toUnits(order.inAmount, USDC_DECIMALS),
+      expectedOut: toUnits(order.outAmount, token.decimals),
+      minimumOut: order.otherAmountThreshold
+        ? toUnits(order.otherAmountThreshold, token.decimals)
+        : null,
+      priceImpactPct: order.priceImpact == null ? null : Math.abs(order.priceImpact),
+      feeBps: order.feeBps ?? null,
+      networkFeesSol: lamportsToSol([
+        order.signatureFeeLamports,
+        order.prioritizationFeeLamports,
+        order.rentFeeLamports,
+      ]),
+      gasless: Boolean(order.gasless),
+      router: order.router,
+      usdcBalance,
+      warning,
+      executed: false,
+      quotedAt: new Date().toISOString(),
+    },
+  });
+}
+
+const quoteCache = new Map<string, { at: number; result: Promise<ToolResult<QuotedToken>> }>();
+
+/**
+ * A live Jupiter /order quote for spending `usdcAmount` USDC on one stock
+ * token (by its symbol) from `wallet`. Failures come back as one plain reason
+ * (`kind` says which), never Jupiter's raw errors. Successful quotes are reused
+ * for 10 s. Never signs, sends or returns a transaction.
+ */
+export async function quoteToken(
+  symbol: string,
+  usdcAmount: number,
+  wallet: string,
+): Promise<ToolResult<QuotedToken>> {
+  let found;
+  try {
+    found = (await stockUniverse()).bySymbol.get(normalizeName(symbol));
+  } catch (error) {
+    console.error("[quote] universe failed", error);
+    return failWith(error);
+  }
+  if (!found) return fail(`${symbol} isn't a listed stock token`);
+  const key = `${found.token.mint}|${usdcAmount}|${wallet}`;
   const hit = quoteCache.get(key);
   if (hit && Date.now() - hit.at < QUOTE_TTL_MS) return hit.result;
-  const result = quoteFresh(ticker, usdcAmount, wallet, options);
+  const result = quoteFresh(found.stock, found.token, usdcAmount, wallet);
   quoteCache.set(key, { at: Date.now(), result });
   // Only successes are reused: a failure is asked again next time.
   void result.then((r) => {
@@ -387,148 +400,43 @@ export function quoteBestIssuer(
   return result;
 }
 
-async function quoteFresh(
-  ticker: string,
-  usdcAmount: number,
-  wallet: string,
-  options: { retryRateLimit?: boolean },
-): Promise<ToolResult<BestQuote>> {
-  const found = resolveTicker(ticker);
-  if (!found.ok) return fail(found.reason);
-  // RFQ (JupiterZ) quotes don't check the taker's balance, so read it ourselves.
-  const usdcHeld = readWalletBalances(wallet)
-    .then((balances) => toUnits(balances[USDC_MINT]?.amount ?? "0", USDC_DECIMALS))
-    .catch(() => null);
-
-  const candidates = [...found.candidates]
-    .sort((a, b) => TIER_ORDER[a.liquidityTier] - TIER_ORDER[b.liquidityTier])
-    .slice(0, MAX_CANDIDATES);
-  const quoted: {
-    entry: StockEntry;
-    order: OrderResponse | null;
-    kind: FriendlyKind | null;
-  }[] = [];
-  for (const entry of candidates) {
-    try {
-      // One at a time (paced within Jupiter's rate limit), stopping at the first that works.
-      const order = await paced(() =>
-        getOrder(
-          {
-            inputMint: USDC_MINT,
-            outputMint: entry.mint,
-            amount: toBaseUnits(usdcAmount, USDC_DECIMALS).toString(),
-            taker: wallet,
-          },
-          undefined,
-          options,
-        ),
-      );
-      const unbuildable = order.transaction === "" ? classifyOrderError(order) : null;
-      if (unbuildable) {
-        console.error(
-          `[quote] ${entry.symbol} unbuildable: router=${order.router} code=${order.errorCode} ${order.errorMessage ?? ""}`,
-        );
-      }
-      const kind = unbuildable ? friendlyKind(unbuildable) : null;
-      quoted.push({ entry, order, kind });
-      if (!kind && order.outAmount && order.outAmount !== "0") break;
-    } catch (error) {
-      // JupiterApiError details are already logged by jupiterFetch.
-      if (!(error instanceof JupiterApiError))
-        console.error(`[quote] ${entry.symbol} failed`, error);
-      quoted.push({ entry, order: null, kind: friendlyKind(error) });
-    }
-  }
-  const held = await usdcHeld;
-  const views = quoted.map(({ entry, order, kind }) => {
-    const impact =
-      order?.priceImpact === null || order?.priceImpact === undefined
-        ? null
-        : Math.abs(order.priceImpact);
-    return {
-      entry,
-      order,
-      impact,
-      kind,
-      note: kind ? FRIENDLY_MESSAGES[kind] : null,
-      candidate: {
-        symbol: entry.symbol,
-        liquidityTier: entry.liquidityTier,
-        priceImpactPct: impact,
-        feeBps: order?.feeBps ?? null,
-        // Unbuildable for this wallet (e.g. too little USDC) still prices the route;
-        // prefer buildable ones, but fall back to the best price when none is.
-        buildable: Boolean(order && order.outAmount && order.outAmount !== "0"),
-      },
-    };
-  });
-  const buildableNow = views.filter((v) => v.candidate.buildable && v.note === null);
-  const pool = buildableNow.length > 0 ? buildableNow : views;
-  const bestIndex = pickBest(pool.map((v) => v.candidate));
-  if (bestIndex === -1) {
-    // One reason for the company, however many of its tokens failed.
-    const kind = combineKinds(views.map((v) => v.kind ?? "no_route"));
-    return fail(FRIENDLY_MESSAGES[kind], kind);
-  }
-  const best = pool[bestIndex]!;
-  const order = best.order!;
-  const lamports = [
-    order.signatureFeeLamports,
-    order.prioritizationFeeLamports,
-    order.rentFeeLamports,
-  ];
-  const issuersCompared = views
-    .map((v) => ({
-      symbol: v.entry.symbol,
-      issuer: ISSUER_NAMES[v.entry.issuer],
-      totalCostPct: Number.isFinite(totalCostPct(v.candidate))
-        ? Number(totalCostPct(v.candidate).toFixed(4))
-        : null,
-      note: v.note,
-    }))
-    .sort((a, b) => (a.totalCostPct ?? Infinity) - (b.totalCostPct ?? Infinity));
-  return ok({
-    entry: best.entry,
-    quote: {
-      ticker: found.ticker,
-      companyName: found.companyName,
-      symbol: best.entry.symbol,
-      issuer: ISSUER_NAMES[best.entry.issuer],
-      liquidityTier: best.entry.liquidityTier,
-      usdcIn: toUnits(order.inAmount, USDC_DECIMALS),
-      expectedOut: toUnits(order.outAmount, best.entry.decimals),
-      minimumOut: order.otherAmountThreshold
-        ? toUnits(order.otherAmountThreshold, best.entry.decimals)
-        : null,
-      priceImpactPct: best.impact,
-      thinLiquidity: best.impact !== null && best.impact > TIER_LIMITS.medium,
-      feeBps: order.feeBps ?? null,
-      networkFeesSol: lamports.every((l) => l === null || l === undefined)
-        ? null
-        : lamports.reduce<number>((sum, l) => sum + (l ?? 0), 0) / 1e9,
-      gasless: Boolean(order.gasless),
-      router: order.router,
-      warning:
-        best.note ??
-        (held !== null && held < usdcAmount ? FRIENDLY_MESSAGES.insufficient_usdc : null),
-      issuersCompared,
-      executed: false,
-      quotedAt: new Date().toISOString(),
-    },
-  });
-}
-
-/** The getSwapQuote tool: the best issuer's quote, without the mint. */
-export async function getSwapQuote(input: unknown): Promise<ToolResult<SwapQuote>> {
+/**
+ * The getSwapQuote tool. A company ticker (NVDA, MU) quotes every one of its
+ * tokens, one after another, and returns them all; any other token symbol
+ * (NVDAx) quotes that token. Mints are never returned.
+ */
+export async function getSwapQuote(input: unknown) {
   const args = parse(swapQuoteInput, input);
   if ("reason" in args) return fail(args.reason);
-  const result = await quoteBestIssuer(args.value.ticker, args.value.usdcAmount, args.value.wallet);
-  return result.data ? ok(result.data.quote) : fail(result.reason);
+  const { symbol, usdcAmount, wallet } = args.value;
+  let universe;
+  try {
+    universe = await stockUniverse();
+  } catch (error) {
+    console.error("[quote] universe failed", error);
+    return failWith(error);
+  }
+  const name = normalizeName(symbol);
+  // A company ticker wins over a token symbol: Backpack's tokens use the bare ticker (MU).
+  const company = universe.byName.get(name);
+  const tokens =
+    company && normalizeName(company.ticker) === name
+      ? company.tokens
+      : [universe.bySymbol.get(name)?.token ?? []].flat();
+  if (tokens.length === 0) return fail(`${symbol} isn't a listed stock or stock token`);
+  const quotes = [];
+  for (const token of tokens) {
+    const result = await quoteToken(token.symbol, usdcAmount, wallet);
+    quotes.push(
+      result.data
+        ? { symbol: token.symbol, quote: result.data.quote, reason: null }
+        : { symbol: token.symbol, quote: null, reason: result.reason },
+    );
+  }
+  return ok({ requested: symbol, quotes });
 }
 
 // --- getWalletBalances --------------------------------------------------------
-
-export const walletInput = base58AddressSchema;
 
 export type WalletBalances = {
   wallet: string;
@@ -538,9 +446,9 @@ export type WalletBalances = {
   readAt: string;
 };
 
-/** USDC and SOL held by `wallet`, read live over RPC. */
+/** USDC and SOL held by `wallet`, read live over RPC (0 when the wallet holds none). */
 export async function getWalletBalances(input: unknown): Promise<ToolResult<WalletBalances>> {
-  const args = parse(walletInput, input);
+  const args = parse(base58AddressSchema, input);
   if ("reason" in args) return fail(args.reason);
   try {
     const balances = await readWalletBalances(args.value);
@@ -554,34 +462,6 @@ export async function getWalletBalances(input: unknown): Promise<ToolResult<Wall
     });
   } catch (error) {
     console.error("[wallet] balance read failed", error);
-    const kind = friendlyKind(error);
-    return fail(FRIENDLY_MESSAGES[kind === "unknown" ? "network" : kind], kind);
+    return failWith(error);
   }
 }
-
-/** The tools with descriptions and input schemas, e.g. for an assistant's tool list. */
-export const STOCK_TOOLS = {
-  listStocks: {
-    description:
-      "List the tokenized stocks and ETFs buyable through Jupiter, by sector, industry, type, search and minimum liquidity.",
-    input: listStocksInput,
-    run: listStocksTool,
-  },
-  getStockMetrics: {
-    description:
-      "Market cap, P/E, revenue growth and 1M/6M/1Y returns for the companies behind registry stocks.",
-    input: tickersInput,
-    run: getStockMetrics,
-  },
-  getSwapQuote: {
-    description:
-      "A live Jupiter quote for spending USDC on a company: the issuers' tokens tried one at a time, most liquid first, until one works. Never executes.",
-    input: swapQuoteInput,
-    run: getSwapQuote,
-  },
-  getWalletBalances: {
-    description: "A wallet's USDC and SOL balances.",
-    input: walletInput,
-    run: getWalletBalances,
-  },
-} as const;

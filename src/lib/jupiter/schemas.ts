@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Shapes of Jupiter responses as Quill uses them (see docs/jupiter-api.md).
+ * Shapes of Jupiter responses as Tickertape uses them.
  * Unknown keys are stripped, so these double as the trimmed payloads our /api
  * routes return to the browser. Client-safe: no server imports.
  */
@@ -12,7 +12,7 @@ export const base58AddressSchema = z
 
 const stringish = z.union([z.string(), z.number()]).transform(String);
 
-export const routePlanStepSchema = z.object({
+const routePlanStepSchema = z.object({
   swapInfo: z.object({
     label: z.string().nullish(),
     inputMint: z.string(),
@@ -62,7 +62,6 @@ export const orderResponseSchema = z.object({
 });
 
 export type OrderResponse = z.infer<typeof orderResponseSchema>;
-export type RoutePlanStep = z.infer<typeof routePlanStepSchema>;
 
 export const executeResponseSchema = z.object({
   status: z.enum(["Success", "Failed"]),
@@ -94,6 +93,8 @@ export const mintInformationSchema = z.object({
   usdPrice: z.number().nullish(),
   mcap: z.number().nullish(),
   holderCount: z.number().nullish(),
+  /** When Jupiter first saw the token (ISO date). */
+  createdAt: z.string().nullish(),
   stats24h: z
     .object({
       priceChange: z.number().nullish(),

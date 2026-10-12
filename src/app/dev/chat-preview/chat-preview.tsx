@@ -25,11 +25,13 @@ const SAMPLES: { title: string; text: string; streaming?: boolean }[] = [
 
 export function ChatPreview() {
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-6 px-4 py-8">
+    <main className="mx-auto w-full max-w-3xl space-y-6 px-4 pt-28 pb-12">
       {SAMPLES.map((s) => (
         <section key={s.title} className="space-y-2">
-          <h2 className="font-mono text-xs text-muted-foreground uppercase">{s.title}</h2>
-          <div className="rounded-2xl border bg-card p-4 text-sm">
+          <h2 className="text-[12px] font-semibold tracking-[0.08em] text-text-low uppercase">
+            {s.title}
+          </h2>
+          <div className="text-body-md rounded-[24px] border border-border-medium bg-white p-5 text-text-high shadow-[0_8px_40px_rgba(0,0,0,0.03)]">
             <Markdown text={s.text} streaming={s.streaming} />
           </div>
         </section>

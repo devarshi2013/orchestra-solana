@@ -2,13 +2,19 @@ import type Anthropic from "@anthropic-ai/sdk";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
+import type { StreamEvent } from "@/lib/assistant/views";
 import { base58AddressSchema } from "@/lib/jupiter/schemas";
 import { anthropic } from "@/server/agent/client";
 import { runGuestTool } from "@/server/agent/guest";
-import { runAgentTurn, type AgentEvent } from "@/server/agent/loop";
+import { runAgentTurn } from "@/server/agent/loop";
 import { agentRateLimiter } from "@/server/agent/rate-limit";
-import { runAgentTool } from "@/server/agent/tools";
-import { errorResponse, validationErrorResponse } from "@/server/http";
+import { runAgentTool, shortWallet } from "@/server/agent/tools";
+import {
+  clientIp,
+  errorResponse,
+  unidentifiedClient,
+  validationErrorResponse,
+} from "@/server/http";
 
 export const maxDuration = 300;
 
@@ -33,17 +39,6 @@ const bodySchema = z.object({
   history: historySchema.default([]),
 });
 
-type StreamEvent =
-  | AgentEvent
-  | { type: "history"; messages: Anthropic.Beta.Messages.BetaMessageParam[] }
-  | { type: "done" };
-
-/** Best-effort client IP (Vercel sets x-forwarded-for) for rate limiting. */
-const clientIp = (request: NextRequest) =>
-  request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-  request.headers.get("x-real-ip") ||
-  "local";
-
 /**
  * POST { wallet, message, history } → a Server-Sent Events stream of the
  * assistant's reply: text deltas, progress notes, tool activity, the
@@ -52,7 +47,7 @@ const clientIp = (request: NextRequest) =>
  * There is no database: the browser keeps the conversation and sends it back.
  * Thinking blocks are signed by the API, so they can't be altered; edited tool
  * results could only mislead the sender's own chat, and every plan is
- * re-validated here against the live registry and wallet before it's shown.
+ * re-validated here against the live stock universe and wallet before it's shown.
  * Never trades: buys happen in the browser, each signed by the user's wallet.
  */
 export async function POST(request: NextRequest) {
@@ -74,7 +69,9 @@ export async function POST(request: NextRequest) {
   const { wallet, message } = parsed.data;
   const history = parsed.data.history as unknown as Anthropic.Beta.Messages.BetaMessageParam[];
 
-  const slot = agentRateLimiter.acquire(clientIp(request));
+  const ip = clientIp(request);
+  if (!ip) return unidentifiedClient();
+  const slot = agentRateLimiter.acquire(ip);
   if (!slot.ok) {
     return Response.json(
       { error: { message: slot.reason } },
@@ -111,7 +108,7 @@ export async function POST(request: NextRequest) {
         console.info(
           JSON.stringify({
             event: "agent.run",
-            wallet: wallet ? `${wallet.slice(0, 4)}…${wallet.slice(-4)}` : "guest",
+            wallet: wallet ? shortWallet(wallet) : "guest",
             plan: Boolean(result.plan),
             ...result.usage,
             ms: Date.now() - started,

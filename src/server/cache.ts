@@ -14,8 +14,3 @@ export function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): P
   value.catch(() => entries.delete(key));
   return value;
 }
-
-/** Test helper. */
-export function clearCache(): void {
-  entries.clear();
-}

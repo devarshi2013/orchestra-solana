@@ -2,7 +2,7 @@ import "server-only";
 
 import type { ToolOutcome } from "./tools";
 
-export const NO_WALLET =
+const NO_WALLET =
   "No wallet is connected. Ask the user to connect a Solana wallet to check balances, get swap quotes or make a plan.";
 
 /** Tools that need the user's wallet: balances, quotes for it, and plans checked against it. */

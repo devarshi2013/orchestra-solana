@@ -3,7 +3,12 @@
 import { useCallback, useRef, useState } from "react";
 
 import type { AcceptedPlan } from "@/lib/agent/plan";
-import type { ToolCallView } from "@/lib/assistant/views";
+import type {
+  AgentEvent,
+  StrategyProposal,
+  StreamEvent,
+  ToolCallView,
+} from "@/lib/assistant/views";
 
 import type { BuyItem } from "./use-plan-buy";
 
@@ -17,6 +22,9 @@ export type AssistantTurn = {
   progress: string;
   plan?: AcceptedPlan;
   buy?: SavedBuy;
+  /** A proposed conditional buy, and its id once the user created it. */
+  strategy?: StrategyProposal;
+  strategyId?: string;
   error?: string;
   done: boolean;
   /** When the reply finished (ms), for the note's "as of" line; absent on replies saved before this was recorded. */
@@ -38,10 +46,28 @@ async function* readEvents(body: ReadableStream<Uint8Array>) {
       const chunk = buffer.slice(0, boundary);
       buffer = buffer.slice(boundary + 2);
       const data = chunk.split("\n").find((l) => l.startsWith("data: "));
-      if (data) yield JSON.parse(data.slice(6)) as { type: string } & Record<string, unknown>;
+      if (data) yield JSON.parse(data.slice(6)) as StreamEvent;
     }
   }
 }
+
+type EventChange<E = AgentEvent> = (turn: AssistantTurn, event: E) => Partial<AssistantTurn>;
+
+/** How each event of a reply changes the turn it streams into. */
+const EVENT_CHANGES: { [T in AgentEvent["type"]]: EventChange<Extract<AgentEvent, { type: T }>> } =
+  {
+    text: (turn, { delta }) => ({ text: turn.text + delta, progress: "" }),
+    progress: (_, { text }) => ({ progress: text }),
+    tool: (turn, { id, name, input }) => ({
+      tools: [...turn.tools, { id, name, input, result: null, ok: null }],
+    }),
+    tool_result: (turn, { id, content, ok }) => ({
+      tools: turn.tools.map((call) => (call.id === id ? { ...call, result: content, ok } : call)),
+    }),
+    plan: (_, { plan }) => ({ plan }),
+    strategy: (_, { strategy }) => ({ strategy }),
+    error: (_, { message }) => ({ error: message }),
+  };
 
 /**
  * A conversation with the assistant over POST /api/agent: streamed text,
@@ -100,45 +126,12 @@ export function useAgentChat(wallet: string | null) {
           return;
         }
         for await (const event of readEvents(response.body)) {
-          switch (event.type) {
-            case "text":
-              updateLast((t) => ({ text: t.text + (event.delta as string), progress: "" }));
-              break;
-            case "progress":
-              updateLast(() => ({ progress: event.text as string }));
-              break;
-            case "tool":
-              updateLast((t) => ({
-                tools: [
-                  ...t.tools,
-                  {
-                    id: event.id as string,
-                    name: event.name as string,
-                    input: event.input,
-                    result: null,
-                    ok: null,
-                  },
-                ],
-              }));
-              break;
-            case "tool_result":
-              updateLast((t) => ({
-                tools: t.tools.map((call) =>
-                  call.id === event.id
-                    ? { ...call, result: event.content as string, ok: event.ok as boolean }
-                    : call,
-                ),
-              }));
-              break;
-            case "plan":
-              updateLast(() => ({ plan: event.plan as AcceptedPlan }));
-              break;
-            case "history":
-              setHistory(event.messages as unknown[]);
-              break;
-            case "error":
-              updateLast(() => ({ error: event.message as string }));
-              break;
+          if (event.type === "history") setHistory(event.messages);
+          else if (event.type !== "done") {
+            const change = Object.hasOwn(EVENT_CHANGES, event.type)
+              ? (EVENT_CHANGES[event.type] as EventChange)
+              : undefined;
+            if (change) updateLast((turn) => change(turn, event));
           }
         }
       } catch {

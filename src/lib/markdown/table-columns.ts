@@ -34,16 +34,12 @@ const PERCENT = /^\s*([+−-])?\s*([\d.,]+)\s*%\s*$/;
 const CHANGE_HEADER = /return|change|growth|perf|move|gain|\b(1|3|6)\s?[dwmy]\b|24h|7d|ytd/i;
 
 function rows(table: Element): Element[][] {
-  const out: Element[][] = [];
-  for (const section of table.children) {
-    if (!isElement(section)) continue;
-    const trs =
-      section.tagName === "tr" ? [section] : section.children.filter((c) => isElement(c, "tr"));
-    for (const tr of trs as Element[]) {
-      out.push(tr.children.filter((c): c is Element => isElement(c, "td") || isElement(c, "th")));
-    }
-  }
-  return out;
+  return table.children
+    .filter((section) => isElement(section))
+    .flatMap((section) =>
+      section.tagName === "tr" ? [section] : section.children.filter((c) => isElement(c, "tr")),
+    )
+    .map((tr) => tr.children.filter((c) => isElement(c, "td") || isElement(c, "th")));
 }
 
 function annotate(table: Element) {

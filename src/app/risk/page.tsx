@@ -1,22 +1,39 @@
 import type { Metadata } from "next";
 
 import { ProsePage } from "@/components/layout/prose-page";
-import { DISCLOSURE_POINTS } from "@/lib/assistant/disclosure";
 
 export const metadata: Metadata = {
   title: "Risk disclosure",
-  description: "The risks of using Quill and buying tokenized stocks on Solana.",
+  description: "The risks of using Tickertape and buying tokenized stocks on Solana.",
 };
+
+const POINTS = [
+  {
+    title: "AI can be wrong",
+    text: "The assistant can misread data, miss context or make mistakes. Check the data it used (shown under each answer) and every amount before you buy.",
+  },
+  {
+    title: "Not financial advice",
+    text: "Plans are research generated from live market data, not a recommendation suited to your situation. You decide, and you sign every trade yourself.",
+  },
+  {
+    title: "Tokenized stocks are securities",
+    text: "Tokenized stocks are securities, and each issuer sets who may buy them: most aren't available to US persons, and many other countries restrict them. Some tokens aren't plain shares: leveraged or inverse products, or exposure to private companies through an issuer structure. Only buy them if you're eligible where you live.",
+  },
+  {
+    title: "You can lose money",
+    text: "Stock prices can fall sharply, and tokenized stocks add on-chain risks: issuer pauses, thin liquidity and price gaps outside US market hours.",
+  },
+];
 
 export default function RiskPage() {
   return (
     <ProsePage eyebrow="Before you buy" title="Risk disclosure" updated="October 2026">
       <p>
-        Quill is research software. It suggests tokenized stocks and shows live quotes, but every
-        purchase is a swap you review and sign in your own wallet. These are the same points you
-        accept before using the assistant.
+        Tickertape is research software. It suggests tokenized stocks and shows live quotes, but
+        every purchase is a swap you review and sign in your own wallet.
       </p>
-      {DISCLOSURE_POINTS.map((point) => (
+      {POINTS.map((point) => (
         <section key={point.title}>
           <h2>{point.title}</h2>
           <p>{point.text}</p>
@@ -31,17 +48,9 @@ export default function RiskPage() {
           <li>Transactions on Solana are final once confirmed.</li>
         </ul>
       </section>
-      <p className="text-sm text-muted-foreground">
-        Issuer details and eligibility rules are summarised in the{" "}
-        <a
-          href="https://github.com/devarshi2013/orchestra-solana/blob/main/docs/tokenized-stocks.md"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary-text underline underline-offset-2"
-        >
-          tokenized stocks notes
-        </a>
-        . Read the issuers&apos; own documents before buying.
+      <p className="text-body-md text-text-low">
+        Each issuer sets its own eligibility rules. Read the issuers&apos; own documents before
+        buying.
       </p>
     </ProsePage>
   );

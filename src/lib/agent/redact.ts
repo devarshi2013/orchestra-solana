@@ -1,7 +1,7 @@
 /** A Solana address or mint: base58, 32-44 characters. */
 const ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const EDGE_PUNCTUATION = /^[("'`[{<]*|[)"'`\]}>.,;:!?]*$/g;
-export const REDACTED = "[address removed]";
+const REDACTED = "[address removed]";
 
 /**
  * A streaming filter that replaces anything shaped like a Solana address in
@@ -19,11 +19,7 @@ export function createAddressRedactor() {
     /** Returns the text that is safe to emit now. */
     push(delta: string): string {
       pending += delta;
-      const lastBreak = Math.max(
-        pending.lastIndexOf(" "),
-        pending.lastIndexOf("\n"),
-        pending.lastIndexOf("\t"),
-      );
+      const lastBreak = Math.max(...[" ", "\n", "\t"].map((c) => pending.lastIndexOf(c)));
       if (lastBreak < 0) return "";
       const ready = pending.slice(0, lastBreak + 1);
       pending = pending.slice(lastBreak + 1);

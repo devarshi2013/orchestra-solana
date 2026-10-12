@@ -19,18 +19,14 @@ const eslintConfig = defineConfig([
     rules: {
       "no-restricted-imports": [
         "error",
-        { patterns: ["@/env/server", "@/server/*", "@/generated/*"] },
+        {
+          paths: [{ name: "@/env", importNames: ["serverEnv", "envProblems"] }],
+          patterns: ["@/server/*", "@/generated/*"],
+        },
       ],
     },
   },
-  globalIgnores([
-    ".next/**",
-    "out/**",
-    "build/**",
-    "coverage/**",
-    "next-env.d.ts",
-    "src/generated/**",
-  ]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "src/generated/**"]),
 ]);
 
 export default eslintConfig;

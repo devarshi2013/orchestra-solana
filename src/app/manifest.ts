@@ -2,20 +2,19 @@ import type { MetadataRoute } from "next";
 
 import { TAGLINE } from "@/lib/brand";
 
-/** Install metadata: the navy nib on white, in the brand's colours. */
+/** Install metadata: the white mark on black (src/app/icon.svg), on a white page. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Quill",
-    short_name: "Quill",
+    name: "Tickertape",
+    short_name: "Tickertape",
     description: TAGLINE,
     start_url: "/",
     display: "standalone",
-    background_color: "#07090D",
-    theme_color: "#0F1B2D",
+    background_color: "#FFFFFF",
+    theme_color: "#FFFFFF",
     icons: [
-      { src: "/brand/quill-icon-192.png", sizes: "192x192", type: "image/png" },
-      { src: "/brand/quill-icon-512.png", sizes: "512x512", type: "image/png" },
-      { src: "/brand/quill-q-icon.svg", sizes: "any", type: "image/svg+xml" },
+      { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
+      { src: "/apple-icon", sizes: "180x180", type: "image/png", purpose: "any" },
     ],
   };
 }

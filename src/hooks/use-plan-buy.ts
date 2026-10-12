@@ -1,16 +1,12 @@
 "use client";
 
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction } from "@solana/web3.js";
 import { useCallback, useRef, useState } from "react";
 
-import { ApiError, executeSwap, fetchOrder } from "@/lib/api-client";
-import {
-  friendlyError,
-  friendlyKind,
-  MAX_RATE_LIMIT_RETRIES,
-  retryDelayMs,
-} from "@/lib/friendly-error";
+import { useConnection, useWallet } from "@/components/wallet";
+import { showPnlToast } from "@/components/share/pnl-toast";
+import { ApiError, executeSwap, fetchOrder, recordFill } from "@/lib/api-client";
+import { friendlyError } from "@/lib/friendly-error";
 import { base64ToBytes, bytesToBase64 } from "@/lib/solana";
 import {
   classifyApiError,
@@ -25,20 +21,19 @@ import { toBaseUnits, USDC_DECIMALS } from "@/lib/units";
 /** Fresh orders per item when a quote expires before it lands. */
 const MAX_ATTEMPTS = 3;
 
-export type BuyStep =
-  "waiting" | "quoting" | "retrying" | "signing" | "sending" | "bought" | "failed";
+export type BuyStep = "waiting" | "quoting" | "signing" | "sending" | "bought" | "failed";
 
 export type BuyItem = {
   symbol: string;
   name: string;
-  /** From the stock registry via the server's quote (never from the model). */
+  /** From the live stock universe via the server's quote (never from the model). */
   mint: string;
   decimals: number;
   usdcAmount: number;
   step: BuyStep;
   /** Transaction signature, once sent (also for a failed swap that landed). */
   signature: string | null;
-  /** Tokens received, base units. */
+  /** Tokens received, base units, as /execute reported them; null when it didn't say. */
   outAmount: string | null;
   /** One friendly sentence (lib/friendly-error.ts); never a raw API error. */
   error: string | null;
@@ -94,27 +89,17 @@ export function usePlanBuy(saved?: { items: BuyItem[]; stopped: string | null })
           for (let attempt = 1; attempt <= MAX_ATTEMPTS && !done; attempt++) {
             update(index, { step: "quoting", error: null });
             let order;
-            // A rate limit is retried up to 3 times (1 s, 2 s, 4 s), showing "Retrying…".
-            for (let retry = 0; ; retry++) {
-              try {
-                order = await fetchOrder({
-                  inputMint: USDC_MINT,
-                  outputMint: item.mint,
-                  amount: toBaseUnits(item.usdcAmount, USDC_DECIMALS).toString(),
-                  taker: publicKey.toBase58(),
-                });
-                break;
-              } catch (error) {
-                if (friendlyKind(error) !== "rate_limited" || retry >= MAX_RATE_LIMIT_RETRIES) {
-                  update(index, { step: "failed", error: fail(item.symbol, "order", error) });
-                  break;
-                }
-                console.error(`[buy] ${item.symbol} order rate-limited, retrying`, error);
-                update(index, { step: "retrying" });
-                await new Promise((resolve) => setTimeout(resolve, retryDelayMs(retry + 1)));
-              }
+            try {
+              order = await fetchOrder({
+                inputMint: USDC_MINT,
+                outputMint: item.mint,
+                amount: toBaseUnits(item.usdcAmount, USDC_DECIMALS).toString(),
+                taker: publicKey.toBase58(),
+              });
+            } catch (error) {
+              update(index, { step: "failed", error: fail(item.symbol, "order", error) });
+              break;
             }
-            if (!order) break;
             if (!order.transaction) {
               update(index, {
                 step: "failed",
@@ -136,7 +121,13 @@ export function usePlanBuy(saved?: { items: BuyItem[]; stopped: string | null })
               return;
             }
             // The wallet prompt may have outlived the quote: get a fresh one.
-            const blockHeight = await connection.getBlockHeight("confirmed").catch(() => undefined);
+            let blockHeight: number;
+            try {
+              blockHeight = await connection.getBlockHeight("confirmed");
+            } catch (error) {
+              update(index, { step: "failed", error: fail(item.symbol, "block height", error) });
+              break;
+            }
             if (isOrderExpired(order, { now: Date.now(), blockHeight })) continue;
 
             update(index, { step: "sending" });
@@ -149,8 +140,11 @@ export function usePlanBuy(saved?: { items: BuyItem[]; stopped: string | null })
                 update(index, {
                   step: "bought",
                   signature: result.signature ?? null,
-                  outAmount: result.totalOutputAmount ?? order.outAmount,
+                  outAmount: result.totalOutputAmount ?? null,
                 });
+                // Recorded for the profile's cost basis; checked on-chain by the server.
+                if (result.signature)
+                  void recordFill(result.signature).then((fill) => fill && showPnlToast(fill));
                 done = true;
                 continue;
               }

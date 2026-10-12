@@ -1,47 +1,41 @@
 import Link from "next/link";
 
-import { Wordmark } from "@/components/brand/logo";
-import { GitHubIcon } from "@/components/brand/social-icons";
-import { DitheredFooter } from "@/components/ui/dithered-footer";
+import { TickertapeMark } from "@/components/brand/tickertape-mark";
 
-const REPO = "https://github.com/devarshi2013/orchestra-solana";
-const inline =
-  "df-link rounded-sm text-foreground/80 hover:text-foreground focus-visible:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--df-accent)]";
+const LINKS = [
+  { label: "Explore", href: "/explore" },
+  { label: "Research", href: "/chat" },
+  { label: "GitHub", href: "https://github.com/devarshi2013/orchestra-solana" },
+  { label: "Risk", href: "/risk" },
+  { label: "Terms", href: "/terms" },
+];
 
-/**
- * The site footer: the logo and tagline, three links (ask, browse, GitHub),
- * the dot band, then the "not financial advice" line (which carries the links
- * to the risk disclosure and the terms) and the copyright.
- */
+const LINK =
+  "text-[13px] tracking-[-0.01em] text-ink-muted transition-colors hover:text-text-extra-high";
+
+/** One quiet row: the mark, the links, the copyright. */
 export function SiteFooter() {
   return (
-    <DitheredFooter
-      logo={<Wordmark markClassName="size-7" />}
-      tagline="Ask an AI about tokenized US stocks. Approve every trade in your own wallet."
-      links={[
-        { label: "Ask Quill", href: "/chat" },
-        { label: "Browse stocks", href: "/markets" },
-        { label: "GitHub", href: REPO, icon: <GitHubIcon className="size-4" /> },
-      ]}
-      disclaimer={
-        <>
-          Research only. Not financial advice. Tokenized stocks carry risk, and the AI can be wrong:
-          read the{" "}
-          <Link href="/risk" className={inline}>
-            risk disclosure
-          </Link>{" "}
-          and the{" "}
-          <Link href="/terms" className={inline}>
-            terms
-          </Link>{" "}
-          before you trade.
-        </>
-      }
-      copyright="© 2026 Quill"
-      // No link yet: pass `href` (portfolio, GitHub or X) to make the name clickable.
-      credit={{ name: "Devarshi" }}
-      // Dark navy dots (#0F1B2D); light gray on the dark theme, where navy can't be seen.
-      accent="var(--footer-dots)"
-    />
+    <footer className="border-t border-border-extra-light">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 px-6 py-6">
+        <Link href="/" aria-label="Tickertape home" className="text-text-extra-high">
+          <TickertapeMark className="h-5" />
+        </Link>
+        <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
+          {LINKS.map(({ label, href }) =>
+            href.startsWith("http") ? (
+              <a key={href} href={href} target="_blank" rel="noopener noreferrer" className={LINK}>
+                {label}
+              </a>
+            ) : (
+              <Link key={href} href={href} className={LINK}>
+                {label}
+              </Link>
+            ),
+          )}
+        </nav>
+        <p className="ml-auto text-[13px] text-ink-muted">© 2026 Tickertape</p>
+      </div>
+    </footer>
   );
 }

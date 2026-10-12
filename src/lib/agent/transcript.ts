@@ -1,7 +1,7 @@
 import { redactAddressesInData } from "./redact";
 
 /** Longest tool result shown in a "data used" panel. */
-export const MAX_DISPLAYED_RESULT = 20_000;
+const MAX_DISPLAYED_RESULT = 20_000;
 
 /** A tool result as the browser may show it: addresses redacted, very long results cut. */
 export function displayToolResult(content: string): string {

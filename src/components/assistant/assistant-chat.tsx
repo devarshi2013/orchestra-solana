@@ -1,44 +1,36 @@
 "use client";
 
-import { useWallet } from "@solana/wallet-adapter-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Cpu, HeartPulse, Menu, PanelLeftOpen, Plus, Scale, TrendingUp } from "lucide-react";
+import { Menu, PanelLeftOpen, Plus } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
 
-import { GridOverlay, Orbs } from "@/components/design/effects";
-import { PauseOffscreen } from "@/components/design/text";
-import { Appear, ProgressBar } from "@/components/motion";
-import { Button } from "@/components/ui/button";
+import { useWallet } from "@/components/wallet";
+import { Appear } from "@/components/motion";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAgentChat, type ChatTurn, type SavedBuy } from "@/hooks/use-agent-chat";
+import {
+  useAgentChat,
+  type AssistantTurn,
+  type ChatTurn,
+  type SavedBuy,
+} from "@/hooks/use-agent-chat";
 import { guestChatCount, newChatId, useChatHistory } from "@/hooks/use-chat-history";
 import { usePersistentFlag } from "@/hooks/use-persistent-flag";
 import { chatIdFromPath, GUEST } from "@/lib/assistant/chat-history";
+import { cn } from "@/lib/utils";
 
 import { ChatSidebar } from "./chat-sidebar";
-import { Composer, type ChatCommand } from "./composer";
-import { DisclosureGate } from "./disclosure-gate";
+import { IconButton, SoftButton } from "./controls";
+import { Composer } from "./composer";
 import { PlanCard } from "./plan-card";
-import { EXAMPLES, ResearchIntro } from "./research-intro";
-import { Tip } from "./tip";
+import { StrategyCard } from "./strategy-card";
 import { AssistantTurnView, UserBubble } from "./turn";
 
-/** "/" commands in the command bar: the same example questions the empty screen offers. */
-const COMMAND_META = [
-  { icon: <Cpu className="size-4" />, prefix: "/tech" },
-  { icon: <Scale className="size-4" />, prefix: "/compare" },
-  { icon: <HeartPulse className="size-4" />, prefix: "/health" },
-  { icon: <TrendingUp className="size-4" />, prefix: "/value" },
-];
-const COMMANDS: ChatCommand[] = EXAMPLES.map((prompt, i) => ({
-  ...COMMAND_META[i]!,
-  label: prompt,
-  prompt,
-}));
+/** The chat's text box. */
+const INPUT_ID = "chat-input";
 
-// Named before the rebrand to Quill; kept so the saved preference carries over.
+// Named before the rebrands (to Quill, then Tickertape); kept so the saved preference carries over.
 const COLLAPSED_KEY = "askfirst.sidebar.collapsed";
 /** How long a reload waits for the wallet to reconnect before saying a chat isn't here. */
 const RECONNECT_GRACE_MS = 2_500;
@@ -86,9 +78,9 @@ async function fetchAiTitle(turns: ChatTurn[]): Promise<string | null> {
  * The stock assistant as a full-screen app: chat history in a sidebar (a
  * drawer on phones) and the conversation, where each reply is a research note
  * (data used, live trail, sources) and each plan a trade ticket. An empty
- * chat shows the intro and example questions. Each chat has its
- * own URL (/chat/[id]); /chat is a new chat. History lives in this browser,
- * per wallet, with a guest list before a wallet connects.
+ * chat is just the input. Each chat has its own URL (/chat/[id]); /chat is a
+ * new chat. History lives in this browser, per wallet, with a guest list
+ * before a wallet connects.
  */
 export function ChatApp() {
   const { publicKey, connecting, wallet: selectedWallet } = useWallet();
@@ -100,7 +92,7 @@ export function ChatApp() {
   const chat = useAgentChat(wallet);
   const { turns, busy } = chat;
 
-  // "Ask Quill about NVDA" on the home page arrives as ?q=…: pre-fill it, never auto-send.
+  // "Ask Tickertape about NVDA" on the home page arrives as ?q=…: pre-fill it, never auto-send.
   const [input, setInput] = useState(prefillFromUrl);
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -230,24 +222,19 @@ export function ChatApp() {
     if (!routeId) go(`/chat/${id}`, true);
   };
 
-  const { updateTurn } = chat;
-  const { patchTurn } = history;
-  const recordBuy = useCallback(
-    (index: number, buy: SavedBuy) => {
-      if (live) updateTurn(index, { buy });
-      else if (viewId) patchTurn(viewId, index, { buy });
-    },
-    [live, viewId, updateTurn, patchTurn],
-  );
+  /** Keeps a change to one reply (a plan's purchase, a created strategy) with its chat. */
+  const patchTurn = (index: number, change: Partial<AssistantTurn>) => {
+    if (live) chat.updateTurn(index, change);
+    else if (viewId) history.patchTurn(viewId, index, change);
+  };
+  const recordBuy = (index: number, buy: SavedBuy) => patchTurn(index, { buy });
 
   // Follow the conversation when a message is sent or another chat opens.
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    // An empty chat starts at the top, so the intro's headline is in view on small screens.
     scroller.current?.scrollTo({ top: viewTurns.length === 0 ? 0 : scroller.current.scrollHeight });
   }, [viewTurns.length, viewId]);
 
-  const activeChat = viewId ? history.chats.find((c) => c.id === viewId) : undefined;
   const missing = routeId !== null && !live && !stored;
   const reconnecting = missing && !settled && (connecting || (selectedWallet !== null && !wallet));
 
@@ -271,211 +258,171 @@ export function ChatApp() {
       onSend={send}
       onStop={chat.cancel}
       busy={busy && live}
-      commands={COMMANDS}
-      placeholder="Ask about any stock, or type / for ideas…"
+      inputId={INPUT_ID}
     />
   );
 
   return (
-    // Fills the screen under the site navbar (4rem); its panels scroll natively (data-chat-app).
-    // data-research scopes this page's button styles (globals.css).
+    // Fills the screen under the fixed site header; its panels scroll natively.
     <div
       data-chat-app
-      data-research
-      className="flex h-[calc(100dvh-4rem-1px)] overflow-hidden bg-background"
+      className="flex h-[calc(100dvh-var(--header-height))] overflow-hidden border-t border-border-extra-light bg-white"
     >
       {!collapsed && (
-        <aside
-          aria-label="Chats"
-          className="hidden w-70 shrink-0 flex-col border-r bg-surface md:flex"
-        >
+        <aside aria-label="Chats" className="hidden w-68 shrink-0 flex-col bg-rail md:flex">
           <ChatSidebar {...sidebarProps} onCollapse={() => setCollapsed(true)} />
         </aside>
       )}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent data-research side="left" className="w-76 max-w-[88vw] gap-0 p-0">
+        <SheetContent side="left" className="w-76 max-w-[88vw] gap-0 bg-rail p-0">
           <SheetTitle className="sr-only">Chats</SheetTitle>
-          <SheetDescription className="sr-only">
-            Your chat history, saved in this browser.
-          </SheetDescription>
+          <SheetDescription className="sr-only">Your saved chats</SheetDescription>
           <ChatSidebar {...sidebarProps} />
         </SheetContent>
       </Sheet>
 
       <div className="relative flex min-w-0 flex-1 flex-col">
-        {busy && live && (
-          <ProgressBar label="Writing a reply" className="absolute inset-x-0 top-12 z-20" />
-        )}
-        <header className="flex h-12 shrink-0 items-center gap-1 border-b px-2 sm:px-3">
-          <Tip label="Chat history">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="md:hidden"
-              onClick={() => setDrawerOpen(true)}
-              aria-label="Open chat history"
-            >
-              <Menu />
-            </Button>
-          </Tip>
+        <div className="absolute top-3 left-3 z-20 flex gap-1">
+          <ChatControl
+            className="md:hidden"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Open chats"
+          >
+            <Menu />
+          </ChatControl>
           {collapsed && (
-            <Tip label="Open sidebar">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="hidden md:inline-flex"
-                onClick={() => setCollapsed(false)}
-                aria-label="Open sidebar"
-              >
-                <PanelLeftOpen />
-              </Button>
-            </Tip>
-          )}
-          <h1 className="min-w-0 flex-1 truncate px-1 font-heading text-sm font-semibold tracking-tight">
-            {activeChat?.title ?? "New chat"}
-          </h1>
-          <Tip label="New chat">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className={collapsed ? "" : "md:hidden"}
-              onClick={newChat}
-              disabled={busy}
-              aria-label="New chat"
+            <ChatControl
+              className="hidden md:flex"
+              onClick={() => setCollapsed(false)}
+              aria-label="Open sidebar"
             >
-              <Plus />
-            </Button>
-          </Tip>
-        </header>
+              <PanelLeftOpen />
+            </ChatControl>
+          )}
+          <ChatControl
+            className={collapsed ? "" : "md:hidden"}
+            onClick={newChat}
+            disabled={busy}
+            aria-label="New chat"
+          >
+            <Plus />
+          </ChatControl>
+        </div>
 
-        <div className="flex min-h-0 flex-1">
-          <div ref={scroller} className="relative isolate min-w-0 flex-1 overflow-y-auto">
-            {/* The home page's backdrop, behind an empty chat only. */}
-            {empty && !missing && (
+        <div ref={scroller} className="min-w-0 flex-1 overflow-y-auto">
+          <div className="mx-auto flex min-h-full w-full max-w-[720px] flex-col px-4 pt-16 sm:px-6">
+            {offerMove && (
               <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[34rem]"
+                role="region"
+                aria-label="Chats from before you connected"
+                className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl bg-soft p-3 pl-4 text-[13.5px] tracking-[-0.01em] text-text-high"
               >
-                <PauseOffscreen className="absolute inset-0">
-                  <Orbs />
-                </PauseOffscreen>
-                <GridOverlay className="[mask-image:radial-gradient(ellipse_at_top,#000_10%,transparent_65%)]" />
+                <p className="min-w-0 flex-1 basis-48">
+                  Move {guestCount} guest {guestCount === 1 ? "chat" : "chats"} to this wallet?
+                </p>
+                <div className="flex gap-1.5">
+                  <SoftButton onClick={() => setDeclined((s) => new Set(s).add(owner))}>
+                    Not now
+                  </SoftButton>
+                  <SoftButton dark onClick={history.adoptGuestChats}>
+                    Move
+                  </SoftButton>
+                </div>
               </div>
             )}
-            <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pt-6 sm:px-6">
-              {offerMove && (
-                <div
-                  role="region"
-                  aria-label="Chats from before you connected"
-                  className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border bg-card p-3.5 text-sm"
-                >
-                  <p className="min-w-0 flex-1 basis-56">
-                    You have {guestCount} {guestCount === 1 ? "chat" : "chats"} from before you
-                    connected this wallet. Move {guestCount === 1 ? "it" : "them"} here?
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDeclined((s) => new Set(s).add(owner))}
-                    >
-                      Not now
-                    </Button>
-                    <Button size="sm" onClick={history.adoptGuestChats}>
-                      Move to this wallet
-                    </Button>
-                  </div>
-                </div>
-              )}
 
-              <DisclosureGate>
-                {/* The intro fades away as the first message is sent. */}
-                <AnimatePresence mode="wait" initial={false}>
-                  {reconnecting ? (
-                    <div
-                      key="opening"
-                      className="space-y-3 py-8"
-                      role="status"
-                      aria-label="Opening chat"
-                    >
-                      <Skeleton className="ml-auto h-9 w-2/3 rounded-2xl" />
-                      <Skeleton className="h-4 w-11/12" />
-                      <Skeleton className="h-4 w-4/5" />
-                    </div>
-                  ) : missing ? (
-                    <div
-                      key="missing"
-                      className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center"
-                    >
-                      <h2 className="font-heading text-2xl font-semibold tracking-tight">
-                        This chat isn&apos;t here
-                      </h2>
-                      <p className="max-w-sm text-sm text-muted-foreground">
-                        Chats are saved in the browser they were made in, for the wallet that made
-                        them. Connect that wallet, or start a new chat.
-                      </p>
-                      <Button onClick={newChat}>
-                        <Plus /> New chat
-                      </Button>
-                    </div>
-                  ) : empty ? (
-                    <motion.div
-                      key="intro"
-                      className="flex flex-1 flex-col justify-center space-y-9 py-6"
-                      initial={{ opacity: 0, y: 16 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8, transition: { duration: 0.18 } }}
-                      transition={{ duration: 0.5, ease: "easeOut" }}
-                    >
-                      <ResearchIntro onAsk={send} disabled={busy} />
-                      {composer}
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="conversation"
-                      className="flex flex-1 flex-col"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.25 }}
-                    >
-                      <div className="flex-1 space-y-8" aria-live="polite">
-                        {viewTurns.map((turn, i) =>
-                          turn.role === "user" ? (
-                            <Appear key={`${viewId ?? "new"}-${i}`}>
-                              <UserBubble text={turn.text} />
-                            </Appear>
-                          ) : (
-                            <Appear key={`${viewId ?? "new"}-${i}`}>
-                              <AssistantTurnView
-                                turn={turn}
-                                cards={
-                                  turn.plan && (
-                                    <Appear y={14} delay={0.05}>
-                                      <PlanCard
-                                        plan={turn.plan}
-                                        saved={turn.buy}
-                                        archived={i < viewArchived}
-                                        onBuyChange={(buy) => recordBuy(i, buy)}
-                                      />
-                                    </Appear>
-                                  )
-                                }
-                              />
-                            </Appear>
-                          ),
+            <AnimatePresence mode="wait" initial={false}>
+              {reconnecting ? (
+                <div
+                  key="opening"
+                  className="space-y-3 py-8"
+                  role="status"
+                  aria-label="Opening chat"
+                >
+                  <Skeleton className="ml-auto h-10 w-2/3 rounded-[18px]" />
+                  <Skeleton className="h-4 w-11/12" />
+                  <Skeleton className="h-4 w-4/5" />
+                </div>
+              ) : missing ? (
+                <div
+                  key="missing"
+                  className="flex flex-1 flex-col items-center justify-center gap-4 pb-24 text-center"
+                >
+                  <p className="text-[15px] tracking-[-0.01em] text-text-high">
+                    This chat isn&apos;t saved here.
+                  </p>
+                  <SoftButton onClick={newChat}>
+                    <Plus className="size-4" /> New chat
+                  </SoftButton>
+                </div>
+              ) : empty ? (
+                <motion.div
+                  key="empty"
+                  className="flex flex-1 flex-col justify-center gap-6 pb-[18vh]"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                >
+                  <h1 className="text-center text-[28px] leading-tight font-medium tracking-[-0.02em] text-text-extra-high">
+                    Ask about any stock
+                  </h1>
+                  {composer}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="conversation"
+                  className="flex flex-1 flex-col"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="flex-1 space-y-8 pb-6" aria-live="polite">
+                    {viewTurns.map((turn, i) => (
+                      <Appear key={`${viewId ?? "new"}-${i}`}>
+                        {turn.role === "user" ? (
+                          <UserBubble text={turn.text} />
+                        ) : (
+                          <AssistantTurnView
+                            turn={turn}
+                            cards={
+                              <>
+                                {turn.plan && (
+                                  <PlanCard
+                                    plan={turn.plan}
+                                    saved={turn.buy}
+                                    archived={i < viewArchived}
+                                    onBuyChange={(buy) => recordBuy(i, buy)}
+                                  />
+                                )}
+                                {turn.strategy && (
+                                  <StrategyCard
+                                    strategy={turn.strategy}
+                                    createdId={turn.strategyId}
+                                    onCreated={(strategyId) => patchTurn(i, { strategyId })}
+                                  />
+                                )}
+                              </>
+                            }
+                          />
                         )}
-                      </div>
-                      <div className="sticky bottom-0 z-10 bg-linear-to-t from-background via-background/90 to-transparent pt-6 pb-4">
-                        {composer}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </DisclosureGate>
-            </div>
+                      </Appear>
+                    ))}
+                  </div>
+                  <div className="sticky bottom-0 z-10 bg-linear-to-t from-white via-white to-white/0 pt-4 pb-5">
+                    {composer}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+/** A round control floating over the conversation (open chats, new chat). */
+function ChatControl({ className, ...props }: ComponentProps<"button">) {
+  return <IconButton className={cn("bg-white shadow-hairline", className)} {...props} />;
 }

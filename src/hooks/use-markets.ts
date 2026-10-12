@@ -3,15 +3,23 @@
 import { useEffect, useState } from "react";
 
 import { friendlyError } from "@/lib/friendly-error";
-import type { Point } from "@/lib/market/series";
-import type { MarketRow } from "@/lib/markets/types";
+import type {
+  ChartWindow,
+  StockHistoryResponse,
+  StockResponse,
+  StockSearchResponse,
+  StocksResponse,
+} from "@/lib/stocks/api";
 
-/** How often live prices are asked for, while the tab is visible. */
-export const PRICE_POLL_MS = 12_000;
+/** How often the stock list is read again while the tab is visible (the server caches it for 60 s). */
+const STOCKS_POLL_MS = 60_000;
 
-export type LivePrice = { price: number; change24h: number | null };
+/** A `.catch` handler that logs `label` with the error, unless the request was cancelled. */
+export const logUnlessAborted = (signal: AbortSignal, label: string) => (e: unknown) => {
+  if (!signal.aborted) console.error(label, e);
+};
 
-async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
+export async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(url, { signal });
   const body = (await response.json().catch(() => null)) as
     (T & { error?: { message: string } }) | null;
@@ -21,32 +29,6 @@ async function getJson<T>(url: string, signal?: AbortSignal): Promise<T> {
     });
   }
   return body;
-}
-
-/** Every company in the screener (from /api/markets, cached on the server for 60 s). */
-export function useMarketList() {
-  const [rows, setRows] = useState<MarketRow[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    const abort = new AbortController();
-    getJson<{ rows: MarketRow[] }>("/api/markets", abort.signal)
-      .then((body) => {
-        setRows(body.rows);
-        setError(null);
-      })
-      .catch((e: unknown) => {
-        if (abort.signal.aborted) return;
-        console.error("[markets] list failed", e);
-        setError(friendlyError(e));
-        // Try again shortly (the server caches, so this is cheap).
-        setTimeout(() => setAttempt((n) => n + 1), 10_000);
-      });
-    return () => abort.abort();
-  }, [attempt]);
-
-  return { rows, error };
 }
 
 /** True while the tab is visible (polling pauses when it's hidden). */
@@ -62,71 +44,93 @@ function usePageVisible() {
 }
 
 /**
- * Live prices for the given tickers (the rows on screen): one batched request
- * every 12 s, only while the tab is visible, and again as soon as it returns.
+ * The last successful read of a url, and the error of the latest read when it
+ * failed. `data` is only ever replaced by a newer response, so a failed
+ * refresh shows as `error` next to data whose own `asOf` says how old it is.
  */
-export function useLivePrices(tickers: readonly string[]) {
-  const [prices, setPrices] = useState<Record<string, LivePrice>>({});
+export type Polled<T> = {
+  data: T | null;
+  error: string | null;
+  /** HTTP status of the failed read (404: not listed), when there was a response. */
+  status: number | null;
+  loading: boolean;
+};
+
+/** Reads `url` now and every `ms` while the tab is visible (`ms` 0: once); a null url reads nothing. */
+function usePolledJson<T>(url: string | null, ms: number, label: string): Polled<T> {
   const visible = usePageVisible();
-  const key = [...new Set(tickers)].sort().slice(0, 40).join(",");
+  const [state, setState] = useState<{ url: string | null } & Polled<T>>({
+    url: null,
+    data: null,
+    error: null,
+    status: null,
+    loading: false,
+  });
+  // A new url starts from nothing: the old data belongs to something else.
+  const current =
+    state.url === url ? state : { url, data: null, error: null, status: null, loading: !!url };
 
   useEffect(() => {
-    if (!key || !visible) return;
+    if (!url || !visible) return;
     const abort = new AbortController();
     const load = () =>
-      getJson<{ prices: Record<string, LivePrice> }>(
-        `/api/markets/prices?tickers=${encodeURIComponent(key)}`,
-        abort.signal,
-      )
-        .then((body) => setPrices((current) => ({ ...current, ...body.prices })))
+      getJson<T>(url, abort.signal)
+        .then((data) => setState({ url, data, error: null, status: null, loading: false }))
         .catch((e: unknown) => {
-          if (!abort.signal.aborted) console.error("[markets] prices failed", e);
+          if (abort.signal.aborted) return;
+          console.error(label, e);
+          const failure = {
+            error: friendlyError(e),
+            status: (e as { status?: number }).status ?? null,
+            loading: false,
+          };
+          setState((s) => (s.url === url ? { ...s, ...failure } : { url, data: null, ...failure }));
         });
     void load();
-    const id = window.setInterval(load, PRICE_POLL_MS);
+    const timer = ms > 0 ? window.setInterval(load, ms) : undefined;
     return () => {
-      window.clearInterval(id);
       abort.abort();
+      window.clearInterval(timer);
     };
-  }, [key, visible]);
+  }, [url, ms, visible, label]);
 
-  return prices;
+  const { data, error, status, loading } = current;
+  return { data, error, status, loading };
 }
 
-/**
- * 24h sparklines for the given tickers, asked for once each; ones still
- * loading on the server are asked for again a few seconds later.
- */
-export function useSparklines(tickers: readonly string[], window: "24h" | "7d" | "30d" = "24h") {
-  const [series, setSeries] = useState<Record<string, Point[] | null>>({});
-  const [retry, setRetry] = useState(0);
-  // A few at a time, so the rows at the top of the screen fill in first.
-  const missing = tickers.filter((t) => !(t in series)).slice(0, 16);
-  const key = missing.sort().join(",");
+/** Every listed company (GET /api/stocks), read again every minute while visible. */
+export const useStocks = () =>
+  usePolledJson<StocksResponse>("/api/stocks", STOCKS_POLL_MS, "[stocks] list failed");
 
+/** One company by ticker or token symbol (GET /api/stocks/[ticker]), read again every minute. */
+export const useStock = (ticker: string) =>
+  usePolledJson<StockResponse>(
+    `/api/stocks/${encodeURIComponent(ticker)}`,
+    STOCKS_POLL_MS,
+    "[stocks] stock failed",
+  );
+
+/** Candles of a token's most liquid pool for one timeframe (read once per mint and window). */
+export const useStockHistory = (mint: string | null, window: ChartWindow) =>
+  usePolledJson<StockHistoryResponse>(
+    mint ? `/api/stocks/history?${new URLSearchParams({ mint, window })}` : null,
+    0,
+    "[stocks] history failed",
+  );
+
+/** Jupiter's token search for `query`, 250 ms after typing stops (nothing for an empty query). */
+export function useStockSearch(query: string): Polled<StockSearchResponse> {
+  const trimmed = query.trim();
+  const [settled, setSettled] = useState(trimmed);
   useEffect(() => {
-    if (!key) return;
-    const abort = new AbortController();
-    const timer = setTimeout(() => {
-      getJson<{ series: Record<string, Point[] | null>; pending: string[] }>(
-        `/api/markets/sparklines?tickers=${encodeURIComponent(key)}&window=${window}`,
-        abort.signal,
-      )
-        .then((body) => {
-          setSeries((current) => ({ ...current, ...body.series }));
-          if (body.pending.length > 0) setTimeout(() => setRetry((n) => n + 1), 5_000);
-        })
-        .catch((e: unknown) => {
-          if (!abort.signal.aborted) console.error("[markets] sparklines failed", e);
-        });
-    }, 300);
-    return () => {
-      clearTimeout(timer);
-      abort.abort();
-    };
-  }, [key, retry, window]);
-
-  return series;
+    const timer = window.setTimeout(() => setSettled(trimmed), 250);
+    return () => window.clearTimeout(timer);
+  }, [trimmed]);
+  const result = usePolledJson<StockSearchResponse>(
+    settled ? `/api/stocks/search?${new URLSearchParams({ q: settled })}` : null,
+    0,
+    "[stocks] search failed",
+  );
+  // Still typing: the results shown are for an older query.
+  return settled === trimmed ? result : { ...result, loading: Boolean(trimmed) };
 }
-
-export { getJson };

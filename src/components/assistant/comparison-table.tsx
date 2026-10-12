@@ -1,84 +1,97 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { Change } from "@/components/market/change";
+import { formatPrice } from "@/components/market/format";
 import { TokenLogo } from "@/components/market/token-logo";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Comparison, ComparisonRow } from "@/lib/markdown/comparison";
-import { formatCompactUsd, formatPrice, type Point } from "@/lib/market/series";
+import { formatCompactUsd } from "@/lib/market/series";
+import type { StockResponse } from "@/lib/stocks/api";
+import type { StockToken } from "@/lib/stocks/types";
 import { cn } from "@/lib/utils";
 
-type LiveRow = {
-  symbol: string;
-  icon: string | null;
-  price: number | null;
-  priceNote: string | null;
-  change24h: number | null;
-  sparkline: Point[] | null;
-};
-type LiveData = { rows: Record<string, LiveRow>; pending: string[]; unknown: string[] };
+/** A ticker's live figures: its most liquid token, or why there are none. */
+type Live = { token: StockToken } | { missing: string };
 
-const RETRY_MS = 4_000;
-const MAX_RETRIES = 8;
-
-/** Live price, logo and sparkline per ticker; asks again while sparklines load. */
-function useLiveRows(tickers: string[]) {
+/**
+ * Each ticker's most liquid token, live from Jupiter (GET /api/stocks/[ticker]).
+ * One request per ticker, once; a failed one says so in its row.
+ */
+function useLiveTokens(tickers: string[]) {
   const key = tickers.join(",");
-  const [data, setData] = useState<LiveData | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [live, setLive] = useState<Record<string, Live> | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const load = async (attempt: number) => {
+    const load = async (ticker: string): Promise<[string, Live]> => {
       try {
-        const response = await fetch(`/api/market/compare?tickers=${encodeURIComponent(key)}`, {
+        const response = await fetch(`/api/stocks/${encodeURIComponent(ticker)}`, {
           signal: controller.signal,
         });
-        if (!response.ok) throw new Error(String(response.status));
-        const next = (await response.json()) as LiveData;
-        setData(next);
-        if (next.pending.length > 0 && attempt < MAX_RETRIES) {
-          timer = setTimeout(() => void load(attempt + 1), RETRY_MS);
-        }
+        if (response.status === 404) return [ticker, { missing: "Not a listed stock" }];
+        if (!response.ok) return [ticker, { missing: "Live price unavailable right now" }];
+        const { stock } = (await response.json()) as StockResponse;
+        const token = stock.tokens[0];
+        return [ticker, token ? { token } : { missing: "No token listed" }];
       } catch {
-        if (!controller.signal.aborted) setFailed(true);
+        return [ticker, { missing: "Live price unavailable right now" }];
       }
     };
-    void load(0);
-    return () => {
-      controller.abort();
-      clearTimeout(timer);
-    };
+    void Promise.all(key.split(",").filter(Boolean).map(load)).then((entries) => {
+      if (!controller.signal.aborted) setLive(Object.fromEntries(entries));
+    });
+    return () => controller.abort();
   }, [key]);
 
-  return { data, failed };
+  return live;
 }
 
-type SortKey = "company" | "ticker" | "price" | "marketCap" | "return1y" | "pe";
+/** The sortable columns. Text columns sort A→Z first; numeric ones high→low, then off. */
+const COLUMNS = [
+  { key: "company", label: "Company", numeric: false },
+  { key: "price", label: "Price", numeric: true },
+  { key: "change24h", label: "1D", numeric: true },
+  { key: "marketCap", label: "Market cap", numeric: true },
+  { key: "return1y", label: "1Y return", numeric: true },
+  { key: "pe", label: "P/E", numeric: true },
+] as const;
+type SortKey = (typeof COLUMNS)[number]["key"];
 type Sort = { key: SortKey; dir: "asc" | "desc" } | null;
 
 const formatReturn = (v: number) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)}%`;
-const formatPe = (v: number) => v.toFixed(1);
+const NUMBER_CELL = "py-2 pl-4 text-right whitespace-nowrap";
 
 /**
- * A stock comparison the assistant sent as a ```comparison block: company
- * with logo, ticker, Jupiter's live price, market cap, 1Y return, P/E and a
- * 7-day sparkline. Click a column header to sort.
+ * A stock comparison the assistant sent as a ```comparison block: company and
+ * ticker, Jupiter's live price and 1D change for its most liquid token, then
+ * market cap, 1Y return and P/E from the assistant's market data. Click a
+ * header to sort.
  */
 export function ComparisonTable({ comparison }: { comparison: Comparison }) {
   const tickers = useMemo(
     () => [...new Set(comparison.rows.map((r) => r.ticker))],
     [comparison.rows],
   );
-  const { data, failed } = useLiveRows(tickers);
+  const live = useLiveTokens(tickers);
   const [sort, setSort] = useState<Sort>(null);
+
+  const tokenOf = (ticker: string) => {
+    const entry = live?.[ticker];
+    return entry && "token" in entry ? entry.token : null;
+  };
 
   const rows = useMemo(() => {
     if (!sort) return comparison.rows;
-    const value = (row: ComparisonRow, key: SortKey): string | number | null =>
-      key === "price" ? (data?.rows[row.ticker]?.price ?? null) : row[key];
+    const value = (row: ComparisonRow, key: SortKey): string | number | null => {
+      if (key === "price" || key === "change24h") {
+        const entry = live?.[row.ticker];
+        return entry && "token" in entry ? entry.token[key] : null;
+      }
+      return row[key];
+    };
     return [...comparison.rows].sort((a, b) => {
       const va = value(a, sort.key);
       const vb = value(b, sort.key);
@@ -90,114 +103,110 @@ export function ComparisonTable({ comparison }: { comparison: Comparison }) {
           : String(va).localeCompare(String(vb));
       return sort.dir === "asc" ? cmp : -cmp;
     });
-  }, [comparison.rows, sort, data]);
+  }, [comparison.rows, sort, live]);
 
-  const toggle = (key: SortKey) =>
+  const toggle = (key: SortKey, numeric: boolean) =>
     setSort((s) =>
       s?.key !== key
-        ? { key, dir: key === "company" || key === "ticker" ? "asc" : "desc" }
+        ? { key, dir: numeric ? "desc" : "asc" }
         : s.dir === "desc"
           ? { key, dir: "asc" }
-          : s.key === "company" || s.key === "ticker"
-            ? { key, dir: "desc" }
-            : null,
+          : numeric
+            ? null
+            : { key, dir: "desc" },
     );
 
-  const header = (key: SortKey, label: string, numeric = false) => {
+  const header = ({ key, label, numeric }: (typeof COLUMNS)[number]) => {
     const active = sort?.key === key;
-    const Icon = !active ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
+    const Icon = sort?.dir === "asc" ? ChevronUp : ChevronDown;
     return (
       <th
+        key={key}
         scope="col"
         aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
         className={cn(
-          "px-3 py-2.5 font-mono text-[11px] font-medium tracking-[0.14em] whitespace-nowrap uppercase",
-          numeric && "text-right",
+          "py-2 text-[12.5px] font-medium whitespace-nowrap text-ink-muted",
+          numeric ? "pl-4 text-right" : "text-left",
         )}
       >
         <button
           type="button"
-          onClick={() => toggle(key)}
+          onClick={() => toggle(key, numeric)}
           className={cn(
-            "inline-flex items-center gap-1 rounded transition-colors hover:text-foreground",
-            active && "text-foreground",
+            "inline-flex cursor-pointer items-center gap-0.5 rounded transition-colors duration-150 hover:text-text-extra-high",
+            active && "text-text-extra-high",
             numeric && "flex-row-reverse",
           )}
         >
           {label}
-          <Icon className={cn("size-3", !active && "opacity-40")} aria-hidden />
+          {active && <Icon className="size-3.5" aria-hidden />}
         </button>
       </th>
     );
   };
 
+  const loading = live === null;
   return (
-    <figure className="space-y-2">
+    <figure className="space-y-1.5">
       {comparison.title && (
-        <figcaption className="text-xs font-medium text-muted-foreground">
+        <figcaption className="text-[15px] font-semibold text-text-extra-high">
           {comparison.title}
         </figcaption>
       )}
-      <div className="max-h-[28rem] overflow-auto rounded-xl border bg-card">
-        <table className="w-full border-collapse text-xs tabular-nums sm:text-sm">
-          <thead className="sticky top-0 z-10 bg-card/85 text-left text-muted-foreground backdrop-blur">
-            <tr>
-              {header("company", "Company")}
-              {header("ticker", "Ticker")}
-              {header("price", "Price", true)}
-              {header("marketCap", "Market cap", true)}
-              {header("return1y", "1Y return", true)}
-              {header("pe", "P/E", true)}
-              <th
-                scope="col"
-                className="px-3 py-2.5 text-right font-mono text-[11px] font-medium tracking-[0.14em] whitespace-nowrap uppercase"
-              >
-                7D
-              </th>
-            </tr>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-[14px] text-text-extra-high tabular-nums">
+          <thead className="border-b border-soft-strong">
+            <tr>{COLUMNS.map(header)}</tr>
           </thead>
-          <tbody className="[&>tr]:border-t [&>tr]:border-border [&>tr]:transition-colors [&>tr]:duration-200 [&>tr:hover]:bg-glow-blue/[0.08]">
+          <tbody className="divide-y divide-soft">
             {rows.map((row) => {
-              const live = data?.rows[row.ticker];
-              const loading = !data && !failed;
+              const token = tokenOf(row.ticker);
+              const entry = live?.[row.ticker];
+              const note = entry && "missing" in entry ? entry.missing : undefined;
               return (
                 <tr key={row.ticker}>
-                  <td className="px-3 py-2">
+                  <td className="py-2">
                     <span className="flex min-w-36 items-center gap-2">
-                      <TokenLogo src={live?.icon} symbol={row.ticker} className="size-5" />
-                      <span className="truncate">{row.company}</span>
+                      <TokenLogo src={token?.icon} symbol={row.ticker} className="size-5" />
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium">{row.company}</span>
+                        <span className="block text-[12px] text-ink-muted">
+                          {row.ticker}
+                          {token && ` · ${token.symbol}`}
+                        </span>
+                      </span>
                     </span>
                   </td>
-                  <td className="px-3 py-2 font-mono text-muted-foreground">{row.ticker}</td>
-                  <td className="px-3 py-2 text-right font-mono whitespace-nowrap">
+                  <td className={NUMBER_CELL}>
                     {loading ? (
                       <Skeleton className="ml-auto h-3.5 w-14" />
-                    ) : live?.price != null ? (
-                      formatPrice(live.price)
+                    ) : token?.price != null ? (
+                      formatPrice(token.price)
                     ) : (
-                      <Missing title={live?.priceNote ?? undefined} />
+                      <Missing title={note} />
                     )}
                   </td>
-                  <td className="px-3 py-2 text-right font-mono whitespace-nowrap">
+                  <td className={NUMBER_CELL}>
+                    {loading ? (
+                      <Skeleton className="ml-auto h-3.5 w-12" />
+                    ) : (
+                      <Change pct={token?.change24h} className="justify-end" />
+                    )}
+                  </td>
+                  <td className={NUMBER_CELL}>
                     {row.marketCap !== null ? formatCompactUsd(row.marketCap) : <Missing />}
                   </td>
                   <td
                     className={cn(
-                      "px-3 py-2 text-right font-mono whitespace-nowrap",
-                      row.return1y !== null && row.return1y > 0 && "text-success",
-                      row.return1y !== null && row.return1y < 0 && "text-destructive",
+                      NUMBER_CELL,
+                      row.return1y !== null && row.return1y > 0 && "text-green-800",
+                      row.return1y !== null && row.return1y < 0 && "text-red-800",
                     )}
                   >
                     {row.return1y !== null ? formatReturn(row.return1y) : <Missing />}
                   </td>
-                  <td className="px-3 py-2 text-right font-mono whitespace-nowrap">
-                    {row.pe !== null ? formatPe(row.pe) : <Missing />}
-                  </td>
-                  <td className="px-3 py-2">
-                    <Sparkline
-                      points={live?.sparkline ?? null}
-                      loading={loading || (data?.pending.includes(row.ticker) ?? false)}
-                    />
+                  <td className={NUMBER_CELL}>
+                    {row.pe !== null ? row.pe.toFixed(1) : <Missing />}
                   </td>
                 </tr>
               );
@@ -205,64 +214,14 @@ export function ComparisonTable({ comparison }: { comparison: Comparison }) {
           </tbody>
         </table>
       </div>
-      <p className="text-[11px] text-muted-foreground">
-        Price: live from Jupiter for the most liquid token. 7D: price history from GeckoTerminal.
-        {failed && " Live data is unavailable right now."}
-      </p>
     </figure>
   );
 }
 
 function Missing({ title = "Not available" }: { title?: string }) {
   return (
-    <span className="text-muted-foreground" title={title}>
+    <span className="text-ink-muted" title={title}>
       —
     </span>
-  );
-}
-
-/** A tiny line of 7-day closes, green if it ended higher, red if lower. */
-function Sparkline({ points, loading }: { points: Point[] | null; loading: boolean }) {
-  if (!points || points.length < 2) {
-    return loading ? (
-      <Skeleton className="ml-auto h-5 w-16" />
-    ) : (
-      <span className="block text-right">
-        <Missing />
-      </span>
-    );
-  }
-  const values = points.map((p) => p.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const first = points[0]!.time;
-  const span = points.at(-1)!.time - first || 1;
-  const W = 64;
-  const H = 20;
-  const d = points
-    .map((p) => {
-      const x = ((p.time - first) / span) * W;
-      const y = max === min ? H / 2 : H - 1 - ((p.value - min) / (max - min)) * (H - 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  const up = values.at(-1)! >= values[0]!;
-  return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      className={cn("ml-auto h-5 w-16", up ? "text-success" : "text-destructive")}
-      role="img"
-      aria-label={`7-day price ${up ? "up" : "down"}`}
-    >
-      <polyline
-        points={d}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
   );
 }

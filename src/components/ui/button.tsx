@@ -1,38 +1,34 @@
-import * as React from "react";
+import { Children, isValidElement, type ComponentProps } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 import { Loader2 } from "lucide-react";
 import { Slot } from "radix-ui";
 
+/** tokens.xyz buttons: pills that press to 0.98; the primary one is solid ink. */
 const buttonVariants = cva(
-  "group/button relative inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[background-color,border-color,color,box-shadow,translate] duration-300 ease-in-out outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/30 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button relative inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full border border-transparent font-semibold whitespace-nowrap transition-[color,background-color,border-color,box-shadow,transform,opacity] duration-150 ease-out outline-none select-none focus-visible:ring-2 focus-visible:ring-gray-1200 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 aria-invalid:border-status-error-border motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        /** Navy with white text; lightens, lifts 2px and gains a soft shadow on hover. */
-        default:
-          "bg-primary text-primary-foreground shadow-soft hover:bg-primary-hover hover:shadow-hover motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0",
-        /** Secondary: white with a navy border and text; fills navy on hover. */
-        outline:
-          "border-primary bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground hover:shadow-hover motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 aria-expanded:bg-primary aria-expanded:text-primary-foreground",
+        default: "bg-gray-1400 text-white hover:bg-gray-1300 active:bg-gray-1100",
         secondary:
-          "border-primary bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground hover:shadow-hover motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 aria-expanded:bg-primary aria-expanded:text-primary-foreground",
-        /** Icon and toolbar buttons: navy, filling navy on hover (no lift). */
+          "bg-gray-1400/8 text-text-extra-high hover:bg-gray-1400/12 active:bg-gray-1400/16 aria-expanded:bg-gray-1400/12",
+        outline:
+          "border-border-light bg-white text-text-extra-high shadow-[0_1px_2px_rgba(20,20,21,0.08)] hover:border-border-medium hover:bg-gray-50 aria-expanded:bg-gray-50",
         ghost:
-          "text-primary-text hover:bg-primary hover:text-primary-foreground aria-expanded:bg-primary aria-expanded:text-primary-foreground",
+          "text-text-medium hover:bg-gray-50 hover:text-text-extra-high aria-expanded:bg-gray-50 aria-expanded:text-text-extra-high",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:ring-destructive/60 dark:bg-destructive/20 dark:hover:bg-destructive/30",
-        link: "h-auto! px-0! text-primary-text underline-offset-4 hover:underline",
+          "bg-status-error-bg text-status-error-text hover:bg-status-error-bg/70 focus-visible:ring-status-error-border",
+        link: "h-auto! rounded-none px-0! font-medium text-text-extra-high underline-offset-4 hover:underline active:scale-100",
       },
       size: {
-        default:
-          "h-10 gap-2 px-5 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4",
-        xs: "h-7 gap-1 rounded-md px-2 text-xs [&_svg:not([class*='size-'])]:size-3.5",
-        sm: "h-8 gap-1.5 rounded-md px-3 text-[0.8125rem] [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-12 gap-2 rounded-xl px-7 text-[0.9375rem]",
+        default: "h-9 gap-2 px-3.5 text-[length:var(--text-button-md)] leading-none",
+        xs: "h-7 gap-1 px-2.5 text-xs [&_svg:not([class*='size-'])]:size-3.5",
+        sm: "h-8 gap-1.5 px-3 text-[length:var(--text-button-sm)] leading-none [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-12 gap-2 px-5 text-[length:var(--text-button-xl)] leading-none",
         icon: "size-9",
-        "icon-xs": "size-7 rounded-md [&_svg:not([class*='size-'])]:size-3.5",
-        "icon-sm": "size-8 rounded-md",
+        "icon-xs": "size-7 [&_svg:not([class*='size-'])]:size-3.5",
+        "icon-sm": "size-8",
         "icon-lg": "size-11",
       },
     },
@@ -56,7 +52,7 @@ function Button({
   disabled,
   children,
   ...props
-}: React.ComponentProps<"button"> &
+}: ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
     loading?: boolean;
@@ -66,8 +62,8 @@ function Button({
     loading && !asChild ? (
       <>
         <Loader2 className="animate-spin" aria-hidden />
-        {React.Children.toArray(children).filter(
-          (child) => !(React.isValidElement(child) && typeof child.type !== "string"),
+        {Children.toArray(children).filter(
+          (child) => !(isValidElement(child) && typeof child.type !== "string"),
         )}
       </>
     ) : (
@@ -89,4 +85,4 @@ function Button({
   );
 }
 
-export { Button, buttonVariants };
+export { Button };

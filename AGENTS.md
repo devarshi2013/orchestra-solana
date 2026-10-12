@@ -8,9 +8,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-## Quill project rules
+## Tickertape project rules
 
-- No custom smart contracts or on-chain programs. On-chain execution goes only through Jupiter REST APIs (Swap v2 `/order` + `/execute`).
-- Non-custodial: the user's wallet signs every transaction (`signTransaction`, never send it from the wallet). Do not use Jupiter Trigger v2 or DCA: they deposit into custodial vaults.
 - `JUPITER_API_KEY` is server-only. The browser calls `/api/*`, which goes through `src/server/jupiter/client.ts`. Never use `lite-api.jup.ag`.
-- Endpoint shapes and caveats: `docs/jupiter-api.md`. Env: `src/env/`. Run `pnpm check` before finishing.
+- Jupiter response shapes: `src/lib/jupiter/schemas.ts`. Env: `src/env.ts`. Run `pnpm check` before finishing.

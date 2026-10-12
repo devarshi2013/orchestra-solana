@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { AssistantTurn, ChatTurn } from "@/hooks/use-agent-chat";
 import {
@@ -19,7 +19,7 @@ import {
   type StoredChat,
 } from "@/lib/assistant/chat-history";
 
-export const browserStorage = () => {
+const browserStorage = () => {
   try {
     return typeof window === "undefined" ? undefined : window.localStorage;
   } catch {
@@ -31,6 +31,38 @@ export const newChatId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+
+/** The list changes as actions on one owner's chats, e.g. `rename(id, title)`. */
+function chatActions(commit: (change: (all: StoredChat[]) => StoredChat[]) => void) {
+  const op =
+    <A extends unknown[]>(change: (all: StoredChat[], ...args: A) => StoredChat[]) =>
+    (...args: A) =>
+      commit((all) => change(all, ...args));
+  return {
+    /** Stores a conversation under `id` (created on its first save). */
+    save: op((all, id: string, turns: ChatTurn[], history: unknown[]) =>
+      upsertChat(all, id, turns, history, Date.now()),
+    ),
+    rename: op(renameChat),
+    setAiTitle: op(applyAiTitle),
+    pin: op(pinChat),
+    remove: op(deleteChat),
+    /** Changes one assistant turn of a saved chat, e.g. a purchase made from a reopened plan. */
+    patchTurn: op((all, id: string, index: number, change: Partial<AssistantTurn>) =>
+      all.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              updatedAt: Date.now(),
+              turns: c.turns.map((t, i) =>
+                i === index && t.role === "assistant" ? { ...t, ...change } : t,
+              ),
+            }
+          : c,
+      ),
+    ),
+  };
+}
 
 /**
  * The chats of `owner` (a wallet address, or "guest" before one connects),
@@ -70,43 +102,7 @@ export function useChatHistory(owner: Owner) {
     [owner],
   );
 
-  /** Stores a conversation under `id` (created on its first save). */
-  const save = useCallback(
-    (id: string, turns: ChatTurn[], history: unknown[]) =>
-      commit((all) => upsertChat(all, id, turns, history, Date.now())),
-    [commit],
-  );
-  const rename = useCallback(
-    (id: string, title: string) => commit((all) => renameChat(all, id, title)),
-    [commit],
-  );
-  const setAiTitle = useCallback(
-    (id: string, title: string) => commit((all) => applyAiTitle(all, id, title)),
-    [commit],
-  );
-  const pin = useCallback(
-    (id: string, pinned: boolean) => commit((all) => pinChat(all, id, pinned)),
-    [commit],
-  );
-  const remove = useCallback((id: string) => commit((all) => deleteChat(all, id)), [commit]);
-  /** Changes one assistant turn of a saved chat, e.g. a purchase made from a reopened plan. */
-  const patchTurn = useCallback(
-    (id: string, index: number, change: Partial<AssistantTurn>) =>
-      commit((all) =>
-        all.map((c) =>
-          c.id === id
-            ? {
-                ...c,
-                updatedAt: Date.now(),
-                turns: c.turns.map((t, i) =>
-                  i === index && t.role === "assistant" ? { ...t, ...change } : t,
-                ),
-              }
-            : c,
-        ),
-      ),
-    [commit],
-  );
+  const actions = useMemo(() => chatActions(commit), [commit]);
   const clearAll = useCallback(() => {
     clearChats(browserStorage(), owner);
     setState({ owner, chats: [] });
@@ -118,18 +114,7 @@ export function useChatHistory(owner: Owner) {
     setState({ owner, chats: moveGuestChats(browserStorage(), owner) });
   }, [owner]);
 
-  return {
-    owner,
-    chats,
-    save,
-    rename,
-    setAiTitle,
-    pin,
-    remove,
-    patchTurn,
-    clearAll,
-    adoptGuestChats,
-  };
+  return { owner, chats, ...actions, clearAll, adoptGuestChats };
 }
 
 /** How many guest chats this browser holds (0 when storage is unavailable). */

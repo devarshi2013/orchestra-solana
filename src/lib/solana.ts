@@ -1,18 +1,9 @@
 /** Browser-safe base64 helpers (no Node Buffer in client bundles). */
-export function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
+export const base64ToBytes = (base64: string) =>
+  Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
 
-export function bytesToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary);
-}
+/** Spreads the bytes as arguments: fine for transactions (at most 1232 bytes). */
+export const bytesToBase64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
 
-export function solscanTxUrl(signature: string, cluster: "mainnet-beta" | "devnet"): string {
-  const url = `https://solscan.io/tx/${signature}`;
-  return cluster === "devnet" ? `${url}?cluster=devnet` : url;
-}
+export const solscanTxUrl = (signature: string, cluster: "mainnet-beta" | "devnet") =>
+  `https://solscan.io/tx/${signature}${cluster === "devnet" ? "?cluster=devnet" : ""}`;

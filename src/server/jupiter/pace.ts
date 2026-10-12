@@ -1,9 +1,9 @@
 import "server-only";
 
 /**
- * Spaces out background Jupiter calls (registry builds, /assets prices and
- * test quotes) so they stay inside the free plan's 1 request/second and leave
- * room for swaps, which are not paced.
+ * Spaces out Jupiter quote calls made in a batch (a company's tokens quoted
+ * one after another) so they stay inside the free plan's 1 request/second.
+ * Swaps the user is signing are not paced. Nothing is retried.
  */
 const GAP_MS = 1100;
 let next = 0;

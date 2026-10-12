@@ -1,26 +1,16 @@
 import type { OrderResponse } from "@/lib/jupiter/schemas";
 
-export type RouteHop = { label: string; percent: number };
-
-/** Flatten routePlan into labelled hops, e.g. [{label: "Meteora DLMM", percent: 100}]. */
-export function summarizeRoute(order: Pick<OrderResponse, "routePlan">): RouteHop[] {
-  return (order.routePlan ?? []).map((step) => ({
-    label: step.swapInfo.label || "Unknown venue",
-    percent: step.percent ?? (step.bps != null ? step.bps / 100 : 100),
-  }));
-}
-
-export type ImpactSeverity = "low" | "medium" | "high";
-
-/** `priceImpact` is in percentage points and usually ≤ 0 (a cost). */
-export function describePriceImpact(priceImpact: number | null | undefined): {
-  text: string;
-  severity: ImpactSeverity;
-} {
-  const pct = Math.abs(priceImpact ?? 0);
-  const severity: ImpactSeverity = pct >= 5 ? "high" : pct >= 1 ? "medium" : "low";
-  const text = pct < 0.01 ? "<0.01%" : `${pct.toFixed(2)}%`;
-  return { text, severity };
+/**
+ * `priceImpact` is in percentage points and usually ≤ 0 (a cost). When Jupiter
+ * doesn't report it, the impact is unknown (severity null), not zero.
+ */
+export function describePriceImpact(priceImpact: number | null | undefined) {
+  if (priceImpact == null) return { text: "Unknown", severity: null };
+  const pct = Math.abs(priceImpact);
+  return {
+    text: pct < 0.01 ? "<0.01%" : `${pct.toFixed(2)}%`,
+    severity: pct >= 5 ? "high" : pct >= 1 ? "medium" : "low",
+  } as const;
 }
 
 /**
@@ -29,16 +19,11 @@ export function describePriceImpact(priceImpact: number | null | undefined): {
  */
 export function isOrderExpired(
   order: Pick<OrderResponse, "expireAt" | "lastValidBlockHeight">,
-  { now, blockHeight }: { now: number; blockHeight?: number },
+  { now, blockHeight }: { now: number; blockHeight: number },
 ): boolean {
-  if (order.expireAt) {
-    const expireAt = parseExpireAt(order.expireAt);
-    if (expireAt !== null && now >= expireAt) return true;
-  }
-  if (order.lastValidBlockHeight && blockHeight !== undefined) {
-    if (blockHeight > Number(order.lastValidBlockHeight)) return true;
-  }
-  return false;
+  const expireAt = order.expireAt ? parseExpireAt(order.expireAt) : null;
+  if (expireAt !== null && now >= expireAt) return true;
+  return !!order.lastValidBlockHeight && blockHeight > Number(order.lastValidBlockHeight);
 }
 
 /** `expireAt` may be ISO-8601, unix seconds or unix milliseconds. */

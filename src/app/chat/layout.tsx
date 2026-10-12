@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Stock assistant" };
 export default function ChatLayout({ children }: { children: ReactNode }) {
   return (
     <>
-      {/* Server-rendered marker: globals.css hides the site footer while it's on the page (the app fills the screen under the navbar). */}
+      {/* Server-rendered marker: globals.css hides the site footer while it's on the page (the app fills the screen under the header). */}
       <div data-chat-shell hidden />
       <ChatAppLoader />
       {children}

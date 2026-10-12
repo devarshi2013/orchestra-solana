@@ -4,7 +4,12 @@ import { z } from "zod";
 import { anthropic } from "@/server/agent/client";
 import { WalletRateLimiter } from "@/server/agent/rate-limit";
 import { generateTitle } from "@/server/agent/title";
-import { errorResponse, validationErrorResponse } from "@/server/http";
+import {
+  clientIp,
+  errorResponse,
+  unidentifiedClient,
+  validationErrorResponse,
+} from "@/server/http";
 
 /** Titles are cheap, but still capped per client: 60 an hour. */
 const titleRateLimiter = new WalletRateLimiter(60);
@@ -14,11 +19,6 @@ const bodySchema = z.object({
   /** The start of the first reply (the browser sends at most ~1,500 characters). */
   reply: z.string().max(4000).default(""),
 });
-
-const clientIp = (request: NextRequest) =>
-  request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-  request.headers.get("x-real-ip") ||
-  "local";
 
 /**
  * POST { message, reply } → { title } (3-6 words) for the chat history
@@ -31,7 +31,9 @@ export async function POST(request: NextRequest) {
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return validationErrorResponse(parsed.error);
 
-  const slot = titleRateLimiter.acquire(clientIp(request));
+  const ip = clientIp(request);
+  if (!ip) return unidentifiedClient();
+  const slot = titleRateLimiter.acquire(ip);
   if (!slot.ok) return errorResponse(429, slot.reason);
   try {
     const title = await generateTitle(

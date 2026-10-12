@@ -1,68 +1,53 @@
 import { FRIENDLY_MESSAGES, friendlyError, type FriendlyKind } from "@/lib/friendly-error";
-import { TIER_LIMITS } from "@/lib/stocks/sync-core";
-import type { SwapQuote } from "@/lib/stocks/tools";
+import type { TokenQuote } from "@/lib/stocks/tools";
+import type { StockToken } from "@/lib/stocks/types";
 import { MIN_ORDER_USD } from "@/lib/units";
 import { formatUsd } from "@/lib/format";
-
-import { describeClosedMarket, usMarketSession } from "./market-hours";
 
 /**
  * Review of an assistant plan before buying: per-item warnings from a fresh
  * Jupiter quote, and the pre-flight checks that gate "Approve & buy". Pure, so
- * the plan card re-evaluates them as amounts, quotes, balances and time change.
+ * the plan card re-evaluates them as amounts, quotes and balances change.
  */
 
 export type ItemKind = "stock";
 
-/** The registry token a quote chose (the most liquid one that quoted); its mint is what gets bought. */
-export type ChosenToken = {
-  symbol: string;
-  issuer: string;
-  mint: string;
-  decimals: number;
-  liquidityTier: "high" | "medium" | "low";
-  hours: string;
-  preIpo: boolean;
+/** The token a plan item buys, with its issuer's label; its mint is what gets bought. */
+type QuotedTokenInfo = Pick<StockToken, "symbol" | "mint" | "decimals"> & {
+  issuer: string | null;
 };
 
 /** A fresh quote for one plan item, from POST /api/assistant/quote. */
 export type ItemQuote = {
-  /** What the plan asked for: a company ticker (best issuer) or a token symbol. */
+  /** The token symbol the plan names. */
   symbol: string;
-  quote: SwapQuote | null;
+  quote: TokenQuote | null;
   /** Why there's no quote: one friendly sentence (lib/friendly-error.ts). */
   reason: string | null;
-  /** Which friendly message `reason` is; "rate_limited" is retried by the browser. */
+  /** Which friendly message `reason` is. */
   errorKind?: FriendlyKind | null;
-  token: ChosenToken | null;
+  token: QuotedTokenInfo | null;
 };
 
 /** Price impact (absolute %) from which a buy is flagged. */
-export const HIGH_IMPACT_PCT = TIER_LIMITS.medium;
+const HIGH_IMPACT_PCT = 1;
 /** Price impact (absolute %) that's a severe cost. */
-export const SEVERE_IMPACT_PCT = 5;
-/** Network fee assumed per non-gasless swap when Jupiter doesn't say, SOL. */
-export const FALLBACK_FEE_SOL = 0.005;
+const SEVERE_IMPACT_PCT = 5;
 
 export type ItemWarning = {
-  kind: "quote" | "impact" | "liquidity" | "market-hours";
+  kind: "quote" | "impact";
   /** "block": the item can't be bought as is. */
   severity: "warn" | "block";
   message: string;
 };
 
-export function itemWarnings(
-  item: { kind: ItemKind; usdcAmount: number },
-  quoted: ItemQuote | undefined,
-  now: Date,
-): ItemWarning[] {
+export function itemWarnings(quoted: ItemQuote | undefined): ItemWarning[] {
   const warnings: ItemWarning[] = [];
-  const quote = quoted?.quote;
   // At most one blocking line per item, always a friendly sentence.
   const blocker = quoteProblem(quoted);
   if (blocker) warnings.push({ kind: "quote", severity: "block", message: blocker });
 
-  const impact = quote?.priceImpactPct ?? null;
+  const impact = quoted?.quote?.priceImpactPct ?? null;
   if (impact !== null && impact >= HIGH_IMPACT_PCT) {
     warnings.push({
       kind: "impact",
@@ -73,35 +58,11 @@ export function itemWarnings(
           : `High price impact (${impact.toFixed(2)}%)`,
     });
   }
-
-  const token = quoted?.token ?? null;
-  if (token?.liquidityTier === "low" || quote?.thinLiquidity) {
-    warnings.push({
-      kind: "liquidity",
-      severity: "warn",
-      message:
-        token?.liquidityTier === "low"
-          ? `Low liquidity: ${token.symbol} moves noticeably even on small buys`
-          : `Thin liquidity: ${formatUsd(item.usdcAmount)} moves the price`,
-    });
-  }
-
-  // Pre-IPO tokens have no public market to be closed; everything else follows US hours.
-  if (item.kind === "stock" && !token?.preIpo) {
-    const session = usMarketSession(now);
-    if (!session.open) {
-      warnings.push({
-        kind: "market-hours",
-        severity: "warn",
-        message: describeClosedMarket(),
-      });
-    }
-  }
   return warnings;
 }
 
 /** Why an item can't be bought as quoted (one friendly sentence), or null. */
-export function quoteProblem(quoted: ItemQuote | undefined): string | null {
+function quoteProblem(quoted: ItemQuote | undefined): string | null {
   if (!quoted) return null;
   if (!quoted.quote) {
     return friendlyError(
@@ -118,13 +79,21 @@ export type PreflightCheck = {
   label: string;
 };
 
-/** SOL the wallet needs for network fees (and new token accounts) across the plan. */
-export function solNeeded(items: { symbol: string }[], quotes: Map<string, ItemQuote>): number {
-  return items.reduce((sum, item) => {
+/**
+ * SOL the wallet needs for network fees (and new token accounts) across the
+ * plan, from the quotes' fees; `unknown` lists the items whose quote is
+ * missing or didn't report its fees (then `sol` is only a partial sum).
+ */
+function solNeeded(items: { symbol: string }[], quotes: Map<string, ItemQuote>) {
+  const unknown: string[] = [];
+  let sol = 0;
+  for (const item of items) {
     const quote = quotes.get(item.symbol)?.quote;
-    if (quote?.gasless) return sum;
-    return sum + (quote?.networkFeesSol ?? FALLBACK_FEE_SOL);
-  }, 0);
+    if (quote?.gasless) continue;
+    if (quote?.networkFeesSol == null) unknown.push(item.symbol);
+    else sol += quote.networkFeesSol;
+  }
+  return { sol, unknown };
 }
 
 /** The checks that must all pass before "Approve & buy". */
@@ -135,16 +104,21 @@ export function preflight(input: {
   quotes: Map<string, ItemQuote>;
   /** Quotes still loading. */
   quoting: boolean;
-  now: Date;
 }): PreflightCheck[] {
   const { wallet, balances, items, quotes } = input;
   const total = items.reduce((sum, item) => sum + item.usdcAmount, 0);
   const small = items.filter((item) => !(item.usdcAmount >= MIN_ORDER_USD));
-  const sol = solNeeded(items, quotes);
   const blocked = items.filter((item) =>
-    itemWarnings(item, quotes.get(item.symbol), input.now).some((w) => w.severity === "block"),
+    itemWarnings(quotes.get(item.symbol)).some((w) => w.severity === "block"),
   );
   const unquoted = items.filter((item) => !quotes.has(item.symbol));
+  const quotesPending = input.quoting || unquoted.length > 0;
+  const fees = solNeeded(items, quotes);
+  // null: still checking (no balances yet, or quotes still loading).
+  const usdcOk = balances && total <= balances.usdc + 1e-9;
+  const solOk =
+    !balances || quotesPending ? null : fees.unknown.length === 0 && balances.sol >= fees.sol;
+  const quotesOk = quotesPending ? null : blocked.length === 0;
   return [
     {
       id: "wallet",
@@ -167,31 +141,34 @@ export function preflight(input: {
     },
     {
       id: "usdc",
-      ok: balances ? total <= balances.usdc + 1e-9 : null,
+      ok: usdcOk,
       label: balances
-        ? total <= balances.usdc + 1e-9
+        ? usdcOk
           ? `Enough USDC: ${formatUsd(total)} of ${formatUsd(balances.usdc)}`
           : `Not enough USDC: the plan needs ${formatUsd(total)}, your wallet holds ${formatUsd(balances.usdc)}`
         : "Checking your USDC…",
     },
     {
       id: "sol",
-      ok: balances ? balances.sol >= sol : null,
-      label: balances
-        ? balances.sol >= sol
-          ? sol === 0
-            ? "No SOL needed for fees (gasless)"
-            : `Enough SOL for fees: about ${sol.toFixed(4)} of ${balances.sol.toFixed(4)} SOL`
-          : `Not enough SOL for fees: about ${sol.toFixed(4)} SOL needed, your wallet holds ${balances.sol.toFixed(4)}`
-        : "Checking your SOL…",
+      ok: solOk,
+      label:
+        solOk === null
+          ? "Checking your SOL…"
+          : fees.unknown.length > 0
+            ? `Jupiter didn't report network fees for ${fees.unknown.join(", ")}, so your SOL can't be checked`
+            : solOk
+              ? fees.sol === 0
+                ? "No SOL needed for fees (gasless)"
+                : `Enough SOL for fees: ${fees.sol.toFixed(4)} of ${balances!.sol.toFixed(4)} SOL`
+              : `Not enough SOL for fees: ${fees.sol.toFixed(4)} SOL needed, your wallet holds ${balances!.sol.toFixed(4)}`,
     },
     {
       id: "quotes",
-      ok: input.quoting || unquoted.length > 0 ? null : blocked.length === 0,
+      ok: quotesOk,
       label:
-        input.quoting || unquoted.length > 0
+        quotesOk === null
           ? "Getting fresh quotes…"
-          : blocked.length === 0
+          : quotesOk
             ? "Every item has a fresh quote"
             : cantBuy(
                 blocked.map((i) => ({
@@ -203,7 +180,7 @@ export function preflight(input: {
   ];
 }
 
-/** "Can't buy BAC right now: <reason>", with one reason when they share it. */
+/** "Can't buy NVDAx right now: <reason>", with one reason when they share it. */
 function cantBuy(items: { symbol: string; problem: string | null }[]): string {
   const symbols = items.map((i) => i.symbol).join(", ");
   const reasons = [...new Set(items.map((i) => i.problem).filter(Boolean))];

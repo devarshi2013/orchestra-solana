@@ -3,7 +3,7 @@ import "server-only";
 /**
  * Per-wallet limits for the assistant: one run at a time, and at most
  * `maxPerWindow` runs per `windowMs`. In memory: this is per server instance,
- * which is enough for one Next.js server (docs/assistant.md).
+ * which is enough for one Next.js server.
  */
 export class WalletRateLimiter {
   private readonly runs = new Map<string, { started: number[]; active: boolean }>();

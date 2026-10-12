@@ -1,16 +1,12 @@
 "use client";
 
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction } from "@solana/web3.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { ApiError, executeSwap, fetchOrder } from "@/lib/api-client";
-import {
-  friendlyError,
-  friendlyKind,
-  MAX_RATE_LIMIT_RETRIES,
-  retryDelayMs,
-} from "@/lib/friendly-error";
+import { useConnection, useWallet } from "@/components/wallet";
+import { showPnlToast } from "@/components/share/pnl-toast";
+import { ApiError, executeSwap, fetchOrder, recordFill } from "@/lib/api-client";
+import { friendlyError } from "@/lib/friendly-error";
 import type { OrderResponse } from "@/lib/jupiter/schemas";
 import { base64ToBytes, bytesToBase64 } from "@/lib/solana";
 import {
@@ -19,6 +15,7 @@ import {
   classifyOrderError,
   classifyWalletError,
 } from "@/lib/swap/errors";
+import type { Fill } from "@/lib/strategies/types";
 import { isOrderExpired } from "@/lib/swap/quote";
 import { USDC_MINT } from "@/lib/tokens";
 import { toBaseUnits, USDC_DECIMALS } from "@/lib/units";
@@ -26,48 +23,40 @@ import { toBaseUnits, USDC_DECIMALS } from "@/lib/units";
 export type TradeSide = "buy" | "sell";
 export type TradeStep = "idle" | "signing" | "sending" | "done" | "failed";
 
+const IDLE = { signature: null, error: null };
+
 /** Logs the details (console only) and returns one friendly line. */
 const explain = (stage: string, error: unknown, classified?: unknown) => {
   console.error(`[trade] ${stage} failed`, error);
   return friendlyError(classified ?? (error instanceof ApiError ? classifyApiError(error) : error));
 };
 
-/** fetchOrder, retrying a rate limit up to 3 times (1 s, 2 s, 4 s); `onRetry` runs before each wait. */
-async function orderWithRetry(
-  query: Parameters<typeof fetchOrder>[0],
-  signal: AbortSignal | undefined,
-  onRetry: () => void,
-): Promise<OrderResponse> {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await fetchOrder(query, signal);
-    } catch (error) {
-      if (friendlyKind(error) !== "rate_limited" || attempt >= MAX_RATE_LIMIT_RETRIES) throw error;
-      onRetry();
-      await new Promise((resolve) => setTimeout(resolve, retryDelayMs(attempt + 1)));
-      if (signal?.aborted) throw error;
-    }
-  }
-}
-
 /**
- * One trade between USDC and a registry stock token, through Jupiter Swap v2:
+ * One trade between USDC and a listed stock token, through Jupiter Swap v2:
  * a quote 500 ms after the amount stops changing, then, on approval, a fresh
  * order for this wallet → the wallet signs (never sends) → our
- * /api/swap/execute lands it. Nothing is signed automatically. `mint` comes
- * from the registry (the server rejects anything else).
+ * /api/swap/execute lands it. Nothing is signed automatically, and nothing is
+ * retried: a failure (a rate limit too) is shown as is. The server only
+ * accepts listed stock mints. A landed swap is recorded for the profile
+ * (checked on-chain by the server; nothing is recorded while signed out).
  */
 export function useTrade({
   side,
   mint,
   decimals,
   amount,
+  strategyId,
+  onRecorded,
 }: {
   side: TradeSide;
   mint: string;
   decimals: number;
   /** USDC to spend (buy) or tokens to sell; 0 for none. */
   amount: number;
+  /** The strategy this buy fills, if any. */
+  strategyId?: string;
+  /** Called once the landed swap is recorded (null when it couldn't be). */
+  onRecorded?: (fill: Fill | null) => void;
 }) {
   const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
@@ -76,37 +65,26 @@ export function useTrade({
     order: OrderResponse | null;
     error: string | null;
   } | null>(null);
-  const [retryingKey, setRetryingKey] = useState<string | null>(null);
   const [step, setStep] = useState<TradeStep>("idle");
-  const [result, setResult] = useState<{ signature: string | null; error: string | null }>({
-    signature: null,
-    error: null,
-  });
+  const [result, setResult] = useState<{ signature: string | null; error: string | null }>(IDLE);
   const busy = useRef(false);
 
-  const inputMint = side === "buy" ? USDC_MINT : mint;
-  const outputMint = side === "buy" ? mint : USDC_MINT;
-  const inDecimals = side === "buy" ? USDC_DECIMALS : decimals;
+  const [inputMint, outputMint, inDecimals] =
+    side === "buy" ? [USDC_MINT, mint, USDC_DECIMALS] : [mint, USDC_MINT, decimals];
   const key = `${side}:${mint}:${amount}`;
 
   useEffect(() => {
     if (!(amount > 0)) return;
     const abort = new AbortController();
     const timer = setTimeout(() => {
-      orderWithRetry(
-        {
-          inputMint,
-          outputMint,
-          amount: toBaseUnits(amount, inDecimals).toString(),
-        },
+      fetchOrder(
+        { inputMint, outputMint, amount: toBaseUnits(amount, inDecimals).toString() },
         abort.signal,
-        () => setRetryingKey(key),
       )
         .then((order) => setQuote({ key, order, error: null }))
         .catch((e: unknown) => {
           if (!abort.signal.aborted) setQuote({ key, order: null, error: explain("quote", e) });
-        })
-        .finally(() => setRetryingKey((k) => (k === key ? null : k)));
+        });
     }, 500);
     return () => {
       clearTimeout(timer);
@@ -120,44 +98,41 @@ export function useTrade({
   const execute = useCallback(async () => {
     if (busy.current || !publicKey || !signTransaction || !(amount > 0)) return;
     busy.current = true;
-    setResult({ signature: null, error: null });
+    setResult(IDLE);
+    const fail = (error: string, signature: string | null = null) => {
+      setResult({ signature, error });
+      setStep("failed");
+    };
     try {
       for (let attempt = 1; attempt <= 3; attempt++) {
         setStep("signing");
         let order: OrderResponse;
         try {
-          order = await orderWithRetry(
-            {
-              inputMint,
-              outputMint,
-              amount: toBaseUnits(amount, inDecimals).toString(),
-              taker: publicKey.toBase58(),
-            },
-            undefined,
-            () => {},
-          );
+          order = await fetchOrder({
+            inputMint,
+            outputMint,
+            amount: toBaseUnits(amount, inDecimals).toString(),
+            taker: publicKey.toBase58(),
+          });
         } catch (e) {
-          setResult({ signature: null, error: explain("order", e) });
-          setStep("failed");
-          return;
+          return fail(explain("order", e));
         }
-        if (!order.transaction) {
-          setResult({ signature: null, error: explain("build", order, classifyOrderError(order)) });
-          setStep("failed");
-          return;
-        }
+        if (!order.transaction) return fail(explain("build", order, classifyOrderError(order)));
         let signed: VersionedTransaction;
         try {
           signed = await signTransaction(
             VersionedTransaction.deserialize(base64ToBytes(order.transaction)),
           );
         } catch (e) {
-          setResult({ signature: null, error: explain("sign", e, classifyWalletError(e)) });
-          setStep("failed");
-          return;
+          return fail(explain("sign", e, classifyWalletError(e)));
         }
         // The wallet prompt may have outlived the quote: get a fresh one.
-        const blockHeight = await connection.getBlockHeight("confirmed").catch(() => undefined);
+        let blockHeight: number;
+        try {
+          blockHeight = await connection.getBlockHeight("confirmed");
+        } catch (e) {
+          return fail(explain("block height", e));
+        }
         if (isOrderExpired(order, { now: Date.now(), blockHeight })) continue;
 
         setStep("sending");
@@ -169,43 +144,46 @@ export function useTrade({
           if (landed.status === "Success") {
             setResult({ signature: landed.signature ?? null, error: null });
             setStep("done");
+            if (landed.signature)
+              void recordFill(landed.signature, strategyId).then((fill) => {
+                if (fill) showPnlToast(fill);
+                onRecorded?.(fill);
+              });
             return;
           }
           const reason = classifyExecuteResult(landed);
           if (reason.kind === "expired") continue;
-          setResult({
-            signature: landed.signature ?? null,
-            error: explain("execute", landed, reason),
-          });
-          setStep("failed");
-          return;
+          return fail(explain("execute", landed, reason), landed.signature ?? null);
         } catch (e) {
           if (e instanceof ApiError && classifyApiError(e).kind === "expired") continue;
-          setResult({ signature: null, error: explain("execute", e) });
-          setStep("failed");
-          return;
+          return fail(explain("execute", e));
         }
       }
-      setResult({
-        signature: null,
-        error: "The quote expired before it was sent. Please try again.",
-      });
-      setStep("failed");
+      fail("The quote expired before it was sent. Please try again.");
     } finally {
       busy.current = false;
     }
-  }, [amount, connection, inDecimals, inputMint, outputMint, publicKey, signTransaction]);
+  }, [
+    amount,
+    inDecimals,
+    connection,
+    inputMint,
+    outputMint,
+    publicKey,
+    signTransaction,
+    strategyId,
+    onRecorded,
+  ]);
 
   const reset = useCallback(() => {
     setStep("idle");
-    setResult({ signature: null, error: null });
+    setResult(IDLE);
   }, []);
 
   return {
     quote: current?.order ?? null,
     quoteError: current?.error ?? null,
     quoting: amount > 0 && !current,
-    retrying: retryingKey === key,
     step,
     signature: result.signature,
     error: result.error,

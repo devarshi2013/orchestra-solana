@@ -2,217 +2,870 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Light only, like tokens.xyz: `dark:` variants never apply. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  /* Manrope for text, Sora for headings, Geist Mono for prices and numbers (next/font, layout.tsx). */
-  --font-sans: var(--font-manrope);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sora);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-series-1: var(--series-1);
-  --color-series-2: var(--series-2);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-danger: var(--danger);
-  --color-gain: var(--gain);
-  --color-loss: var(--loss);
-  --color-label-blue: var(--label-blue);
-  --color-glow-blue: var(--glow-blue);
-  --color-glow-deep: var(--glow-deep);
-  --color-navy: var(--navy);
-  --color-silver: var(--silver);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-surface: var(--surface);
-  --color-surface-raised: var(--surface-raised);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-primary-to: var(--primary-to);
-  --color-primary-text: var(--primary-text);
-  --color-primary-hover: var(--primary-hover);
-  --color-primary-tint: var(--primary-tint);
-  --color-heading: var(--heading);
-  --shadow-hover: var(--shadow-hover-value);
-  --color-gold: var(--gold-fill);
-  --color-gold-text: var(--gold-text);
-  --color-neutral: var(--neutral);
-  /* Very soft, warm depth: borders do most of the layering. */
-  --shadow-soft: 0 1px 2px hsl(var(--shadow-color) / 0.06);
-  --shadow-lift: 0 6px 20px -8px hsl(var(--shadow-color) / 0.16);
+/* Design tokens, typography and table helpers from @solana/design-system 1.0.0 (ISC),
 
-  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
-  --animate-toast-in: toast-in 180ms ease-out;
-  /* One radius scale: chips 6px, controls 8px, cards 14px, panels/dialogs 16px. */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.875rem;
-  --radius-2xl: 1rem;
-  --radius-3xl: 1.5rem;
-  --radius-4xl: 2rem;
+ * the system tokens.xyz is built on, without its Solana brand colours, dark theme and code themes. */
 
-  @keyframes shimmer {
-    0% {
-      background-position: 100% 0;
-    }
-    100% {
-      background-position: -100% 0;
-    }
-  }
-  @keyframes toast-in {
-    from {
-      opacity: 0;
-      transform: translateY(8px) scale(0.98);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
+@utility autofill-transparent {
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover,
+  &:-webkit-autofill:focus,
+  &:-webkit-autofill:active {
+    -webkit-text-fill-color: inherit !important;
+    transition: background-color 9999s ease-in-out 0s;
   }
 }
 
-/*
- * Quill design tokens: one dark theme for the whole site. Every colour lives
- * here as a CSS variable (Tailwind reads them through @theme above).
- *
- * Page #07090D, surfaces #0D1117, raised cards #121821, borders white at 8%,
- * text #F5F7FA, muted text #A3ACB9, accents #3B5BDB / #1E3A8A (glows and
- * graphics), navy #0F1B2D, silver #C9D0D7. Gains #22C55E, losses #EF4444, and
- * a lighter red for error text.
- *
- * Contrast (WCAG AA, checked): text 18.6:1 on the page, 16.6:1 on raised
- * cards; muted text 8.7:1 / 7.8:1; gains 9.4:1; losses 5.3:1; error text
- * #F87171 7.2:1; blue labels #8FA4FF 8.5:1. The glow blues are never text.
- */
-:root {
-  --page: #07090d;
-  --surface-1: #0d1117;
-  --surface-2: #121821;
-  --text: #f5f7fa;
-  --text-muted: #a3acb9;
-  --navy: #0f1b2d;
-  --glow-deep: #1e3a8a;
-  --glow-blue: #3b5bdb;
-  --silver: #c9d0d7;
-  --label-blue: #8fa4ff;
-  --gain: #22c55e;
-  --loss: #ef4444;
+@keyframes spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-  --background: var(--page);
-  --foreground: var(--text);
-  --heading: var(--text);
-  --card: var(--surface-1);
-  --card-foreground: var(--text);
-  --surface: var(--surface-1);
-  --surface-raised: var(--surface-2);
-  --popover: var(--surface-2);
-  --popover-foreground: var(--text);
-  /* Primary buttons are white with dark text. */
-  --primary: var(--text);
-  --primary-hover: #ffffff;
-  --primary-foreground: var(--page);
-  --primary-to: #ffffff;
-  --primary-text: var(--text);
-  --primary-text-to: var(--silver);
-  --primary-tint: var(--surface-2);
-  --gold-fill: var(--page);
-  --gold-text: var(--label-blue);
-  --secondary: transparent;
-  --secondary-foreground: var(--text);
-  --muted: var(--surface-2);
-  --muted-foreground: var(--text-muted);
-  --accent: var(--surface-2);
-  --accent-foreground: var(--text);
-  --destructive: var(--loss);
-  --success: var(--gain);
-  --warning: #fbbf24;
-  --danger: #f87171;
-  --neutral: var(--text-muted);
-  --border: rgb(255 255 255 / 0.08);
-  --input: rgb(255 255 255 / 0.14);
-  --ring: #6e8bff;
-  --shadow-color: 0 0% 0%;
-  --chart-1: #1e3a8a;
-  --chart-2: #3b5bdb;
-  --chart-3: #8fa4ff;
-  --chart-4: var(--silver);
-  --chart-5: var(--text);
-  --series-1: var(--label-blue);
-  --series-2: var(--silver);
-  --radius: 0.5rem;
-  --sidebar: var(--surface-1);
-  --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--text);
-  --sidebar-primary-foreground: var(--page);
-  --sidebar-accent: var(--surface-2);
-  --sidebar-accent-foreground: var(--text);
-  --sidebar-border: rgb(255 255 255 / 0.08);
-  --sidebar-ring: #6e8bff;
-  --logo-nib: var(--text);
-  --logo-slit: var(--page);
-  --footer-dots: var(--glow-blue);
-  --shadow-hover-value: 0 10px 24px -12px rgb(0 0 0 / 0.6);
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+@keyframes spinner-dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 42, 150;
+    stroke-dashoffset: -16;
+  }
+  100% {
+    stroke-dasharray: 42, 150;
+    stroke-dashoffset: -59;
+  }
+}
+
+.animate-spinner {
+  animation: spinner-rotate 1.4s linear infinite;
+}
+
+.animate-spinner-dash {
+  animation: spinner-dash 1.4s ease-in-out infinite;
+}
+
+@theme {
+  /* Gray palette - references CSS variables for light/dark mode switching */
+  --color-gray-50: var(--gray-50);
+  --color-gray-100: var(--gray-100);
+  --color-gray-200: var(--gray-200);
+  --color-gray-300: var(--gray-300);
+  --color-gray-400: var(--gray-400);
+  --color-gray-500: var(--gray-500);
+  --color-gray-600: var(--gray-600);
+  --color-gray-700: var(--gray-700);
+  --color-gray-800: var(--gray-800);
+  --color-gray-900: var(--gray-900);
+  --color-gray-1000: var(--gray-1000);
+  --color-gray-1100: var(--gray-1100);
+  --color-gray-1200: var(--gray-1200);
+  --color-gray-1300: var(--gray-1300);
+  --color-gray-1400: var(--gray-1400);
+
+  /* Text emphasis scale */
+  --color-text-extra-high: var(--text-extra-high);
+  --color-text-high: var(--text-high);
+  --color-text-medium: var(--text-medium);
+  --color-text-low: var(--text-low);
+  --color-text-extra-low: var(--text-extra-low);
+
+  /* Border scale */
+  --color-border-strongest: var(--border-strongest);
+  --color-border-strong: var(--border-strong);
+  --color-border-medium: var(--border-medium);
+  --color-border-light: var(--border-light);
+  --color-border-extra-light: var(--border-extra-light);
+
+  /* Base colors */
+  --color-black: var(--black);
+  --color-white: var(--white);
+
+  /* Status colors */
+  --color-status-error-bg: var(--status-error-bg);
+  --color-status-error-border: var(--status-error-border);
+  --color-status-error-text: var(--status-error-text);
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-success-text: var(--status-success-text);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-border: var(--status-warning-border);
+  --color-status-warning-text: var(--status-warning-text);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-border: var(--status-info-border);
+  --color-status-info-text: var(--status-info-text);
+
+  /* Soft surfaces: fills instead of borders, hairline shadows instead of outlines. */
+  --color-soft: #f4f4f9;
+  --color-soft-strong: #eaeaf1;
+  --color-rail: #fafafc;
+  --color-ink-muted: #868593;
+  --shadow-hairline:
+    0 0 0 1px rgb(0 0 0 / 0.04), 0 1px 1px rgb(0 0 0 / 0.04), 0 2px 4px -1px rgb(0 0 0 / 0.08);
+  --shadow-float: 0 12px 32px -8px rgb(0 0 0 / 0.18), 0 0 0 1px rgb(0 0 0 / 0.05);
+}
+
+:root {
+  /* Gray palette - Light mode (OKLCH, Solana purple axis H=286→300→286) */
+  --gray-50: oklch(0.97 0.004 286);
+  --gray-100: oklch(0.93 0.008 289.4);
+  --gray-200: oklch(0.887 0.012 292.6);
+  --gray-300: oklch(0.842 0.016 295.6);
+  --gray-400: oklch(0.794 0.019 298);
+  --gray-500: oklch(0.743 0.021 299.7);
+  --gray-600: oklch(0.69 0.022 300);
+  --gray-700: oklch(0.633 0.021 299.7);
+  --gray-800: oklch(0.575 0.019 298);
+  --gray-900: oklch(0.513 0.016 295.6);
+  --gray-1000: oklch(0.449 0.012 292.6);
+  --gray-1100: oklch(0.382 0.008 289.4);
+  --gray-1200: oklch(0.312 0.004 286.6);
+  --gray-1300: oklch(0.24 0.003 286);
+  --gray-1400: oklch(0.165 0.002 286);
+
+  /* Base colors */
+  --black: #000000;
+  --white: #ffffff;
+
+  /* Semantic tokens - Text (emphasis scale using transparency) */
+  --text-extra-high: var(--gray-1400);
+  --text-high: color-mix(in srgb, var(--gray-1400) 88%, transparent);
+  --text-medium: color-mix(in srgb, var(--gray-1400) 72%, transparent);
+  --text-low: color-mix(in srgb, var(--gray-1400) 58%, transparent);
+  --text-extra-low: color-mix(in srgb, var(--gray-1400) 44%, transparent);
+
+  /* Semantic tokens - Borders (using gray-1300 with transparency) */
+  --border-strongest: var(--gray-1300);
+  --border-strong: color-mix(in srgb, var(--gray-1300) 48%, transparent);
+  --border-medium: color-mix(in srgb, var(--gray-1300) 20%, transparent);
+  --border-light: color-mix(in srgb, var(--gray-1300) 12%, transparent);
+  --border-extra-light: color-mix(in srgb, var(--gray-1300) 4%, transparent);
+
+  /* Status color tokens (OKLCH, contrast-verified) */
+  --status-error-bg: oklch(0.965 0.015 25);
+  --status-error-border: oklch(0.78 0.1 25);
+  --status-error-text: oklch(0.44 0.18 25);
+  --status-success-bg: oklch(0.965 0.02 155);
+  --status-success-border: oklch(0.75 0.1 155);
+  --status-success-text: oklch(0.38 0.1 155);
+  --status-warning-bg: oklch(0.97 0.025 85);
+  --status-warning-border: oklch(0.8 0.11 85);
+  --status-warning-text: oklch(0.42 0.12 85);
+  --status-info-bg: oklch(0.965 0.015 250);
+  --status-info-border: oklch(0.75 0.09 250);
+  --status-info-text: oklch(0.4 0.13 250);
+
+  /* Typography - Font Family */
+  --font-sans: "Inter Variable", "Inter", system-ui, sans-serif;
+
+  /* ==========================================================================
+ Dark Mode Font Weight Compensation
+
+ The irradiation illusion causes light text on dark backgrounds
+ to appear 15-25% heavier than intended. We use a weight multiplier
+ to reduce the rendered weight in dark mode.
+
+ How it works:
+ 1. Define base weights (the intended design values)
+ 2. Apply multiplier: computed_weight = base_weight × multiplier
+ 3. Light mode: multiplier = 1 (no change)
+ 4. Dark mode: multiplier = 0.90 (10% reduction)
+
+ Why 0.90?
+ - Inter's weights (450/500/550/600) are already custom-tuned
+ - 0.90 provides visible improvement with minimal layout shift
+ - More aggressive values (0.85) cause noticeable text reflow
+
+ Trade-off accepted:
+ - Minor layout shift occurs on theme toggle
+ - This is acceptable because toggles are user-initiated
+ ========================================================================== */
+
+  /* Weight multiplier (1 = no adjustment, <1 = lighter in dark mode) */
+  --fw-mult: 1;
+
+  /* Letter-spacing offset for dark mode (compensates for narrower glyphs) */
+  --tracking-dark-offset: 0em;
+
+  /* Base weight values - these are the intended design weights */
+  --font-weight-regular-base: 450;
+  --font-weight-medium-base: 500;
+  --font-weight-semibold-base: 600;
+  --font-weight-bold-base: 550;
+
+  /* Typography - Weights (computed: base × multiplier) */
+  --font-weight-regular: calc(var(--font-weight-regular-base) * var(--fw-mult));
+  --font-weight-medium: calc(var(--font-weight-medium-base) * var(--fw-mult));
+  --font-weight-semibold: calc(var(--font-weight-semibold-base) * var(--fw-mult));
+  --font-weight-bold: calc(var(--font-weight-bold-base) * var(--fw-mult));
+
+  /* Typography - Tracking */
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.01em;
+
+  /* Typography - Line Heights */
+  --leading-none: 1;
+  --leading-tight: 1.1;
+  --leading-snug: 1.25;
+  --leading-normal: 1.5;
+
+  /* Typography - Fluid Sizes (768px → 1440px) */
+  --text-display: clamp(36px, calc(36px + (48 - 36) * ((100vw - 768px) / (1440 - 768))), 48px);
+  --text-title-xl: clamp(28px, calc(28px + (36 - 28) * ((100vw - 768px) / (1440 - 768))), 36px);
+  --text-title-lg: clamp(22px, calc(22px + (28 - 22) * ((100vw - 768px) / (1440 - 768))), 28px);
+  --text-title-md: clamp(19px, calc(19px + (24 - 19) * ((100vw - 768px) / (1440 - 768))), 24px);
+  --text-title-sm: clamp(16px, calc(16px + (19 - 16) * ((100vw - 768px) / (1440 - 768))), 19px);
+
+  /* Typography - Static Sizes */
+  --text-headline-lg: 16px;
+  --text-headline-md: 14px;
+  --text-body-lg-size: 16px;
+  --text-body-md-size: 14px;
+  --text-body-sm-size: 12px;
+  --text-button-xl: 16px;
+  --text-button-lg: 15px;
+  --text-button-md: 14px;
+  --text-button-sm: 13px;
+
+  /* =============================================================================
+ TABLE TOKENS
+ ============================================================================= */
+
+  --table-row-height: 44px;
+  --table-header-height: 40px;
+  --table-cell-padding-x: 16px;
+  --table-cell-padding-x-edge: 20px;
+  --table-cell-padding-y: 12px;
+  --table-header-padding-y: 10px;
+  --table-header-bg: color-mix(in srgb, var(--gray-1400) 3%, transparent);
+  --table-header-text: var(--text-medium);
+  --table-row-bg-hover: color-mix(in srgb, var(--gray-1400) 3%, transparent);
+  --table-row-bg-selected: color-mix(in srgb, var(--gray-1400) 6%, transparent);
+  --table-border: var(--border-light);
+  --table-caption-text: var(--text-low);
+  --table-radius: 12px;
+  --table-scrollbar-thumb: var(--gray-300);
+  --table-scrollbar-thumb-hover: var(--gray-400);
+
+  /* Solid equivalents for sticky/pinned cells (can't be transparent over scrolling content) */
+  --table-bg: var(--background);
+  --table-header-bg-solid: color-mix(in srgb, var(--gray-1400) 3%, var(--background));
+  --table-row-bg-hover-solid: color-mix(in srgb, var(--gray-1400) 3%, var(--background));
+
+  /* =============================================================================
+ BADGE TOKENS
+ ============================================================================= */
+
+  --badge-height: 20px;
+  --badge-padding-x: 8px;
+  --badge-radius: 9999px;
+  --badge-dot-size: 5px;
+  --badge-gap: 5px;
+  --badge-font-size: var(--text-body-sm-size);
+  --badge-font-weight: var(--font-weight-medium);
+
+  /* Badge - Default (gray) */
+  --badge-default-bg: color-mix(in srgb, var(--gray-1400) 8%, transparent);
+  --badge-default-text: var(--text-high);
+  --badge-default-dot: var(--gray-700);
+
+  /* Badge - Success (green) H=155 */
+  --badge-success-bg: oklch(0.955 0.045 155);
+  --badge-success-text: oklch(0.4 0.1 155);
+  --badge-success-dot: oklch(0.55 0.14 155);
+
+  /* Badge - Warning (amber) H=84 */
+  --badge-warning-bg: oklch(0.955 0.05 84);
+  --badge-warning-text: oklch(0.4 0.1 84);
+  --badge-warning-dot: oklch(0.55 0.14 84);
+
+  /* Badge - Danger (red) H=29 */
+  --badge-danger-bg: oklch(0.955 0.04 29);
+  --badge-danger-text: oklch(0.4 0.1 29);
+  --badge-danger-dot: oklch(0.55 0.14 29);
+
+  /* Badge - Info (blue) H=250 */
+  --badge-info-bg: oklch(0.955 0.04 250);
+  --badge-info-text: oklch(0.4 0.1 250);
+  --badge-info-dot: oklch(0.55 0.14 250);
+
+  /* =============================================================================
+ BUTTON TOKENS
+ ============================================================================= */
+
+  /* Button Primary - high contrast, inverts in dark mode */
+  --button-primary-bg: var(--gray-1400);
+  --button-primary-bg-hover: var(--gray-1300);
+  --button-primary-bg-active: var(--gray-1100);
+  --button-primary-text: var(--white);
+
+  /* Button Secondary - subtle transparency-based fill */
+  --button-secondary-bg: color-mix(in srgb, var(--gray-1400) 8%, transparent);
+  --button-secondary-bg-hover: color-mix(in srgb, var(--gray-1400) 12%, transparent);
+  --button-secondary-bg-active: color-mix(in srgb, var(--gray-1400) 16%, transparent);
+  --button-secondary-text: var(--text-high);
+
+  /* Button Focus Ring - solid color for WCAG 2.4.13 compliance (≥3:1 contrast) */
+  --button-focus-ring: var(--gray-1200);
+  --button-focus-ring-offset: 2px;
+
+  /* Button Heights */
+  --button-height-xl: 48px;
+  --button-height-lg: 40px;
+  --button-height-md: 36px;
+  --button-height-sm: 28px;
+
+  /* Button Padding Horizontal */
+  --button-padding-x-xl: 20px;
+  --button-padding-x-lg: 18px;
+  --button-padding-x-md: 12px;
+  --button-padding-x-sm: 8px;
+
+  /* Button Padding Horizontal - Round variant */
+  --button-padding-x-round-xl: 26px;
+  --button-padding-x-round-lg: 22px;
+  --button-padding-x-round-md: 16px;
+  --button-padding-x-round-sm: 12px;
+
+  /* Button Radii - Default (per size) */
+  --button-radius-xl: 12px;
+  --button-radius-lg: 10px;
+  --button-radius-md: 8px;
+  --button-radius-sm: 6px;
+
+  /* Button Icon Sizes */
+  --button-icon-xl: 20px;
+  --button-icon-lg: 18px;
+  --button-icon-md: 16px;
+  --button-icon-sm: 14px;
+
+  /* Button Icon Gaps */
+  --button-gap-xl: 10px;
+  --button-gap-lg: 8px;
+  --button-gap-md: 6px;
+  --button-gap-sm: 4px;
+
+  /* =============================================================================
+ INPUT TOKENS
+ ============================================================================= */
+
+  /* Input Heights (matches button) */
+  --input-height-xl: 48px;
+  --input-height-lg: 40px;
+  --input-height-md: 36px;
+
+  /* Input Typography */
+  --input-text-size-xl: 16px;
+  --input-text-size-lg: 14px;
+  --input-text-size-md: 14px;
+  --input-label-size-xl: 14px;
+  --input-label-size-lg: 14px;
+  --input-label-size-md: 14px;
+  --input-description-size-xl: 14px;
+  --input-description-size-lg: 12px;
+  --input-description-size-md: 12px;
+  --input-text-line-height: 1.25;
+  --input-placeholder-color: var(--text-low);
+
+  /* Input Padding Horizontal */
+  --input-padding-x-xl: 14px;
+  --input-padding-x-lg: 12px;
+  --input-padding-x-md: 10px;
+
+  /* Input Addon Inner Padding (divider side) */
+  --input-addon-inner-xl: 12px;
+  --input-addon-inner-lg: 10px;
+  --input-addon-inner-md: 8px;
+
+  /* Input Radii (matches button) */
+  --input-radius-xl: 12px;
+  --input-radius-lg: 10px;
+  --input-radius-md: 8px;
+
+  /* Input Icon Sizes */
+  --input-icon-xl: 20px;
+  --input-icon-lg: 16px;
+  --input-icon-md: 16px;
+
+  /* Input Gaps */
+  --input-gap-xl: 8px;
+  --input-gap-lg: 6px;
+  --input-gap-md: 6px;
+
+  /* Input Action Gaps */
+  --input-action-gap-xl: 4px;
+  --input-action-gap-lg: 2px;
+  --input-action-gap-md: 2px;
+
+  /* Input Border */
+  --input-border-width: 1.5px;
+  --input-border-idle: color-mix(in srgb, var(--gray-1300) 20%, transparent);
+  --input-border-hover: color-mix(in srgb, var(--gray-1300) 36%, transparent);
+  --input-border-focus: color-mix(in srgb, var(--gray-1300) 48%, transparent);
+
+  /* Input Background */
+  --input-bg-idle: color-mix(in srgb, var(--gray-1400) 1.5%, transparent);
+  --input-bg-hover: color-mix(in srgb, var(--gray-1400) 2%, transparent);
+
+  /* Input Addon Hover (interactive segments like AddonSelect) */
+  --input-addon-hover-bg: color-mix(in srgb, var(--gray-1400) 3%, transparent);
+
+  /* Input Focus Ring */
+  --input-focus-ring: color-mix(in srgb, var(--gray-1200) 16%, transparent);
+
+  /* Input Error (wired to status tokens) */
+  --input-border-error: oklch(0.44 0.18 25 / 60%);
+  --input-error-text: var(--status-error-text);
+
+  /* =============================================================================
+ TOOLTIP TOKENS
+ ============================================================================= */
+
+  --tooltip-bg: var(--gray-1400);
+  --tooltip-text: var(--white);
+  --tooltip-radius: 8px;
+  --tooltip-shadow: 0px 4px 12px rgba(0, 0, 0, 0.12);
+
+  /* =============================================================================
+ TABS TOKENS
+ ============================================================================= */
+
+  --tab-text-idle: var(--text-high);
+  --tab-text-hover: var(--text-high);
+  --tab-text-active: var(--text-extra-high);
+  --tab-text-disabled: var(--text-extra-low);
+  --tab-weight-idle: var(--font-weight-regular);
+  --tab-weight-active: var(--font-weight-medium);
+  --tab-indicator-height: 2px;
+  --tab-indicator-color: var(--text-extra-high);
+  --tab-badge-bg: color-mix(in srgb, var(--gray-1400) 8%, transparent);
+  --tab-badge-text: var(--text-medium);
+  --tab-padding-x-sm: 12px;
+  --tab-padding-x-md: 16px;
+  --tab-padding-y-sm: 8px;
+  --tab-padding-y-md: 10px;
+  --tab-gap-sm: 6px;
+  --tab-gap-md: 8px;
+  --tab-icon-sm: 14px;
+  --tab-icon-md: 16px;
+
+  /* Input Hint Icon */
+  --input-hint-icon-xl: 14px;
+  --input-hint-icon-lg: 14px;
+  --input-hint-icon-md: 12px;
+
+  /* =============================================================================
+ SELECT POPUP TOKENS
+ ============================================================================= */
+
+  --select-popup-bg: var(--white);
+  --select-popup-border: color-mix(in srgb, var(--gray-1300) 16%, transparent);
+  --select-popup-shadow: 0px 8px 24px rgba(0, 0, 0, 0.08), 0px 2px 8px rgba(0, 0, 0, 0.04);
+  --select-popup-radius: 12px;
+  --select-popup-padding: 4px;
+  --select-item-radius: 8px;
+  --select-item-highlight-bg: color-mix(in srgb, var(--gray-1400) 6%, transparent);
+  --select-item-indicator-slot: 16px;
+  --select-item-indicator-gap: 8px;
+  --select-trigger-icon-xl: 16px;
+  --select-trigger-icon-lg: 14px;
+  --select-trigger-icon-md: 14px;
+  --select-item-icon-xl: 16px;
+  --select-item-icon-lg: 14px;
+  --select-item-icon-md: 14px;
+  --select-indicator-size-xl: 16px;
+  --select-indicator-size-md: 14px;
+  --select-indicator-size-lg: 14px;
+  --select-indicator-size: var(--select-indicator-size-lg);
+
+  --radius: 0.625rem;
+
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.44 0.18 25);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+/* =============================================================================
+   TYPOGRAPHY SYSTEM - Inter Variable
+   Using fluid scaling for display/titles, static sizes for body/UI text
+   ============================================================================= */
+
+/* Display & Titles (Fluid) */
+.text-display {
+  font-family: var(--font-sans);
+  font-size: var(--text-display);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-title-xl {
+  font-family: var(--font-sans);
+  font-size: var(--text-title-xl);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-title-lg {
+  font-family: var(--font-sans);
+  font-size: var(--text-title-lg);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-title-md {
+  font-family: var(--font-sans);
+  font-size: var(--text-title-md);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-title-sm {
+  font-family: var(--font-sans);
+  font-size: var(--text-title-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 24px;
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Headlines (Static) */
+.text-headline-lg {
+  font-family: var(--font-sans);
+  font-size: var(--text-headline-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-headline-md {
+  font-family: var(--font-sans);
+  font-size: var(--text-headline-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Body (Static) */
+.text-body-lg {
+  font-family: var(--font-sans);
+  font-size: var(--text-body-lg-size);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.text-body-lg-bold {
+  font-family: var(--font-sans);
+  font-size: var(--text-body-lg-size);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.text-body-md {
+  font-family: var(--font-sans);
+  font-size: var(--text-body-md-size);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-body-md-bold {
+  font-family: var(--font-sans);
+  font-size: var(--text-body-md-size);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-body-sm {
+  font-family: var(--font-sans);
+  font-size: var(--text-body-sm-size);
+  font-weight: var(--font-weight-regular);
+  line-height: 1.4;
+  letter-spacing: var(--tracking-normal);
+}
+
+.text-body-sm-bold {
+  font-family: var(--font-sans);
+  font-size: var(--text-body-sm-size);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.4;
+  letter-spacing: var(--tracking-normal);
+}
+
+/* Buttons (Static) */
+.text-button-xl {
+  font-family: var(--font-sans);
+  font-size: var(--text-button-xl);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-none);
+  letter-spacing: var(--tracking-wide);
+}
+
+.text-button-lg {
+  font-family: var(--font-sans);
+  font-size: var(--text-button-lg);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-none);
+  letter-spacing: var(--tracking-wide);
+}
+
+.text-button-md {
+  font-family: var(--font-sans);
+  font-size: var(--text-button-md);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-none);
+  letter-spacing: var(--tracking-wide);
+}
+
+.text-button-sm {
+  font-family: var(--font-sans);
+  font-size: var(--text-button-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-none);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Legacy aliases for backwards compatibility */
+.text-h1 {
+  font-family: var(--font-sans);
+  font-size: var(--text-display);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-title-2 {
+  font-family: var(--font-sans);
+  font-size: var(--text-title-xl);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-h2 {
+  font-family: var(--font-sans);
+  font-size: var(--text-title-lg);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-title-4 {
+  font-family: var(--font-sans);
+  font-size: var(--text-title-md);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-title-5 {
+  font-family: var(--font-sans);
+  font-size: var(--text-title-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: 24px;
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-body-l {
+  font-family: var(--font-sans);
+  font-size: var(--text-body-lg-size);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.text-nav-item {
+  font-family: var(--font-sans);
+  font-size: var(--text-headline-md);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: var(--font-sans);
+  --font-inter: var(--font-sans);
+}
+
+/* =============================================================================
+   TABLE - Scrollbar & Scroll Shadows
+   ============================================================================= */
+
+/* Always-visible thin scrollbar for WebKit/Blink (converts overlay → classic) */
+.table-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--table-scrollbar-thumb);
+  border-radius: 9999px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--table-scrollbar-thumb-hover);
+}
+
+/* Firefox fallback: thin native scrollbar */
+@supports not selector(::-webkit-scrollbar) {
+  .table-scroll-container {
+    scrollbar-color: var(--table-scrollbar-thumb) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+/* Edge shadow indicators */
+.table-scroll-shadow-start,
+.table-scroll-shadow-end {
+  position: absolute;
+  top: 0;
+  bottom: 8px; /* clear the scrollbar track */
+  z-index: 1;
+  width: 16px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.table-scroll-shadow-start {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--gray-1400) 8%, transparent),
+    transparent
+  );
+  border-radius: var(--table-radius) 0 0 0;
+}
+
+.table-scroll-shadow-end {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--gray-1400) 8%, transparent),
+    transparent
+  );
+  border-radius: 0 var(--table-radius) 0 0;
+}
+
+/* Inter Variable, self-hosted (public/fonts, OFL) and preloaded in layout.tsx. */
+@font-face {
+  font-family: "Inter Variable";
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: optional;
+  src: url("/fonts/InterVariable.woff2") format("woff2-variations");
+}
+
+:root {
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+@theme inline {
+  --font-mono: var(--font-mono);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring;
+  :where(*) {
+    @apply border-border outline-ring/50;
   }
   html {
-    font-variant-numeric: normal;
-    color-scheme: dark;
+    font-synthesis-weight: none;
+    font-synthesis-style: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-optical-sizing: auto;
+    font-size-adjust: 0.52;
+    color-scheme: light;
     -webkit-tap-highlight-color: transparent;
   }
-  body {
-    @apply bg-background font-sans text-sm leading-6 text-foreground;
+  :where(body) {
+    font-optical-sizing: auto;
+    @apply bg-background font-sans text-foreground;
   }
-  /* Prices and amounts: monospaced tabular figures so columns line up. */
-  .tabular-nums,
-  .font-mono {
-    font-variant-numeric: tabular-nums slashed-zero;
-  }
-  /* Sora for headings; an <em> inside one is an Instrument Serif Italic accent. */
-  h1,
-  h2,
-  h3 {
-    @apply font-heading font-semibold tracking-tight text-balance text-heading;
-  }
-  :is(h1, h2, h3) em {
-    font-family: var(--font-instrument), Georgia, serif;
-    font-style: italic;
-    font-weight: 400;
-    letter-spacing: -0.01em;
-  }
-  ::selection {
-    background: color-mix(in oklch, var(--primary) 28%, transparent);
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-sans);
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -224,236 +877,15 @@
   }
 }
 
-/* Type scale: h1 28px, h2 18px, h3 15px, body 14px, caption 12px. */
-@utility type-h1 {
-  font-size: 1.75rem;
-  line-height: 2.125rem;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-}
-@utility type-h2 {
-  font-size: 1.125rem;
-  line-height: 1.625rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-@utility type-h3 {
-  font-size: 0.9375rem;
-  line-height: 1.375rem;
-  font-weight: 600;
-}
-@utility type-caption {
-  font-size: 0.75rem;
-  line-height: 1.125rem;
-  color: var(--muted-foreground);
-}
-
-/* The accent gradient, for primary actions and small highlights only. */
-@utility bg-brand {
-  background-image: linear-gradient(135deg, var(--primary), var(--primary-to));
-}
-/* Gradient text in the accent (navy in light mode, white in dark). */
-@utility text-brand {
-  background-image: linear-gradient(135deg, var(--primary-text), var(--primary-text-to));
-  background-clip: text;
-  color: transparent;
-}
-
-/* The wallet adapter's button, matched to our controls. */
-html .wallet-adapter-button {
-  height: 2.5rem;
-  white-space: nowrap;
-  justify-content: center;
-  padding: 0 0.875rem;
-  border-radius: var(--radius-lg);
-  font-size: 0.875rem;
-  font-weight: 500;
-  line-height: 1;
-  transition:
-    background-color 300ms ease,
-    box-shadow 300ms ease,
-    transform 300ms ease;
-}
-/* Select Wallet / the connected address: a navy button like our primary actions. */
-html .wallet-adapter-button-trigger {
-  background: var(--primary);
-  color: var(--primary-foreground);
-  font-weight: 600;
-}
-html .wallet-adapter-button-trigger:not([disabled]):hover {
-  background: var(--primary-hover);
-  box-shadow: var(--shadow-hover-value);
-}
-@media (prefers-reduced-motion: no-preference) {
-  html .wallet-adapter-button-trigger:not([disabled]):hover {
-    transform: translateY(-2px);
-  }
-}
-html .wallet-adapter-button:not([disabled]):focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-html .wallet-adapter-button-start-icon {
-  margin-right: 0.5rem;
-  width: 18px;
-  height: 18px;
-}
-html .wallet-adapter-button:not([disabled]):active {
-  transform: none;
-}
-
-/* The wallet picker modal, in our surfaces and type instead of the library's own. */
-html .wallet-adapter-modal-fade-wrapper,
-html .wallet-adapter-modal {
-}
-html .wallet-adapter-modal-overlay {
-  background: rgb(0 0 0 / 55%);
-  backdrop-filter: blur(4px);
-}
-html .wallet-adapter-modal-wrapper {
-  background: var(--popover);
-  color: var(--popover-foreground);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-lift);
-}
-html .wallet-adapter-modal-title {
-  color: var(--foreground);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-html .wallet-adapter-modal-button-close {
-  background: var(--muted);
-}
-html .wallet-adapter-modal-button-close svg {
-  fill: var(--muted-foreground);
-}
-html .wallet-adapter-modal-button-close:hover svg {
-  fill: var(--foreground);
-}
-html .wallet-adapter-modal-list .wallet-adapter-button {
-  height: 3rem;
-  justify-content: flex-start;
-  border-radius: var(--radius-lg);
-  background: transparent;
-  color: var(--foreground);
-  font-weight: 500;
-}
-html .wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover {
-  background: var(--muted);
-}
-html .wallet-adapter-modal-list .wallet-adapter-button span {
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  font-weight: 400;
-}
-html .wallet-adapter-modal-list-more {
-  color: var(--muted-foreground);
-}
-html .wallet-adapter-modal-list-more svg {
-  fill: var(--muted-foreground);
-}
-html .wallet-adapter-modal-middle-button {
-  background: var(--primary);
-  color: var(--primary-foreground);
-  font-weight: 600;
-  border-radius: var(--radius-lg);
-}
-html .wallet-adapter-dropdown-list {
-  background: var(--popover);
-  color: var(--popover-foreground);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lift);
-}
-html .wallet-adapter-dropdown-list-item {
-  border-radius: var(--radius-md);
-  font-weight: 500;
-}
-html .wallet-adapter-dropdown-list-item:not([disabled]):hover {
-  background: var(--muted);
-}
-
-/* The chat (/chat) fills the screen under the navbar: no footer. */
-body:has([data-chat-shell]) [data-site-footer] {
-  display: none;
-}
-/* On the chat the navbar's button reads "Browse stocks" and is the one link to Markets. */
-body:has([data-chat-shell]) [data-nav-markets],
-body:has([data-chat-shell]) [data-nav-launch] {
-  display: none;
-}
-body:has([data-chat-shell]) [data-nav-browse] {
-  display: inline;
-}
-body:has([data-chat-shell]) [data-nav-cta] {
-  display: inline-flex;
-}
-/* The home page has its own announcement bar and navbar instead of the site header. */
-body:has([data-home-page]) [data-site-header] {
-  display: none;
-}
-
-/* Secondary (outline) buttons: a light outline that fills white on hover. */
-[data-slot="button"][data-variant="outline"] {
-  border-color: rgb(255 255 255 / 0.24);
-}
-
-/*
- * Links: a navy underline that grows from left to right on hover.
- * `link-grow` for links that stand apart (navigation, footer); `link-inline`
- * for links inside running text, which also keep a faint underline at rest,
- * since navy alone isn't distinct enough from body text (1.15:1).
- */
-@utility link-grow {
-  color: var(--primary-text);
-  background-image: linear-gradient(var(--primary-text), var(--primary-text));
-  background-repeat: no-repeat;
-  background-position: 0 100%;
-  background-size: 0% 1.5px;
-  transition:
-    background-size 300ms var(--ease-out-soft),
-    color 300ms ease;
-  &:hover,
-  &:focus-visible {
-    background-size: 100% 1.5px;
-  }
-}
-@utility link-inline {
-  color: var(--primary-text);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-decoration-color: color-mix(in oklch, var(--primary-text) 35%, transparent);
-  text-underline-offset: 3px;
-  background-image: linear-gradient(var(--primary-text), var(--primary-text));
-  background-repeat: no-repeat;
-  background-position: 0 100%;
-  background-size: 0% 1.5px;
-  transition: background-size 300ms var(--ease-out-soft);
-  &:hover,
-  &:focus-visible {
-    background-size: 100% 1.5px;
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 
-/* Cards: lift slightly on hover with a faint navy-tinted shadow. */
-@utility card-lift {
-  transition:
-    transform 300ms ease,
-    box-shadow 300ms ease,
-    border-color 300ms ease;
-  &:hover {
-    box-shadow: var(--shadow-hover-value);
-    border-color: color-mix(in oklch, var(--primary) 30%, var(--border));
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    &:hover {
-      transform: translateY(-2px);
-    }
-  }
-}
-
-/* An indeterminate navy progress bar (a still, full bar under reduced motion). */
+/* An indeterminate progress bar (a still, full bar under reduced motion). */
 @keyframes progress-slide {
   from {
     transform: translateX(-100%);
@@ -463,443 +895,420 @@ body:has([data-home-page]) [data-site-header] {
   }
 }
 @utility progress-indeterminate {
-  animation: progress-slide 1.1s var(--ease-out-soft) infinite;
+  animation: progress-slide 1.2s ease-in-out infinite;
   @media (prefers-reduced-motion: reduce) {
-    animation: none;
     width: 100%;
-    opacity: 0.6;
+    animation: none;
   }
 }
 
-/* --- Home page effects (dark home only) ------------------------------------ */
+/* --- The chat (/chat) ------------------------------------------------------ */
 
-/* Soft gradient orbs drift slowly; only when motion is allowed (see `motion-safe:`). */
-@keyframes orb-drift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(3%, -4%, 0) scale(1.06);
-  }
+/* The fixed header's height: pages that don't run under it start below it. */
+:root {
+  --header-height: 72px;
 }
-@utility animate-orb {
-  animation: orb-drift 22s ease-in-out infinite;
+/* The chat fills the screen under the header: no footer, and it starts below the header. */
+body:has([data-chat-shell]) [data-site-footer] {
+  display: none;
 }
-/* Hero overlays: a slow, small bob. */
-@keyframes float {
-  50% {
-    transform: translateY(-8px);
-  }
-}
-@utility animate-float {
-  animation: float 7s ease-in-out infinite;
-}
-/* Headline accents: silver to soft electric blue, as text. */
-@utility text-gradient-silver {
-  /* Wider than the text, so hovering can sweep it across (.accent-sweep). */
-  background-image: linear-gradient(
-    100deg,
-    #e6eaf0 0%,
-    var(--silver) 22%,
-    var(--label-blue) 48%,
-    var(--silver) 74%,
-    #e6eaf0 100%
-  );
-  background-size: 220% 100%;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-}
-@utility bg-grain {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+body:has([data-chat-shell]) #main {
+  padding-top: var(--header-height);
 }
 
-/* --- Home page: fonts, scrolling and text hover effects -------------------- */
-
-/* Native smooth scrolling as a fallback when Lenis isn't running. */
-@media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
-}
-/* Looping animations stop while their section is off screen (PauseOffscreen). */
-[data-paused] *,
-[data-paused] {
-  animation-play-state: paused !important;
-}
-
-/*
- * Hover effects (mouse only: Tailwind's hover and these rules apply under
- * `(hover: hover)`). Only transform, opacity, colour, letter-spacing and
- * background-position change; movement is dropped under reduced motion.
- */
-@media (hover: hover) {
-  /* Hero headline: each word lifts a little and brightens. */
-  .hover-word {
-    display: inline-block;
-    transition:
-      transform 250ms ease-out,
-      color 250ms ease-out;
-  }
-  .hover-word:hover {
-    color: #ffffff;
-  }
-  /* Gradient accent words: the gradient sweeps across on hover. */
-  .accent-sweep {
-    background-size: 220% 100%;
-    background-position: 0% 50%;
-    transition: background-position 400ms ease-out;
-  }
-  .accent-sweep:hover {
-    background-position: 100% 50%;
-  }
-  /* A gradient word that also lifts keeps its gradient (no white fill). */
-  .accent-sweep.hover-word:hover {
-    color: transparent;
-  }
-  /* Feature row headlines: a blue gradient underline grows from the left. */
-  .underline-grow {
-    background-image: linear-gradient(90deg, var(--label-blue) 0 50%, transparent 50% 100%);
-    background-repeat: no-repeat;
-    background-size: 200% 2px;
-    background-position: 100% 100%;
-    padding-bottom: 0.08em;
-    -webkit-box-decoration-break: clone;
-    box-decoration-break: clone;
-    transition: background-position 350ms ease-out;
-  }
-  .group\/row:hover .underline-grow {
-    background-position: 0% 100%;
-  }
-  /* Nav links: grey to white, with a thin underline growing from the centre. */
-  .nav-underline {
-    position: relative;
-  }
-  .nav-underline::after {
-    content: "";
-    position: absolute;
-    inset-inline: 0;
-    bottom: -4px;
-    height: 1px;
-    background: currentColor;
-    transform: scaleX(0);
-    transition: transform 250ms ease-out;
-  }
-  .nav-underline:hover::after {
-    transform: scaleX(1);
-  }
-  /* Buttons on the home page: a soft light sweeps across. */
-  [data-slot="button"] {
-    overflow: hidden;
-  }
-  [data-slot="button"]::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(
-      110deg,
-      transparent 30%,
-      rgb(255 255 255 / 0.22) 50%,
-      transparent 70%
-    );
-    transform: translateX(-130%);
-    transition: transform 400ms ease-out;
-  }
-  [data-slot="button"][data-variant="default"]::after {
-    background: linear-gradient(
-      110deg,
-      transparent 30%,
-      color-mix(in srgb, var(--glow-blue) 16%, transparent) 50%,
-      transparent 70%
-    );
-  }
-  [data-slot="button"]:hover::after {
-    transform: translateX(130%);
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .hover-word:hover {
-      transform: translateY(-3px);
-    }
+/* Underlined inline links (prose, chat replies). */
+@utility link-inline {
+  color: var(--text-extra-high);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 150ms ease-out;
+  &:hover,
+  &:focus-visible {
+    text-decoration-color: var(--text-extra-high);
   }
 }
 
-/*
- * The punch line ("Clarity is the best edge."). Lit by hover (mouse), keyboard
- * focus, or a tap (which sets data-lit): a brand gradient sweeps across the
- * letters, they spread a touch, a glow fades in behind, and "edge" lifts with
- * a highlighter underline. Under reduced motion it is a plain colour change.
- */
-.punch {
-  cursor: default;
-  outline: none;
-  transition: letter-spacing 400ms ease-out;
-}
-.punch:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 12px;
-  border-radius: 1rem;
-}
-.punch-glow {
-  transition: opacity 400ms ease-out;
-}
-.punch-text {
-  transition: color 300ms ease-out;
-}
-.punch-edge {
-  position: relative;
-  display: inline-block;
-  /* Its own layer, so the underline sits behind the letters. */
-  isolation: isolate;
-}
-.punch-edge::after {
-  content: "";
-  position: absolute;
-  inset-inline: -0.04em;
-  bottom: 0.08em;
-  height: 0.28em;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--glow-blue), var(--label-blue));
-  opacity: 0;
-  z-index: -1;
-  transition: opacity 300ms ease-out;
-}
-@media (prefers-reduced-motion: no-preference) {
-  /* White at rest (the gradient's first 40%); the lit state slides the colours in. */
-  .punch-text {
-    background-image: linear-gradient(
-      100deg,
-      var(--text) 0%,
-      var(--text) 40%,
-      var(--silver) 56%,
-      var(--label-blue) 72%,
-      var(--glow-blue) 88%,
-      var(--label-blue) 100%
-    );
-    background-size: 250% 100%;
-    background-position: 0% 50%;
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    transition: background-position 400ms ease-out;
-  }
-  .punch-edge {
-    transition: transform 350ms var(--ease-out-soft);
-  }
-  .punch-edge::after {
-    opacity: 0.55;
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 350ms var(--ease-out-soft) 80ms;
-  }
-}
-.punch[data-lit] .punch-glow,
-.punch:focus-visible .punch-glow {
-  opacity: 1;
-}
-.punch[data-lit] .punch-edge::after,
-.punch:focus-visible .punch-edge::after {
-  opacity: 0.55;
-}
-@media (prefers-reduced-motion: reduce) {
-  .punch[data-lit] .punch-text,
-  .punch:focus-visible .punch-text {
-    color: var(--label-blue);
-  }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .punch[data-lit],
-  .punch:focus-visible {
-    letter-spacing: -0.012em;
-  }
-  .punch[data-lit] .punch-text,
-  .punch:focus-visible .punch-text {
-    background-position: 100% 50%;
-  }
-  .punch[data-lit] .punch-edge,
-  .punch:focus-visible .punch-edge {
-    transform: translateY(-0.04em) rotate(-2deg);
-  }
-  .punch[data-lit] .punch-edge::after,
-  .punch:focus-visible .punch-edge::after {
-    transform: scaleX(1);
-  }
+/* --- Wallet (ported as-is from perps: Wallet Standard connect button and drawer) --- */
+:root {
+  --wallet-surface: #f9f8ed;
+  --wallet-border: #d6d2c0;
+  --wallet-fg: #1b1a14;
+  --wallet-fg-muted: #736a6c;
+  --wallet-fg-subtle: #9c9092;
+  --wallet-icon-bg: #edece3;
+  --wallet-option-bg: #f1efe2;
+  --wallet-option-hover: #e8e6d8;
+  --wallet-option-border: #d6d2c0;
+  --wallet-option-ring: #9c9092;
+  --wallet-handle: #c6b6ba;
+  --wallet-danger: #ef4a3c;
+  --wallet-iconbtn-bg: #edece3;
+  --wallet-iconbtn-hover-bg: #dcd9c8;
+  --wallet-iconbtn-fg: #736a6c;
+  --wallet-iconbtn-hover-fg: #1b1a14;
+  /* perps' --surface / --surface-hover / --border / --foreground, scoped to the wallet UI. */
+  --wallet-btn-surface: #f1efe2;
+  --wallet-btn-surface-hover: #e8e6d8;
+  --wallet-btn-border: #d6d2c0;
+  --wallet-btn-fg: #1b1a14;
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/*
- * The Research page (/chat) has its own buttons, scoped by data-research:
- * - primary (Approve, Send, New chat): solid accent blue with an inner
- *   highlight; lifts and gets a light sweep on hover, presses to 0.98;
- * - secondary (outline): an accent outline that fills softly on hover;
- * - ghost and icon buttons: round, with a soft circle behind on hover.
- * Focus rings are accent blue. Colours come from the shared tokens.
- */
-[data-research] {
-  --ring: var(--label-blue);
+@theme inline {
+  --color-wallet-surface: var(--wallet-surface);
+  --color-wallet-border: var(--wallet-border);
+  --color-wallet-fg: var(--wallet-fg);
+  --color-wallet-fg-muted: var(--wallet-fg-muted);
+  --color-wallet-fg-subtle: var(--wallet-fg-subtle);
+  --color-wallet-icon-bg: var(--wallet-icon-bg);
+  --color-wallet-handle: var(--wallet-handle);
+  --color-wallet-danger: var(--wallet-danger);
+  --color-wallet-btn-surface: var(--wallet-btn-surface);
+  --color-wallet-btn-surface-hover: var(--wallet-btn-surface-hover);
+  --color-wallet-btn-border: var(--wallet-btn-border);
+  --color-wallet-btn-fg: var(--wallet-btn-fg);
 }
-[data-research] [data-slot="button"] {
-  transition-duration: 200ms;
-  transition-property: background-color, border-color, color, box-shadow, translate, scale;
-}
-[data-research] [data-slot="button"]:active {
-  scale: 0.98;
-}
-[data-research] [data-slot="button"][data-variant="default"] {
-  background-color: var(--glow-blue);
-  color: var(--text);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.24),
-    0 8px 20px -10px color-mix(in srgb, var(--glow-blue) 80%, transparent);
-}
-[data-research] [data-slot="button"][data-variant="default"]:hover {
-  background-color: color-mix(in srgb, var(--glow-blue) 82%, var(--label-blue));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.3),
-    0 12px 26px -10px color-mix(in srgb, var(--glow-blue) 90%, transparent);
-}
-[data-research] [data-slot="button"][data-variant="default"]::after {
-  background: linear-gradient(
-    110deg,
-    transparent 30%,
-    rgb(255 255 255 / 0.28) 50%,
-    transparent 70%
-  );
-}
-[data-research] [data-slot="button"][data-variant="outline"],
-[data-research] [data-slot="button"][data-variant="secondary"] {
-  border-color: color-mix(in srgb, var(--label-blue) 40%, transparent);
-  background-color: transparent;
-  color: var(--text);
-}
-[data-research] [data-slot="button"][data-variant="outline"]:hover,
-[data-research] [data-slot="button"][data-variant="secondary"]:hover,
-[data-research] [data-slot="button"][data-variant="outline"][aria-expanded="true"] {
-  border-color: color-mix(in srgb, var(--label-blue) 70%, transparent);
-  background-color: color-mix(in srgb, var(--glow-blue) 16%, transparent);
-  color: var(--text);
-}
-[data-research] [data-slot="button"][data-variant="ghost"] {
-  border-radius: 999px;
-  color: var(--text-muted);
-}
-[data-research] [data-slot="button"][data-variant="ghost"]:hover,
-[data-research] [data-slot="button"][data-variant="ghost"][aria-expanded="true"] {
-  background-color: rgb(255 255 255 / 0.08);
-  color: var(--text);
-}
-[data-research] [data-slot="button"][data-variant="ghost"]::after {
-  content: none;
-}
-/* The command bar: an accent outline and a soft glow while it is in use. */
-.command-bar:focus-within {
-  border-color: color-mix(in srgb, var(--label-blue) 55%, transparent);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--label-blue) 30%, transparent),
-    0 0 48px -10px color-mix(in srgb, var(--glow-blue) 70%, transparent);
-}
-/* The sidebar's search pill: its glow grows as it takes focus. */
-.search-pill {
+
+.wallet-option {
+  display: flex;
+  height: 3rem;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--wallet-option-border);
+  border-radius: 0.75rem;
+  background: var(--wallet-option-bg);
+  cursor: pointer;
   transition:
-    border-color 200ms ease-out,
-    box-shadow 250ms ease-out;
-}
-.search-pill:focus-within {
-  border-color: color-mix(in srgb, var(--label-blue) 60%, transparent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--glow-blue) 22%, transparent);
-}
-/* The trade ticket's perforation: a dashed line with a notch cut into each edge. */
-.ticket-tear {
-  position: relative;
-  border-top: 1px dashed color-mix(in srgb, var(--silver) 35%, transparent);
-}
-.ticket-tear::before,
-.ticket-tear::after {
-  content: "";
-  position: absolute;
-  top: -0.5rem;
-  width: 1rem;
-  height: 1rem;
-  border-radius: 999px;
-  background: var(--background);
-  border: 1px solid var(--border);
-}
-.ticket-tear::before {
-  left: -0.5rem;
-}
-.ticket-tear::after {
-  right: -0.5rem;
+    background-color 150ms var(--ease-out-strong),
+    transform 150ms var(--ease-out-strong),
+    border-color 150ms var(--ease-out-strong);
 }
 
-/* An underline that slides in from the left on hover or focus (sortable table headers). */
-.underline-slide {
-  background-image: linear-gradient(currentColor, currentColor);
-  background-repeat: no-repeat;
-  background-position: 0 100%;
-  background-size: 0% 1px;
-  padding-bottom: 2px;
-  transition: background-size 200ms ease-out;
+.wallet-option:hover {
+  background: var(--wallet-option-hover);
 }
-button:hover > .underline-slide,
-button:focus-visible > .underline-slide {
-  background-size: 100% 1px;
+
+.wallet-option:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--wallet-option-ring);
 }
-/* Table rows fade and slide in, each a touch after the one above (--i is the row's index). */
-@keyframes row-in {
+
+.wallet-option:active {
+  transform: scale(0.98);
+}
+
+.icon-button {
+  display: flex;
+  height: 2rem;
+  width: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--wallet-iconbtn-bg);
+  color: var(--wallet-iconbtn-fg);
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--ease-out-strong),
+    transform 150ms var(--ease-out-strong),
+    color 150ms var(--ease-out-strong);
+}
+
+.icon-button:hover {
+  background: var(--wallet-iconbtn-hover-bg);
+  color: var(--wallet-iconbtn-hover-fg);
+}
+
+.icon-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--wallet-option-ring);
+}
+
+.icon-button:active {
+  transform: scale(0.95);
+}
+
+.icon-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wallet-option,
+  .icon-button {
+    transition: none;
+  }
+  .wallet-option:active,
+  .icon-button:active {
+    transform: none;
+  }
+}
+
+@keyframes wallet-tile-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
-}
-@utility animate-row-in {
-  animation: row-in 320ms var(--ease-out-soft) both;
-  animation-delay: calc(min(var(--i, 0), 14) * 28ms);
-}
-
-/*
- * Home page rhythm. Every section pads itself by half the gap above and below
- * (`section-y`), so two neighbours are always one gap apart: 48px on phones,
- * 64px on tablets, 88px on desktop. `section-head` is the space from a
- * section's heading to its content (24px, 32px from tablets up).
- */
-:root {
-  --section-gap: 3rem;
-  --section-head-gap: 1.5rem;
-}
-@media (min-width: 40rem) {
-  :root {
-    --section-gap: 4rem;
-    --section-head-gap: 2rem;
-  }
-}
-@media (min-width: 64rem) {
-  :root {
-    --section-gap: 5.5rem;
-  }
-}
-@utility section-y {
-  padding-block: calc(var(--section-gap) / 2);
-}
-@utility section-head {
-  margin-top: var(--section-head-gap);
-}
-
-/* The home ticker tape: two copies of the list slide left by one copy's width, forever. */
-@keyframes tape {
   to {
-    transform: translateX(-50%);
+    opacity: 1;
+    transform: translateY(0);
   }
-}
-@utility animate-tape {
-  animation: tape 70s linear infinite;
 }
 
-/* The Trade card's 30-second countdown ring: the stroke empties, then the quote refreshes. */
-@keyframes ring-countdown {
-  to {
-    stroke-dashoffset: 50.3;
+.wallet-tile-in {
+  animation: wallet-tile-in 240ms var(--ease-out-strong) backwards;
+}
+.wallet-tile-in:nth-child(2) {
+  animation-delay: 30ms;
+}
+.wallet-tile-in:nth-child(3) {
+  animation-delay: 60ms;
+}
+.wallet-tile-in:nth-child(4) {
+  animation-delay: 90ms;
+}
+.wallet-tile-in:nth-child(5) {
+  animation-delay: 120ms;
+}
+.wallet-tile-in:nth-child(6) {
+  animation-delay: 150ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wallet-tile-in {
+    animation: none;
   }
 }
-@utility animate-ring {
-  animation: ring-countdown 30s linear forwards;
+
+/* A muted line of text with a light passing over it (in-progress status). */
+@utility text-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-ink-muted) 35%,
+    var(--text-extra-high) 50%,
+    var(--color-ink-muted) 65%
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: text-shimmer 1.8s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    background-image: none;
+    color: var(--color-ink-muted);
+  }
+}
+@keyframes text-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+
+/* Arc slot-text (https://uiarc.dev, MIT, Copyright (c) 2026 Elia Kuratli) */
+.arc-slot-root {
+  position: relative;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+.arc-slot-reels {
+  display: inline-flex;
+  height: 1.15em;
+  align-items: flex-start;
+}
+
+/* Each slot holds one character. Its width follows the character on a spring, so the word never resizes in one frame. */
+.arc-slot-slot {
+  position: relative;
+  display: inline-block;
+  height: 1.15em;
+  flex: none;
+  overflow: visible;
+}
+.arc-slot-sizer {
+  display: inline-block;
+  visibility: hidden;
+  white-space: pre;
+  pointer-events: none;
+}
+
+/* The window reaches a little past the line so glyphs fade at the edges instead of being cut. */
+.arc-slot-window {
+  position: absolute;
+  inset: -0.22em -0.08em;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 0.24em,
+    #000 calc(100% - 0.24em),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 0.24em,
+    #000 calc(100% - 0.24em),
+    transparent
+  );
+}
+.arc-slot-strip {
+  position: absolute;
+  top: calc(0.22em - 0.225em);
+  right: 0.08em;
+  left: 0.08em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: transform;
+}
+.arc-slot-cell {
+  display: block;
+  height: 1.6em;
+  padding-top: 0.225em;
+  box-sizing: border-box;
+  line-height: 1.15;
+  white-space: pre;
+}
+
+.arc-slot-srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Arc hold-to-confirm (https://uiarc.dev, MIT, Copyright (c) 2026 Elia Kuratli) */
+/* The button hugs its label; the fill is a second, inverted copy of the face revealed by clip-path, so the text flips colour exactly at the edge. */
+/* The default tone follows the selected accent; danger stays available for a truly irreversible action. */
+.arc-hold-button {
+  --hold-ink: #111111;
+  --hold-fill: #111111;
+  --hold-on-fill: #ffffff;
+  --hold-border: rgba(17, 17, 17, 0.14);
+  position: relative;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  border: 1px solid var(--hold-border);
+  border-radius: 9999px;
+  background: #ffffff;
+  color: var(--hold-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.arc-hold-button[data-tone="danger"] {
+  --hold-ink: #b42318;
+  --hold-fill: #b42318;
+  --hold-on-fill: #ffffff;
+  --hold-border: rgba(180, 35, 24, 0.32);
+}
+.arc-hold-button[data-tone="neutral"] {
+  --hold-ink: #111111;
+  --hold-fill: #111111;
+  --hold-on-fill: #ffffff;
+  --hold-border: rgba(17, 17, 17, 0.14);
+}
+@media (hover: hover) and (pointer: fine) {
+  .arc-hold-button:not(:disabled):not([aria-disabled="true"]):hover {
+    background: color-mix(in oklab, var(--hold-fill) 6%, #ffffff);
+  }
+}
+.arc-hold-button[aria-disabled="true"] {
+  cursor: default;
+}
+.arc-hold-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.arc-hold-face {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+/* Covers the border too, and keeps its own rounded corners; the clip only ever cuts a straight leading edge. */
+.arc-hold-fill {
+  position: absolute;
+  inset: -1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--hold-fill);
+  color: var(--hold-on-fill);
+  pointer-events: none;
+}
+.arc-hold-iconSlot {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  place-items: center;
+}
+.arc-hold-iconPhase {
+  display: grid;
+  grid-area: 1 / 1;
+  place-items: center;
+}
+.arc-hold-iconPhase svg {
+  width: 18px;
+  height: 18px;
+}
+/* Clips the outgoing label while the frame narrows, with room for the rise and the soft blur. */
+.arc-hold-labelFrame {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  clip-path: inset(-0.6em -3px);
+}
+.arc-hold-label {
+  display: block;
+  white-space: nowrap;
+}
+.arc-hold-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.arc-hold-srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arc-hold-button {
+    transition: none;
+  }
 }

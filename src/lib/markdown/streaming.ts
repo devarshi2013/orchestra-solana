@@ -26,12 +26,11 @@ export function stableMarkdown(text: string, streaming: boolean): StableMarkdown
   let partial = lines.pop() ?? "";
 
   // An unclosed ```comparison block: show nothing of it until the closing fence.
-  let openFence = -1;
-  lines.forEach((line, i) => {
-    if (openFence >= 0) {
-      if (FENCE.test(line)) openFence = -1;
-    } else if (COMPARISON_FENCE.test(line)) openFence = i;
-  });
+  const openFence = lines.reduce(
+    (open, line, i) =>
+      open >= 0 ? (FENCE.test(line) ? -1 : open) : COMPARISON_FENCE.test(line) ? i : -1,
+    -1,
+  );
   if (openFence >= 0) return { text: lines.slice(0, openFence).join("\n"), pending: "comparison" };
   // A fence line still being typed ("```compa") isn't known to be anything yet.
   if (/^\s*`/.test(partial)) partial = "";
@@ -45,8 +44,7 @@ export function stableMarkdown(text: string, streaming: boolean): StableMarkdown
 
   // A table needs its header and delimiter rows before it renders as a table;
   // until then its lines would show as raw pipes.
-  let start = lines.length;
-  while (start > 0 && TABLE_LINE.test(lines[start - 1]!)) start--;
+  const start = lines.findLastIndex((line) => !TABLE_LINE.test(line)) + 1;
   const tableLines = lines.slice(start);
   if (pending === "row" && tableLines.length === 0) pending = "table"; // the header row itself
   if (tableLines.length > 0 && !(tableLines.length >= 2 && DELIMITER_ROW.test(tableLines[1]!))) {

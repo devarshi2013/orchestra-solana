@@ -6,7 +6,7 @@ import { cleanAiTitle } from "@/lib/assistant/chat-history";
 import { redactAddresses } from "@/lib/agent/redact";
 
 /** A small, fast model is plenty for a 3-6 word title. */
-export const TITLE_MODEL = "claude-haiku-4-5-20251001";
+const TITLE_MODEL = "claude-haiku-4-5-20251001";
 
 const SYSTEM = `You name chats in a research app for tokenized US stocks. Given the user's first message and the start of the reply, write a title of 3 to 6 words that says what the chat is about (e.g. "Top tech stocks for 200 USDC", "Comparing NVDA and AMD"). Plain text only: no quotes, no punctuation at the end, no emoji. Reply with the title and nothing else.`;
 

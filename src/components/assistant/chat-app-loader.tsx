@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 
-import { LogoMark } from "@/components/brand/logo";
+import { TickertapeMark } from "@/components/brand/tickertape-mark";
 import { ProgressBar } from "@/components/motion";
 
 /**
@@ -13,12 +13,12 @@ export const ChatAppLoader = dynamic(() => import("./assistant-chat").then((m) =
   ssr: false,
   loading: () => (
     <div
-      className="flex h-[calc(100dvh-4rem-1px)] flex-col items-center justify-center gap-3"
+      className="flex h-[calc(100dvh-var(--header-height))] flex-col items-center justify-center gap-3 border-t border-border-light"
       role="status"
-      aria-label="Loading Quill"
+      aria-label="Loading Tickertape"
     >
-      <LogoMark className="size-12" />
-      <span className="font-heading text-lg font-semibold tracking-tight">Quill</span>
+      <TickertapeMark className="h-12 text-text-extra-high" />
+      <span className="text-title-sm text-text-extra-high">Tickertape</span>
       <ProgressBar label="Loading" className="mt-2 w-40 rounded-full" />
     </div>
   ),

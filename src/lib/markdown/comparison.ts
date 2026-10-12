@@ -8,7 +8,7 @@ import { z } from "zod";
  */
 const metric = z.number().finite().nullable().optional().default(null);
 
-export const comparisonSchema = z.object({
+const comparisonSchema = z.object({
   title: z.string().max(160).optional(),
   rows: z
     .array(

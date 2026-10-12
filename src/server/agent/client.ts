@@ -2,7 +2,7 @@ import "server-only";
 
 import Anthropic from "@anthropic-ai/sdk";
 
-import { serverEnv } from "@/env/server";
+import { serverEnv } from "@/env";
 
 let client: Anthropic | null = null;
 
