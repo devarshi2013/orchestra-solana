@@ -77,6 +77,12 @@ export function fetchOrder(
 export const executeSwap = (body: ExecuteBody) =>
   request("/api/swap/execute", post(body), executeResponseSchema);
 
+/** Solana's confirmed block height, read by the server (browsers are refused by public RPCs). */
+export const fetchBlockHeight = () =>
+  request("/api/solana/block-height", {}, z.object({ blockHeight: z.number() })).then(
+    (body) => body.blockHeight,
+  );
+
 export const assistantApi = {
   balances: (wallet: string, signal?: AbortSignal) =>
     request(

@@ -3,9 +3,9 @@
 import { VersionedTransaction } from "@solana/web3.js";
 import { useCallback, useRef, useState } from "react";
 
-import { useConnection, useWallet } from "@/components/wallet";
+import { useWallet } from "@/components/wallet";
 import { showPnlToast } from "@/components/share/pnl-toast";
-import { ApiError, executeSwap, fetchOrder, recordFill } from "@/lib/api-client";
+import { ApiError, executeSwap, fetchBlockHeight, fetchOrder, recordFill } from "@/lib/api-client";
 import { friendlyError } from "@/lib/friendly-error";
 import { base64ToBytes, bytesToBase64 } from "@/lib/solana";
 import {
@@ -56,7 +56,6 @@ const fail = (symbol: string, stage: string, error: unknown, classified?: unknow
  * failed item doesn't stop the others; declining in the wallet stops the run.
  */
 export function usePlanBuy(saved?: { items: BuyItem[]; stopped: string | null }) {
-  const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
   // A reopened chat starts from its saved purchase (statuses and Solscan links).
   const [items, setItems] = useState<BuyItem[] | null>(saved?.items ?? null);
@@ -123,7 +122,7 @@ export function usePlanBuy(saved?: { items: BuyItem[]; stopped: string | null })
             // The wallet prompt may have outlived the quote: get a fresh one.
             let blockHeight: number;
             try {
-              blockHeight = await connection.getBlockHeight("confirmed");
+              blockHeight = await fetchBlockHeight();
             } catch (error) {
               update(index, { step: "failed", error: fail(item.symbol, "block height", error) });
               break;
@@ -176,7 +175,7 @@ export function usePlanBuy(saved?: { items: BuyItem[]; stopped: string | null })
         setRunning(false);
       }
     },
-    [connection, publicKey, signTransaction],
+    [publicKey, signTransaction],
   );
 
   /** Buys the items again that weren't bought (failed or never reached). */

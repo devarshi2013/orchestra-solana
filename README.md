@@ -48,6 +48,7 @@ An **AI research chatbot and trading app for tokenized US stocks on Solana**. As
 | `GET`/`PATCH /api/profile`, `POST /api/profile/read`                                        | Positions with cost basis, strategies, fills, notifications; webhook URL; mark read                 |
 | `GET /api/portfolio/history?period=7d\|30d\|90d\|1y`                                        | The portfolio, one point per day (value, P&L), today live; past days backfilled from recorded fills |
 | `GET /api/prices?mints=`                                                                    | Jupiter's live price and 24h change, up to 50 mints                                                 |
+| `GET /api/solana/block-height`                                                              | Solana's confirmed block height from the server's RPC; a trade checks it after the wallet signs     |
 | `GET /api/health`                                                                           | Which env variables are missing                                                                     |
 
 The UI (home, stock pages, chat) is being rebuilt in the tokens.xyz design system on top of these routes.
@@ -76,19 +77,19 @@ pnpm dev                     # http://localhost:3000
 
 Variables are validated with Zod in [`src/env.ts`](src/env.ts), the only config file. Blank values count as unset. There are no defaults: a missing required variable stops `next dev` / `next build` / `next start`, naming it.
 
-| Variable                     | Scope   | Required       | Purpose                                                                                   |
-| ---------------------------- | ------- | -------------- | ----------------------------------------------------------------------------------------- |
-| `JUPITER_API_KEY`            | server  | yes            | Sent as `x-api-key` to `api.jup.ag` (https://developers.jup.ag/portal)                    |
-| `JUPITER_API_BASE_URL`       | server  | yes            | `https://api.jup.ag`; `lite-api` is rejected                                              |
-| `SOLANA_RPC_URL`             | server  | yes            | Server RPC for balances (may hold a provider key)                                         |
-| `NEXT_PUBLIC_SOLANA_RPC_URL` | browser | yes            | Browser RPC (block height while a trade signs). Never put a secret here                   |
-| `ANTHROPIC_API_KEY`          | server  | for chat       | Claude API key; without it the assistant is off (503)                                     |
-| `MARKET_DATA_API_KEY`        | server  | no             | Financial Modeling Prep; without it the assistant has no fundamentals tool                |
-| `COINGECKO_API_KEY`          | server  | for charts     | CoinGecko key (Demo or Pro); without it price charts are off                              |
-| `DATABASE_URL`               | server  | for strategies | The Neon (Vercel Postgres) connection string; tables live in the `tickertape` schema      |
-| `SESSION_SECRET`             | server  | for strategies | Signs wallet session cookies (32+ characters)                                             |
-| `CRON_SECRET`                | server  | for strategies | Bearer token for `/api/strategies/run` (16+ characters); Vercel Cron sends it             |
-| `COINGECKO_API_BASE_URL`     | server  | for charts     | `https://api.coingecko.com/api/v3` (Demo) or `https://pro-api.coingecko.com/api/v3` (Pro) |
+| Variable                     | Scope   | Required       | Purpose                                                                                      |
+| ---------------------------- | ------- | -------------- | -------------------------------------------------------------------------------------------- |
+| `JUPITER_API_KEY`            | server  | yes            | Sent as `x-api-key` to `api.jup.ag` (https://developers.jup.ag/portal)                       |
+| `JUPITER_API_BASE_URL`       | server  | yes            | `https://api.jup.ag`; `lite-api` is rejected                                                 |
+| `SOLANA_RPC_URL`             | server  | yes            | Server RPC for balances (may hold a provider key)                                            |
+| `NEXT_PUBLIC_SOLANA_RPC_URL` | browser | yes            | Browser RPC; no longer read (trades ask `/api/solana/block-height`). Never put a secret here |
+| `ANTHROPIC_API_KEY`          | server  | for chat       | Claude API key; without it the assistant is off (503)                                        |
+| `MARKET_DATA_API_KEY`        | server  | no             | Financial Modeling Prep; without it the assistant has no fundamentals tool                   |
+| `COINGECKO_API_KEY`          | server  | for charts     | CoinGecko key (Demo or Pro); without it price charts are off                                 |
+| `DATABASE_URL`               | server  | for strategies | The Neon (Vercel Postgres) connection string; tables live in the `tickertape` schema         |
+| `SESSION_SECRET`             | server  | for strategies | Signs wallet session cookies (32+ characters)                                                |
+| `CRON_SECRET`                | server  | for strategies | Bearer token for `/api/strategies/run` (16+ characters); Vercel Cron sends it                |
+| `COINGECKO_API_BASE_URL`     | server  | for charts     | `https://api.coingecko.com/api/v3` (Demo) or `https://pro-api.coingecko.com/api/v3` (Pro)    |
 
 Import `serverEnv` (server code only; ESLint keeps it out of components and hooks) and `clientEnv` from `@/env`. `GET /api/health` reports missing variables by name (never values).
 
@@ -108,7 +109,7 @@ Import `serverEnv` (server code only; ESLint keeps it out of components and hook
 
 A strategy is a conditional buy: "buy $190 of NVDAx when its price drops below $220" (also price above, 24h change below/above, or every N days). After signing in with the wallet (it signs a one-time message; no password), strategies are kept in Postgres (Neon) with their fills and notifications.
 
-- **Watching:** `/api/strategies/run` checks every watching strategy against Jupiter's live price. On Vercel it runs once a day via Vercel Cron (`vercel.json`, `0 0 * * *`: the Hobby plan allows only daily crons, so set `* * * * *` on Pro for every-minute checks; per-minute crons need the Pro plan, Hobby runs them daily), or any scheduler can call it with `Authorization: Bearer CRON_SECRET`. Locally, `pnpm strategies:watch`.
+- **Watching:** `/api/strategies/run` checks every watching strategy against Jupiter's live price. On Vercel it runs once a day via Vercel Cron (`vercel.json`, `0 0 * * *`: the Hobby plan allows only daily crons, so set `* * * * *` on Pro for every-minute checks), or any scheduler can call it with `Authorization: Bearer CRON_SECRET`. Locally, `pnpm strategies:watch`.
 - **Triggered:** the strategy is marked triggered, the user gets a notification on their portfolio page and, if they set one, a POST to their webhook URL (`{ text, content, strategy, price, url }`: works as a Discord or Slack incoming webhook, or any receiver).
 - **Buying:** the user opens the strategy and buys with one tap; their wallet signs. The swap is read back from the chain (`/api/fills`) and recorded against the strategy; a repeating strategy goes back to watching.
 - **Profile:** positions (on-chain balances of listed stock tokens) with average cost from recorded fills, live value and P&L from `/api/prices`.

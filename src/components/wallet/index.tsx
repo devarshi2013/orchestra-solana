@@ -1,11 +1,10 @@
 "use client";
 
-import { Connection, PublicKey, VersionedTransaction } from "@solana/web3.js";
+import { PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { useMemo, type ReactNode } from "react";
 
 import { ConnectWalletDrawer } from "@/components/wallet/connect-wallet-drawer";
 import { useWalletContext, WalletProvider } from "@/components/wallet/wallet-provider";
-import { clientEnv } from "@/env";
 import { useWalletModalStore } from "@/stores/wallet-modal";
 
 export { ConnectWalletButton } from "@/components/wallet/connect-wallet-button";
@@ -61,17 +60,6 @@ export function useWallet() {
     signMessage,
     disconnect,
   };
-}
-
-let connection: Connection | null = null;
-
-/** The browser's Solana RPC connection (NEXT_PUBLIC_SOLANA_RPC_URL). */
-export function useConnection() {
-  connection ??= new Connection(clientEnv.NEXT_PUBLIC_SOLANA_RPC_URL, {
-    commitment: "confirmed",
-    disableRetryOnRateLimit: true,
-  });
-  return { connection };
 }
 
 /** Opens the connect-wallet drawer. */

@@ -3,9 +3,9 @@
 import { VersionedTransaction } from "@solana/web3.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useConnection, useWallet } from "@/components/wallet";
+import { useWallet } from "@/components/wallet";
 import { showPnlToast } from "@/components/share/pnl-toast";
-import { ApiError, executeSwap, fetchOrder, recordFill } from "@/lib/api-client";
+import { ApiError, executeSwap, fetchBlockHeight, fetchOrder, recordFill } from "@/lib/api-client";
 import { friendlyError } from "@/lib/friendly-error";
 import type { OrderResponse } from "@/lib/jupiter/schemas";
 import { base64ToBytes, bytesToBase64 } from "@/lib/solana";
@@ -58,7 +58,6 @@ export function useTrade({
   /** Called once the landed swap is recorded (null when it couldn't be). */
   onRecorded?: (fill: Fill | null) => void;
 }) {
-  const { connection } = useConnection();
   const { publicKey, signTransaction } = useWallet();
   const [quote, setQuote] = useState<{
     key: string;
@@ -129,7 +128,7 @@ export function useTrade({
         // The wallet prompt may have outlived the quote: get a fresh one.
         let blockHeight: number;
         try {
-          blockHeight = await connection.getBlockHeight("confirmed");
+          blockHeight = await fetchBlockHeight();
         } catch (e) {
           return fail(explain("block height", e));
         }
@@ -166,7 +165,6 @@ export function useTrade({
   }, [
     amount,
     inDecimals,
-    connection,
     inputMint,
     outputMint,
     publicKey,

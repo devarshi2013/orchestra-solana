@@ -67,7 +67,7 @@ export const serverEnvSchema = z.object({
 });
 
 export const clientEnvSchema = z.object({
-  /** Browser RPC (block height checks while a trade signs). Use a public or origin-restricted endpoint. */
+  /** Browser RPC. No code reads it now: trades get the block height from /api/solana/block-height (public RPCs refuse browsers). */
   NEXT_PUBLIC_SOLANA_RPC_URL: requiredUrl("NEXT_PUBLIC_SOLANA_RPC_URL"),
 });
 

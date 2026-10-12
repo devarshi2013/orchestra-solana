@@ -55,6 +55,9 @@ async function readBalances(owner: string): Promise<Record<string, Balance>> {
   return balances;
 }
 
+/** The confirmed block height (a quote's `lastValidBlockHeight` is compared with it). */
+export const getBlockHeight = () => rpc().getBlockHeight("confirmed");
+
 /** A confirmed transaction with parsed accounts and token balances, or null when it isn't found. */
 export const getParsedTransaction = (signature: string) =>
   rpc().getParsedTransaction(signature, {
