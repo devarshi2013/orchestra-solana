@@ -108,7 +108,7 @@ Import `serverEnv` (server code only; ESLint keeps it out of components and hook
 
 A strategy is a conditional buy: "buy $190 of NVDAx when its price drops below $220" (also price above, 24h change below/above, or every N days). After signing in with the wallet (it signs a one-time message; no password), strategies are kept in Postgres (Neon) with their fills and notifications.
 
-- **Watching:** `/api/strategies/run` checks every watching strategy against Jupiter's live price. On Vercel it runs every minute via Vercel Cron (`vercel.json`; per-minute crons need the Pro plan, Hobby runs them daily), or any scheduler can call it with `Authorization: Bearer CRON_SECRET`. Locally, `pnpm strategies:watch`.
+- **Watching:** `/api/strategies/run` checks every watching strategy against Jupiter's live price. On Vercel it runs once a day via Vercel Cron (`vercel.json`, `0 0 * * *`: the Hobby plan allows only daily crons, so set `* * * * *` on Pro for every-minute checks; per-minute crons need the Pro plan, Hobby runs them daily), or any scheduler can call it with `Authorization: Bearer CRON_SECRET`. Locally, `pnpm strategies:watch`.
 - **Triggered:** the strategy is marked triggered, the user gets a notification on their portfolio page and, if they set one, a POST to their webhook URL (`{ text, content, strategy, price, url }`: works as a Discord or Slack incoming webhook, or any receiver).
 - **Buying:** the user opens the strategy and buys with one tap; their wallet signs. The swap is read back from the chain (`/api/fills`) and recorded against the strategy; a repeating strategy goes back to watching.
 - **Profile:** positions (on-chain balances of listed stock tokens) with average cost from recorded fills, live value and P&L from `/api/prices`.
